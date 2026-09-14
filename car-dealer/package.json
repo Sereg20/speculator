@@ -1,0 +1,17 @@
+{
+  "name": "car-dealer",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/server",
+    "apps/mobile",
+    "packages/shared"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w apps/server",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "migrate": "npm run migrate -w apps/server",
+    "migrate:down": "npm run migrate:down -w apps/server"
+  }
+}

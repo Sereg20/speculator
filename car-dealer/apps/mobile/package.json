@@ -1,0 +1,8 @@
+{
+  "name": "@car-dealer/mobile",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "echo 'Run: npx create-expo-app@latest . --template blank (Phase 0 mobile)' && exit 0"
+  }
+}
