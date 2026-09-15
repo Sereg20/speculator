@@ -104,7 +104,7 @@ async function getDialogue(request, reply) {
   // Cache
   await sql`
     UPDATE cars
-    SET seller_dialogue = jsonb_set(COALESCE(seller_dialogue, '{}'), '{intro}', ${JSON.stringify(dialogue)}::jsonb),
+    SET seller_dialogue = jsonb_set(COALESCE(seller_dialogue, '{}'), '{intro}', to_jsonb(${dialogue}::text)),
         updated_at = NOW()
     WHERE id = ${carId}
   `;

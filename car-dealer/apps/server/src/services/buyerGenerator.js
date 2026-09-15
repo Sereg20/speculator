@@ -184,7 +184,7 @@ async function checkQuickFixDiscovery(carId, reputationScore, buyerRequested) {
  * @param {object} log - Fastify logger
  * @returns {Promise<number>} count of inquiries generated
  */
-export async function generateBuyerInquiry(listingId, log) {
+export async function generateBuyerInquiry(listingId, log, { force = false } = {}) {
   // Load listing + car + player state
   const [listing] = await sql`
     SELECT l.id, l.asking_price, l.listed_at, l.status,
@@ -210,7 +210,7 @@ export async function generateBuyerInquiry(listingId, log) {
   );
 
   // No inquiry today?
-  if (Math.random() >= prob) return 0;
+  if (!force && Math.random() >= prob) return 0;
 
   const count = rollInquiryCount();
   let generated = 0;

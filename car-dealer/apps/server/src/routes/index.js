@@ -6,6 +6,8 @@ import inspectionRoutes from './inspection.js';
 import repairRoutes   from './repair.js';
 import listingRoutes  from './listings.js';
 import adsRoutes      from './ads.js';
+import devRoutes      from './dev.js';
+import { NODE_ENV }   from '../config.js';
 
 export default async function registerRoutes(fastify) {
   await fastify.register(authRoutes);
@@ -16,4 +18,5 @@ export default async function registerRoutes(fastify) {
   await fastify.register(repairRoutes);
   await fastify.register(listingRoutes);
   await fastify.register(adsRoutes);
+  if (NODE_ENV !== 'production') await fastify.register(devRoutes);
 }
