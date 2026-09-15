@@ -1,6 +1,6 @@
 # Car Dealer Simulator — Game Mechanics Specification
 
-**Version:** 1.1
+**Version:** 1.2
 **Status:** Ready for Implementation
 **Companion to:** GDD_CarDealer.md
 **Currency:** Belarusian Ruble (BYN). All monetary values calibrated against the Belarusian used-car market (av.by, 2025). 1 BYN ≈ 0.30 USD at the time of writing.
@@ -407,7 +407,11 @@ Without Deal Closer: max discount 15%. With Deal Closer: max 25%.
 
 ### 5.2 Sale Negotiation (Buyer Counter-Offers)
 
-When a buyer offers below asking, player can counter. Base acceptance: 40%.
+When a buyer offers below asking, the player can counter. Base acceptance: **25%**.
+
+Multi-round bargaining is the norm. On a non-acceptance, the buyer counter-offers at the midpoint between their original offer and the player's counter (70% probability) rather than walking away outright (30%). This means most negotiations run 2–5 rounds before reaching acceptance or final rejection.
+
+Delta penalty: how far above the buyer's offer the player counters reduces acceptance probability, capped at −20%.
 
 | Modifier | Effect |
 |----------|--------|
@@ -647,17 +651,29 @@ Listing above 120% of market value: near-zero organic demand. Below 85%: likely 
 | Reputable | +10% |
 | Legendary | +15% |
 
-### 9.2 Inquiry Count per Day (when inquiry occurs)
+### 9.2 One Inquiry at a Time
 
-| Roll | Simultaneous Inquiries |
-|------|----------------------|
-| 1–60% | 1 |
-| 61–90% | 2 |
-| 91–100% | 3 |
+Only one active buyer inquiry per car is allowed at any time. If a pending or in-negotiation inquiry exists, no new inquiry is generated for that listing.
 
-Each inquiry is an independent buyer NPC.
+After a rejection (player rejects the buyer, or buyer rejects the player's counter-offer), a **cooldown of 1 in-game day** applies before a new inquiry can appear for that listing.
 
-### 9.3 Buyer Inspection Probability Formula
+### 9.3 Direct-Buy Mechanic
+
+On each generated inquiry, there is a small chance the buyer arrives ready to pay the asking price outright — no negotiation expected.
+
+| Parameter | Value |
+|-----------|-------|
+| Base probability | 8% |
+| Reputation: Trusted | +2% |
+| Reputation: Reputable | +3% |
+| Reputation: Legendary | +4% |
+| Buyer archetype: `impulsive_buyer` | +4% |
+| Hard cap | 16% |
+| Blocked if buyer found quick-fix defects | Yes |
+
+When the direct-buy condition fires: the inquiry arrives with `offered_price = asking_price` and a `is_direct_buy` flag. The player still explicitly accepts it — the sale is not automatic. The buyer's message may reflect their willingness to buy immediately.
+
+### 9.4 Buyer Inspection Probability Formula
 
 ```
 InspectionChance = 30% + ReputationMod + PriceMod
@@ -826,7 +842,7 @@ Break-even sell price with a 1,700 BYN buy = ~2,400–2,600 BYN.
 
 | Variable | Type | Description |
 |----------|------|-------------|
-| `buyer_archetype` | Enum | `first_car_buyer`, `family_man`, `mechanic`, `reseller`, `cautious_retiree` |
+| `buyer_archetype` | Enum | `careful_buyer`, `bargain_hunter`, `impulsive_buyer`, `skeptic`, `enthusiast` |
 | `car_make_model_year` | String | |
 | `asking_price` | Integer | Player's asking price |
 | `market_value_estimate` | Integer | Buyer's estimate (±8% of true value) |
@@ -844,11 +860,11 @@ Break-even sell price with a 1,700 BYN buy = ~2,400–2,600 BYN.
 Ты ищешь подержанный автомобиль и переписываешься с продавцом.
 
 ПЕРСОНАЖ: {{buyer_archetype}}
-  first_car_buyer   — Первая машина. Немного наивен, задаёт базовые вопросы, легко воодушевляется.
-  family_man        — Практичный, смотрит на надёжность. Торгуется умеренно.
-  mechanic          — Разбирается в машинах. Технические вопросы, скептичен к размытым ответам.
-  reseller          — Хочет купить дёшево и продать дальше. Ищет максимальную скидку, холоден.
-  cautious_retiree  — Осторожен, не торопится, много уточняет. Честность для него важна.
+  careful_buyer    — Дотошный покупатель. Много вопросов, взвешен, торгуется умеренно.
+  bargain_hunter   — Охотник за скидкой. Настойчив, давит на цену, хочет максимальный дисконт.
+  impulsive_buyer  — Импульсивный. Быстро загорается, почти не торгуется, готов платить близко к цене.
+  skeptic          — Скептик. Недоверчив, ждёт подвоха, осторожен в каждом шаге.
+  enthusiast       — Любитель марки. Искренне заинтересован, интересуется деталями, торгуется меньше.
 
 ОБЪЯВЛЕНИЕ:
   Машина:             {{car_make_model_year}}
@@ -884,19 +900,21 @@ Break-even sell price with a 1,700 BYN buy = ~2,400–2,600 BYN.
 
 ### 11.5 API Parameters
 
-| Parameter | Seller Dialogue | Buyer Dialogue |
-|-----------|----------------|----------------|
-| Temperature | 0.85 | 0.80 |
-| Max tokens | 200 | 200 |
-| Top-p | 0.92 | 0.90 |
-| Frequency penalty | 0.4 | 0.4 |
-| Presence penalty | 0.2 | 0.2 |
+| Parameter | Seller Intro | Seller Negotiation | Buyer Inquiry | Buyer Counter |
+|-----------|-------------|-------------------|--------------|---------------|
+| Temperature | 0.85 | 0.85 | 0.80 | 0.80 |
+| Max tokens | 200 | 150 | 180 | 120 |
+| Top-p | 0.92 | 0.92 | 0.90 | 0.90 |
+
+Context types: `seller_intro`, `seller_negotiation`, `buyer_inquiry`, `buyer_counter`.
+
+`buyer_counter` is used during multi-round sale negotiation: when the buyer counter-offers back at the midpoint, an AI line is generated reflecting the ongoing bargaining round, round number, defect state, and archetype.
 
 Lower temperature for buyers: their mechanical outcomes (offer amount, walk-away) are already calculated by the engine. The prompt renders the dialogue, not the decision.
 
 ### 11.6 Fallback Dialogue
 
-On API failure or timeout (> 3 seconds), fall back to a local pre-written pool:
+On API failure or timeout (> 30 seconds), fall back to a local pre-written pool:
 
 | Pool | Minimum Size |
 |------|-------------|
@@ -938,7 +956,7 @@ All values suitable for extraction into a typed constants file (e.g., `balance-c
 | `AI_SELLER_TEMPERATURE` | 0.85 | 11.5 |
 | `AI_BUYER_TEMPERATURE` | 0.80 | 11.5 |
 | `AI_MAX_TOKENS` | 200 | 11.5 |
-| `AI_TIMEOUT_MS` | 3,000 | 11.6 |
+| `AI_TIMEOUT_MS` | 30,000 | 11.6 |
 
 ---
 

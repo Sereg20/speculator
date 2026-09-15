@@ -306,7 +306,7 @@ async function getInquiries(request, reply) {
 
   const inquiries = await sql`
     SELECT id, buyer_archetype, buyer_name, offered_price, message_text,
-           player_counter_offer, final_agreed_price, status,
+           player_counter_offer, final_agreed_price, status, is_direct_buy,
            did_inspect, discovered_quick_fixes, negotiation_round,
            generated_at, expires_at
     FROM buyer_inquiries

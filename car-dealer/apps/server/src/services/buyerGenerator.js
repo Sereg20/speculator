@@ -112,9 +112,27 @@ function inquiryProbability(askingPrice, marketValue, daysListed, reputationScor
 }
 
 /**
- * Compute buyer's initial offered price.
- * Buyer discounts from asking price based on archetype profile.
+ * Compute direct-buy probability (buyer pays asking price with no negotiation).
+ * Base 8%, small rep bonus, impulsive_buyer gets extra.
+ * Max ~14% even at Legend so it stays a pleasant surprise, not the norm.
  */
+function directBuyProbability(reputationScore, archetype) {
+  let p = 0.08;
+
+  const repTier = getRepTierName(reputationScore);
+  const REP_BONUS = {
+    'Надёжный':  0.02,
+    'Авторитет': 0.03,
+    'Легенда':   0.04,
+  };
+  p += REP_BONUS[repTier] ?? 0;
+
+  if (archetype === 'impulsive_buyer') p += 0.04;
+
+  return Math.min(p, 0.16); // hard cap at 16% — stays rare
+}
+
+
 function computeOfferPrice(askingPrice, archetype) {
   const profile = ARCHETYPE_OFFER_DISCOUNT[archetype] || ARCHETYPE_OFFER_DISCOUNT.careful_buyer;
   const discount = profile.min + Math.random() * (profile.max - profile.min);
@@ -279,18 +297,25 @@ export async function generateBuyerInquiry(listingId, log, { force = false } = {
       }
     }
 
+    // ── Direct-buy roll ────────────────────────────────────────────────────
+    // Small chance the buyer is willing to pay asking price without negotiating.
+    // Blocked if they found defects — they'd want a discount in that case.
+    const isDirectBuy = !discoveredQuickFixes && Math.random() < directBuyProbability(listing.reputation_score, archetype);
+
+    const insertPrice = isDirectBuy ? listing.asking_price : finalOfferedPrice;
+
     await sql`
       INSERT INTO buyer_inquiries (
         listing_id, buyer_archetype, buyer_name, offered_price,
-        message_text, status, did_inspect, discovered_quick_fixes, expires_at
+        message_text, status, did_inspect, discovered_quick_fixes, is_direct_buy, expires_at
       ) VALUES (
-        ${listingId}, ${archetype}, ${buyerName}, ${finalOfferedPrice},
-        ${messageText}, 'pending', ${didInspect}, ${discoveredQuickFixes}, ${expiresAt}
+        ${listingId}, ${archetype}, ${buyerName}, ${insertPrice},
+        ${messageText}, 'pending', ${didInspect}, ${discoveredQuickFixes}, ${isDirectBuy}, ${expiresAt}
       )
     `;
 
     log?.info(
-      { listingId, archetype, offeredPrice: finalOfferedPrice, didInspect },
+      { listingId, archetype, offeredPrice: insertPrice, didInspect, isDirectBuy },
       '[buyerGenerator] Inquiry generated',
     );
 
