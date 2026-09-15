@@ -1,10 +1,25 @@
 import { sql } from '../db/client.js';
 import { requireAuth } from '../middleware/auth.js';
 import { getEnergy } from '../services/energyService.js';
-import { REPUTATION_TIERS } from '../config.js';
+import { REPUTATION_TIERS, LEVEL_XP_THRESHOLDS } from '../config.js';
 
 function reputationTier(score) {
   return REPUTATION_TIERS.findLast((t) => score >= t.min)?.name || 'Новичок';
+}
+
+/**
+ * Compute XP needed to reach the next level.
+ * Returns 0 if at max level in the threshold table.
+ */
+function xpToNextLevel(xp, level) {
+  const nextThreshIdx = level; // level is 1-based; index for next threshold = level (0-based)
+  if (nextThreshIdx >= LEVEL_XP_THRESHOLDS.length) {
+    // Beyond table: every 300 XP = 1 level
+    const xpIntoCurrentLevel = xp - LEVEL_XP_THRESHOLDS[LEVEL_XP_THRESHOLDS.length - 1]
+      - (level - LEVEL_XP_THRESHOLDS.length) * 300;
+    return 300 - xpIntoCurrentLevel;
+  }
+  return Math.max(0, LEVEL_XP_THRESHOLDS[nextThreshIdx] - xp);
 }
 
 /**
@@ -30,6 +45,7 @@ async function getMe(request, reply) {
       ...player,
       energy_current: energyCurrent,
       reputation_tier: reputationTier(player.reputation_score),
+      xp_to_next_level: xpToNextLevel(player.xp, player.level),
     },
     error: null,
     meta: {
@@ -62,6 +78,7 @@ async function getStats(request, reply) {
       energy_current: energyCurrent,
       energy_max: energyMax,
       reputation_tier: reputationTier(player.reputation_score),
+      xp_to_next_level: xpToNextLevel(player.xp, player.level),
     },
     error: null,
     meta: {
@@ -341,6 +358,130 @@ async function upgradeGarage(request, reply) {
   });
 }
 
+// ─── Transactions ─────────────────────────────────────────────────────────────
+
+/**
+ * GET /player/transactions
+ * Returns the player's transaction history, newest first.
+ * Optional query param: limit (default 50, max 100), offset (default 0).
+ */
+async function getTransactions(request, reply) {
+  const playerId = request.playerId;
+  const limit  = Math.min(Number(request.query.limit  ?? 50), 100);
+  const offset = Number(request.query.offset ?? 0);
+
+  const transactions = await sql`
+    SELECT id, type, amount, reference_id, description, created_at
+    FROM transactions
+    WHERE player_id = ${playerId}
+    ORDER BY created_at DESC
+    LIMIT ${limit} OFFSET ${offset}
+  `;
+
+  const [{ total }] = await sql`
+    SELECT COUNT(*)::int AS total FROM transactions WHERE player_id = ${playerId}
+  `;
+
+  return reply.send({
+    data: { transactions },
+    error: null,
+    meta: { total, limit, offset },
+  });
+}
+
+// ─── Progression summary ──────────────────────────────────────────────────────
+
+/**
+ * GET /player/progression
+ * Returns a summary suitable for the progression/level-up screen:
+ *   - Current level, XP, XP to next level
+ *   - Reputation score and tier
+ *   - Recently unlocked skills/equipment (level-gated items the player can now buy)
+ *   - Total cars bought/sold, total profit
+ */
+async function getProgression(request, reply) {
+  const playerId = request.playerId;
+
+  const [player] = await sql`
+    SELECT xp, level, reputation_score, in_game_day
+    FROM players WHERE id = ${playerId}
+  `;
+  if (!player) {
+    return reply.code(404).send({ data: null, error: 'Player not found', meta: null });
+  }
+
+  // Skills unlockable at current level (not yet owned)
+  const availableSkills = await sql`
+    SELECT st.id, st.name, st.xp_cost, st.skill_type, st.tier, st.level_required
+    FROM skill_tree st
+    WHERE st.level_required <= ${player.level}
+      AND st.xp_cost > 0
+      AND NOT EXISTS (
+        SELECT 1 FROM player_skills ps
+        WHERE ps.player_id = ${playerId} AND ps.skill_id = st.id
+      )
+    ORDER BY st.tier, st.level_required
+    LIMIT 10
+  `;
+
+  // Equipment unlockable at current level (not yet owned)
+  const availableEquipment = await sql`
+    SELECT eq.id, eq.name, eq.purchase_price, eq.detection_tier, eq.level_required
+    FROM equipment eq
+    WHERE eq.level_required <= ${player.level}
+      AND NOT EXISTS (
+        SELECT 1 FROM player_equipment pe
+        WHERE pe.player_id = ${playerId} AND pe.equipment_id = eq.id
+      )
+    ORDER BY eq.detection_tier, eq.level_required
+    LIMIT 10
+  `;
+
+  // Career stats
+  const [carStats] = await sql`
+    SELECT
+      COUNT(*) FILTER (WHERE state != 'available_in_market')::int AS total_cars_purchased,
+      COUNT(*) FILTER (WHERE state = 'sold')::int AS total_cars_sold
+    FROM cars WHERE player_id = ${playerId}
+  `;
+
+  const [profitStats] = await sql`
+    SELECT COALESCE(SUM(amount), 0)::int AS total_profit
+    FROM transactions
+    WHERE player_id = ${playerId}
+      AND type IN ('sale_revenue', 'car_purchase')
+  `;
+
+  const repTierInfo = REPUTATION_TIERS.find(t =>
+    player.reputation_score >= t.min && player.reputation_score <= t.max
+  ) || REPUTATION_TIERS[0];
+
+  const nextRepTier = REPUTATION_TIERS.find(t => t.min > player.reputation_score);
+
+  return reply.send({
+    data: {
+      level: player.level,
+      xp: player.xp,
+      xp_to_next_level: xpToNextLevel(player.xp, player.level),
+      reputation_score: player.reputation_score,
+      reputation_tier: repTierInfo.name,
+      reputation_next_tier: nextRepTier
+        ? { name: nextRepTier.name, score_needed: nextRepTier.min - player.reputation_score }
+        : null,
+      in_game_day: player.in_game_day,
+      available_skills: availableSkills,
+      available_equipment: availableEquipment,
+      career: {
+        cars_purchased: carStats.total_cars_purchased,
+        cars_sold: carStats.total_cars_sold,
+        total_profit: profitStats.total_profit,
+      },
+    },
+    error: null,
+    meta: null,
+  });
+}
+
 export default async function playerRoutes(fastify) {
   fastify.get('/player/me',    { preHandler: requireAuth }, getMe);
   fastify.get('/player/stats', { preHandler: requireAuth }, getStats);
@@ -355,4 +496,8 @@ export default async function playerRoutes(fastify) {
 
   // Garage
   fastify.post('/player/garage/upgrade',                        { preHandler: requireAuth }, upgradeGarage);
+
+  // Transactions & Progression
+  fastify.get('/player/transactions',  { preHandler: requireAuth }, getTransactions);
+  fastify.get('/player/progression',   { preHandler: requireAuth }, getProgression);
 }

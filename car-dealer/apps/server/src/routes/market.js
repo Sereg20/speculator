@@ -12,6 +12,7 @@ import { generateDialogue } from '../services/aiProxy.js';
 import { transitionCar } from '../services/carStateMachine.js';
 import { consumeEnergy } from '../services/energyService.js';
 import { awardXP } from '../services/xpService.js';
+import { resolvePurchaseNegotiation } from '../services/negotiationEngine.js';
 import { sql } from '../db/client.js';
 import { requireAuth } from '../middleware/auth.js';
 import { LISTING_REFRESH_MANUAL_COST, INGAME_DAY_REAL_MINUTES } from '../config.js';
@@ -278,11 +279,119 @@ async function forceRefresh(request, reply) {
   });
 }
 
+/**
+ * POST /market/listings/:carId/negotiate
+ * Attempt to negotiate a lower purchase price from the market seller.
+ * Costs 2 energy (GMS §1.3). On success, reduces the asking price by the rolled discount.
+ * On failure with smooth_talker skill, sets a retry flag for one more attempt at half cost.
+ *
+ * Body: { context?: { sellerMoodRevealed?: string } }
+ */
+async function negotiatePurchase(request, reply) {
+  const { carId } = request.params;
+  const playerId = request.playerId;
+  const { context: extraContext = {} } = request.body || {};
+
+  const ENERGY_COST_NEGOTIATE = 2;
+
+  const hasEnergy = await consumeEnergy(playerId, ENERGY_COST_NEGOTIATE);
+  if (!hasEnergy) {
+    return reply.code(400).send({ data: null, error: 'Not enough energy', meta: null });
+  }
+
+  // Fetch car listing
+  const [car] = await sql`
+    SELECT id, asking_price, seller_archetype, market_listing_expires_at, player_id
+    FROM cars
+    WHERE id = ${carId}
+      AND player_id = ${playerId}
+      AND state = 'available_in_market'
+      AND market_listing_expires_at > NOW()
+  `;
+  if (!car) {
+    // Refund energy
+    await sql`
+      UPDATE players SET energy_current = LEAST(energy_current + ${ENERGY_COST_NEGOTIATE}, 30),
+        updated_at = NOW() WHERE id = ${playerId}
+    `;
+    return reply.code(404).send({ data: null, error: 'Listing not found or expired', meta: null });
+  }
+
+  // Compute listing age in in-game days
+  const listingAge = Math.floor(
+    (Date.now() - (new Date(car.market_listing_expires_at).getTime() - 7 * INGAME_DAY_REAL_MINUTES * 60000))
+    / (INGAME_DAY_REAL_MINUTES * 60000),
+  );
+
+  // Check if player already failed a negotiation on this car (in analytics)
+  const [recentFail] = await sql`
+    SELECT 1 FROM analytics_events
+    WHERE player_id = ${playerId}
+      AND event_type = 'negotiation_purchase_failed'
+      AND metadata->>'carId' = ${carId}
+    LIMIT 1
+  `;
+
+  const result = await resolvePurchaseNegotiation(playerId, {
+    listingAge,
+    sellerMoodRevealed: extraContext.sellerMoodRevealed ?? null,
+    recentFailedNegotiation: !!recentFail,
+    carQualityTier: extraContext.carQualityTier ?? 'fair',
+    buildRapportBonus: extraContext.buildRapportBonus ?? 0,
+  });
+
+  if (result.outcome === 'success') {
+    const discountAmount = Math.round(car.asking_price * result.discount);
+    const newPrice = car.asking_price - discountAmount;
+
+    // Apply discount to the car's asking_price
+    await sql`
+      UPDATE cars SET asking_price = ${newPrice}, updated_at = NOW() WHERE id = ${carId}
+    `;
+
+    // Award negotiation XP
+    await awardXP(playerId, 20, 'negotiation_purchase');
+
+    // Log analytics
+    await sql`
+      INSERT INTO analytics_events (player_id, event_type, metadata)
+      VALUES (${playerId}, 'negotiation_purchase_success',
+        ${sql.json({ carId, discount: result.discount, discountAmount, newPrice })})
+    `;
+
+    // Reputation +1 for successful purchase negotiation
+    await sql`
+      UPDATE players SET reputation_score = GREATEST(0, LEAST(200, reputation_score + 1)),
+        updated_at = NOW() WHERE id = ${playerId}
+    `;
+
+    return reply.send({
+      data: { outcome: 'success', newPrice, discountAmount },
+      error: null,
+      meta: { discount: result.discount },
+    });
+  }
+
+  // Failure — log it
+  await sql`
+    INSERT INTO analytics_events (player_id, event_type, metadata)
+    VALUES (${playerId}, 'negotiation_purchase_failed',
+      ${sql.json({ carId, retryAllowed: result.retryAllowed })})
+  `;
+
+  return reply.send({
+    data: { outcome: 'failure', retryAllowed: result.retryAllowed },
+    error: null,
+    meta: null,
+  });
+}
+
 export default async function marketRoutes(fastify) {
   const auth = { preHandler: requireAuth };
 
-  fastify.get('/market/listings',                    auth, getListings);
-  fastify.get('/market/listings/:carId/dialogue',    auth, getDialogue);
-  fastify.post('/market/listings/:carId/purchase',   auth, purchaseCar);
-  fastify.post('/market/listings/refresh',           auth, forceRefresh);
+  fastify.get('/market/listings',                          auth, getListings);
+  fastify.get('/market/listings/:carId/dialogue',          auth, getDialogue);
+  fastify.post('/market/listings/:carId/purchase',         auth, purchaseCar);
+  fastify.post('/market/listings/:carId/negotiate',        auth, negotiatePurchase);
+  fastify.post('/market/listings/refresh',                 auth, forceRefresh);
 }

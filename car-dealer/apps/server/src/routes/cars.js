@@ -10,6 +10,7 @@
 
 import { sql } from '../db/client.js';
 import { requireAuth } from '../middleware/auth.js';
+import { INGAME_DAY_REAL_MINUTES } from '../config.js';
 
 /**
  * GET /cars/:carId
@@ -76,6 +77,7 @@ async function getCar(request, reply) {
 /**
  * GET /cars
  * Returns all cars owned by the player (excluding market listings and sold).
+ * Includes `days_held` (in-game days since purchase) for the client calendar.
  */
 async function getMyCars(request, reply) {
   const playerId = request.playerId;
@@ -90,8 +92,16 @@ async function getMyCars(request, reply) {
     ORDER BY created_at DESC
   `;
 
+  // Compute days_held per car (in-game days since the car was purchased)
+  const INGAME_DAY_MS = INGAME_DAY_REAL_MINUTES * 60 * 1000;
+  const now = Date.now();
+  const carsWithDaysHeld = cars.map(car => ({
+    ...car,
+    days_held: Math.floor((now - new Date(car.created_at).getTime()) / INGAME_DAY_MS),
+  }));
+
   return reply.send({
-    data: { cars },
+    data: { cars: carsWithDaysHeld },
     error: null,
     meta: { total: cars.length },
   });

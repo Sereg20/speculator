@@ -6,6 +6,8 @@ import registerRoutes from './routes/index.js';
 import { PORT, LOG_LEVEL, JWT_SECRET } from './config.js';
 import { startRepairCompletionJob } from './jobs/repairCompletion.js';
 import { startHoldingCostJob } from './jobs/holdingCost.js';
+import { startBuyerInquiryJob } from './jobs/buyerInquiry.js';
+import { startListingExpiryJob } from './jobs/listingExpiry.js';
 
 const fastify = Fastify({
   logger: {
@@ -54,6 +56,8 @@ try {
 // ─── Background jobs ─────────────────────────────────────────────────────────
 startRepairCompletionJob(fastify.log);
 startHoldingCostJob(fastify.log);
+startBuyerInquiryJob(fastify.log);
+startListingExpiryJob(fastify.log);
 
 // ─── Graceful shutdown ──────────────────────────────────────────────────────
 process.on('SIGTERM', async () => {

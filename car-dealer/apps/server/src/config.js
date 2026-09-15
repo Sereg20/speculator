@@ -18,6 +18,8 @@ export const GEMINI_API_KEYS = [
   process.env.GEMINI_API_KEY_2,
 ].filter(Boolean);
 export const AI_TIMEOUT_MS = Number(process.env.AI_TIMEOUT_MS) || 3000;
+/** Hard cutoff for AI dialogue generation before falling back to pool (ms) */
+export const AI_DIALOGUE_TIMEOUT_MS = Number(process.env.AI_DIALOGUE_TIMEOUT_MS) || 30000;
 
 // ─── Time ────────────────────────────────────────────────────────────────────
 /** How many real-world minutes = 1 in-game day */
@@ -101,3 +103,44 @@ export const QUICK_FIX_VALUE_RESTORE = 0.4;       // 40%
 
 // Ad reward rate limiting
 export const AD_GRANT_COOLDOWN_HOURS = 4;
+
+// ─── Phase 5 / 6 additions ────────────────────────────────────────────────────
+
+// Listing expiry distribution (GMS §4.1) — days : cumulative probability
+export const LISTING_EXPIRY_DAYS_DISTRIBUTION = [3, 4, 5, 6, 7]; // 20/30/25/15/10%
+
+// Selling energy costs (GMS §1.3)
+export const ENERGY_COST_LIST_CAR     = 1;
+export const ENERGY_COST_RESPOND_BUYER = 1;
+export const ENERGY_COST_NEGOTIATE    = 2;
+
+// XP awards per action (GMS §1.2)
+export const XP_CAR_PURCHASED        = 15;
+export const XP_INSPECTION_BASIC     = 10;
+export const XP_INSPECTION_INTER     = 20;
+export const XP_INSPECTION_ADVANCED  = 35;
+export const XP_REPAIR_QUICK_FIX     = 10;
+export const XP_CAR_SOLD             = 30;
+export const XP_NEGOTIATION_PURCHASE = 20;
+export const XP_NEGOTIATION_SALE     = 20;
+export const XP_NEGOTIATION_LOW_ACCEPT = 5;
+export const XP_CLEAN_DEAL           = 15;
+
+// Reputation change events (GMS §1.4)
+export const REP_SALE_CLEAN          = +3;
+export const REP_BUYER_POSITIVE      = +5;
+export const REP_DEFECT_DISCOVERED   = -10;
+export const REP_DISPUTE             = -15;
+export const REP_NEGOTIATION_PURCHASE = +1;
+export const REP_NEGOTIATION_SALE    = +2;
+export const REP_LISTING_EXPIRED     = -1;
+export const REP_PROPER_REPAIR_BONUS = +2;
+export const REP_QUICK_FIX_FAIL      = -12;
+
+// Ad grant types (Phase 8 prep)
+export const AD_GRANT_TYPES = [
+  'energy_refill',
+  'waive_holding_cost',
+  'second_chance_inspection',
+  'extend_listing',
+];
