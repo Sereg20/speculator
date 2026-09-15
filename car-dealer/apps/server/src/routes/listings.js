@@ -19,6 +19,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { transitionCar } from '../services/carStateMachine.js';
 import { consumeEnergy } from '../services/energyService.js';
 import { awardXP } from '../services/xpService.js';
+import { generateDialogue } from '../services/aiProxy.js';
 import { resolveSaleNegotiation } from '../services/negotiationEngine.js';
 import { INGAME_DAY_REAL_MINUTES, REPUTATION_TIERS } from '../config.js';
 
@@ -353,6 +354,31 @@ async function respondToInquiry(request, reply) {
       meta: null,
     });
   }
+  if (action === 'counter') {
+    // Load inquiry to validate price bounds
+    const [inq] = await sql`
+      SELECT offered_price FROM buyer_inquiries WHERE id = ${inquiryId} AND listing_id = ${listingId}
+    `;
+    const [lst] = await sql`
+      SELECT asking_price FROM listings WHERE id = ${listingId} AND player_id = ${playerId}
+    `;
+    if (inq && lst) {
+      if (counterPrice > lst.asking_price) {
+        return reply.code(400).send({
+          data: null,
+          error: `Counter offer cannot exceed your asking price (${lst.asking_price} BYN)`,
+          meta: null,
+        });
+      }
+      if (counterPrice <= inq.offered_price) {
+        return reply.code(400).send({
+          data: null,
+          error: `Counter offer must be above the buyer's offer (${inq.offered_price} BYN) — just accept instead`,
+          meta: null,
+        });
+      }
+    }
+  }
 
   // Energy cost depends on action
   const energyCost = action === 'counter' ? ENERGY_COST_NEGOTIATE : ENERGY_COST_RESPOND;
@@ -413,10 +439,16 @@ async function _processInquiryResponse(playerId, listingId, inquiryId, action, c
   }
 
   if (action === 'reject') {
+    // Set cooldown: new inquiry can appear after 1 in-game day
+    const cooldownMs = INGAME_DAY_REAL_MINUTES * 60 * 1000;
+    const nextAllowedAt = new Date(Date.now() + cooldownMs);
     await sql`
       UPDATE buyer_inquiries SET status = 'rejected', updated_at = NOW() WHERE id = ${inquiryId}
     `;
-    return { outcome: 'rejected', inquiryId };
+    await sql`
+      UPDATE listings SET next_inquiry_allowed_at = ${nextAllowedAt} WHERE id = ${listingId}
+    `;
+    return { outcome: 'rejected', inquiryId, nextInquiryAllowedAt: nextAllowedAt };
   }
 
   if (action === 'accept') {
@@ -452,21 +484,38 @@ async function _processInquiryResponse(playerId, listingId, inquiryId, action, c
   }
 
   if (negotiationResult.outcome === 'counter') {
-    // Buyer sends back a mid-point counter
+    const midpoint = negotiationResult.finalPrice;
+    // Update inquiry with buyer's new midpoint offer
     await sql`
       UPDATE buyer_inquiries
-      SET offered_price = ${negotiationResult.finalPrice}, status = 'negotiating'
+      SET offered_price = ${midpoint}, status = 'negotiating'
       WHERE id = ${inquiryId}
     `;
+    // Generate contextual buyer dialogue for this counter round
+    const counterMessage = await generateDialogue('buyer_counter', {
+      buyer_archetype: inquiry.buyer_archetype,
+      asking_price: listing.asking_price,
+      buyer_offered_price: inquiry.offered_price,
+      player_counter_offer: counterPrice,
+      buyer_new_offer: midpoint,
+      negotiation_round: (inquiry.negotiation_round ?? 0) + 1,
+      defect_discovered: inquiry.discovered_quick_fixes || false,
+    }).catch(() => 'Давайте найдём компромисс.');
     return {
       outcome: 'counter',
       inquiryId,
-      buyerNewOffer: negotiationResult.finalPrice,
-      message: 'Покупатель предлагает встречную цену.',
+      buyerNewOffer: midpoint,
+      message: counterMessage,
     };
   }
 
-  return { outcome: 'rejected', inquiryId };
+  // Buyer rejected — set cooldown before next inquiry
+  const cooldownMs = INGAME_DAY_REAL_MINUTES * 60 * 1000;
+  const nextAllowedAt = new Date(Date.now() + cooldownMs);
+  await sql`
+    UPDATE listings SET next_inquiry_allowed_at = ${nextAllowedAt} WHERE id = ${listingId}
+  `;
+  return { outcome: 'rejected', inquiryId, nextInquiryAllowedAt: nextAllowedAt };
 }
 
 /**

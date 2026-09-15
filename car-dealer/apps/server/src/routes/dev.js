@@ -9,7 +9,6 @@
 import { generateBuyerInquiry } from '../services/buyerGenerator.js';
 import { requireAuth } from '../middleware/auth.js';
 import { sql } from '../db/client.js';
-
 async function forceInquiry(request, reply) {
   const { listingId } = request.params;
   const playerId = request.playerId;
@@ -24,6 +23,11 @@ async function forceInquiry(request, reply) {
   if (!listing) {
     return reply.code(404).send({ data: null, error: 'Active listing not found', meta: null });
   }
+
+  // Clear cooldown so force always works regardless of rejection cooldown
+  await sql`
+    UPDATE listings SET next_inquiry_allowed_at = NULL WHERE id = ${listingId}
+  `;
 
   const count = await generateBuyerInquiry(listingId, request.log, { force: true });
 

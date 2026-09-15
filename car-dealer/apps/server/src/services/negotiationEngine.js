@@ -207,8 +207,11 @@ export async function resolveSaleNegotiation(playerId, context) {
   const skillSet = new Set(ownedSkills.map(r => r.skill_id));
   const repTier = getRepTierName(player.reputation_score);
 
-  // ── Base acceptance probability (GMS §5.2) ────────────────────────────────
-  let prob = 0.40;
+  // ── Base acceptance probability ───────────────────────────────────────────
+  // Kept low intentionally — the buyer is expected to counter back multiple
+  // times before accepting or walking. The delta penalty and buyer counter-back
+  // probability together create the multi-round bargaining feel.
+  let prob = 0.25;
 
   // Reputation modifiers
   prob += SALE_REP_MODS[repTier] ?? 0;
@@ -240,8 +243,10 @@ export async function resolveSaleNegotiation(playerId, context) {
   const maxAcceptableDelta = askingPrice - buyerOfferedPrice;
   const deltaFraction = maxAcceptableDelta > 0 ? delta / maxAcceptableDelta : 1;
 
-  // Penalty proportional to how aggressive the counter-offer is
-  const deltapenalty = deltaFraction * 0.30;
+  // Penalty proportional to how aggressive the counter-offer is.
+  // Capped at 0.20 so even a counter near asking price still leaves a
+  // meaningful buyer counter-back chance rather than instant rejection.
+  const deltapenalty = deltaFraction * 0.20;
   const adjustedProb = clamp(prob - deltapenalty, NEGOTIATION_SUCCESS_FLOOR, NEGOTIATION_SUCCESS_CAP);
 
   const r = Math.random();
@@ -260,8 +265,9 @@ export async function resolveSaleNegotiation(playerId, context) {
     };
   }
 
-  // Rejected — buyer may send a final counter at their original offer
-  const buyerCounter = Math.random() < 0.35;
+  // Buyer counter-back: high probability so multi-round bargaining is the norm.
+  // Only outright rejects (~30%) when the player's counter is far from their offer.
+  const buyerCounter = Math.random() < 0.70;
   if (buyerCounter) {
     const midpoint = Math.round((buyerOfferedPrice + playerCounterOffer) / 2);
     return { outcome: 'counter', finalPrice: midpoint };

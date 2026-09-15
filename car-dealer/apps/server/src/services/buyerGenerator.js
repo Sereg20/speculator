@@ -112,16 +112,6 @@ function inquiryProbability(askingPrice, marketValue, daysListed, reputationScor
 }
 
 /**
- * Roll how many simultaneous inquiries arrive (GMS §9.2).
- */
-function rollInquiryCount() {
-  const r = Math.random();
-  if (r < 0.60) return 1;
-  if (r < 0.90) return 2;
-  return 3;
-}
-
-/**
  * Compute buyer's initial offered price.
  * Buyer discounts from asking price based on archetype profile.
  */
@@ -187,7 +177,7 @@ async function checkQuickFixDiscovery(carId, reputationScore, buyerRequested) {
 export async function generateBuyerInquiry(listingId, log, { force = false } = {}) {
   // Load listing + car + player state
   const [listing] = await sql`
-    SELECT l.id, l.asking_price, l.listed_at, l.status,
+    SELECT l.id, l.asking_price, l.listed_at, l.status, l.next_inquiry_allowed_at,
            c.id AS car_id, c.make, c.model, c.year, c.market_value,
            p.id AS player_id, p.reputation_score, p.in_game_day
     FROM listings l
@@ -197,6 +187,20 @@ export async function generateBuyerInquiry(listingId, log, { force = false } = {
   `;
 
   if (!listing || listing.status !== 'active') return 0;
+
+  // One inquiry at a time: skip if a pending/negotiating inquiry already exists
+  const [activeInquiry] = await sql`
+    SELECT 1 FROM buyer_inquiries
+    WHERE listing_id = ${listingId}
+      AND status IN ('pending', 'negotiating')
+    LIMIT 1
+  `;
+  if (activeInquiry) return 0;
+
+  // Respect cooldown after rejection (unless forced by dev endpoint)
+  if (!force && listing.next_inquiry_allowed_at && new Date(listing.next_inquiry_allowed_at) > new Date()) {
+    return 0;
+  }
 
   // Compute days listed (in-game days since listing was created)
   const msListed = Date.now() - new Date(listing.listed_at).getTime();
@@ -212,14 +216,10 @@ export async function generateBuyerInquiry(listingId, log, { force = false } = {
   // No inquiry today?
   if (!force && Math.random() >= prob) return 0;
 
-  const count = rollInquiryCount();
-  let generated = 0;
-
-  for (let i = 0; i < count; i++) {
-    const archetype = pickWeightedArchetype();
-    const buyerName = randomName(archetype);
-    const offeredPrice = computeOfferPrice(listing.asking_price, archetype);
-    const expiresAt = inquiryExpiresAt();
+  const archetype = pickWeightedArchetype();
+  const buyerName = randomName(archetype);
+  const offeredPrice = computeOfferPrice(listing.asking_price, archetype);
+  const expiresAt = inquiryExpiresAt();
 
     // Determine if buyer inspects (GMS §9.3)
     const inspectProb = buyerInspectionProb(
@@ -289,13 +289,10 @@ export async function generateBuyerInquiry(listingId, log, { force = false } = {
       )
     `;
 
-    generated++;
-
     log?.info(
       { listingId, archetype, offeredPrice: finalOfferedPrice, didInspect },
       '[buyerGenerator] Inquiry generated',
     );
-  }
 
-  return generated;
+  return 1;
 }
