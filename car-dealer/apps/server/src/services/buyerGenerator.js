@@ -77,8 +77,13 @@ function randomName(archetype) {
 /**
  * Compute inquiry probability per GMS §9.1.
  * Returns 0–1.
+ *
+ * purchasePrice: what the player paid for the car.
+ * When > 0, applies a multiplier based on how aggressively the car is priced
+ * above cost. Selling below cost gets a small boost; near the 1.5× cap gets
+ * penalised heavily so the player waits a long time.
  */
-function inquiryProbability(askingPrice, marketValue, daysListed, reputationScore) {
+function inquiryProbability(askingPrice, marketValue, daysListed, reputationScore, purchasePrice) {
   // Base probability from asking price ratio
   const ratio = marketValue > 0 ? askingPrice / marketValue : 1.0;
 
@@ -108,15 +113,26 @@ function inquiryProbability(askingPrice, marketValue, daysListed, reputationScor
   };
   prob += REP_BONUS[repTier] ?? 0;
 
+  // Purchase-price premium penalty: higher margin above cost → fewer inquiries
+  if (purchasePrice > 0) {
+    const ppRatio = askingPrice / purchasePrice;
+    let ppMult;
+    if      (ppRatio < 1.00)  ppMult = 1.10; // selling at a loss — buyers rush
+    else if (ppRatio <= 1.15) ppMult = 1.00; // fair margin, no penalty
+    else if (ppRatio <= 1.30) ppMult = 0.80; // noticeable premium
+    else if (ppRatio <= 1.40) ppMult = 0.55; // high premium
+    else                      ppMult = 0.30; // near 1.5× cap — very rare inquiries
+    prob *= ppMult;
+  }
+
   return Math.min(prob, 0.98);
 }
 
 /**
  * Compute direct-buy probability (buyer pays asking price with no negotiation).
- * Base 8%, small rep bonus, impulsive_buyer gets extra.
- * Max ~14% even at Legend so it stays a pleasant surprise, not the norm.
+ * Lower margins → much higher direct-buy chance. Near the 1.5× cap → very rare.
  */
-function directBuyProbability(reputationScore, archetype) {
+function directBuyProbability(reputationScore, archetype, askingPrice, purchasePrice) {
   let p = 0.08;
 
   const repTier = getRepTierName(reputationScore);
@@ -129,7 +145,16 @@ function directBuyProbability(reputationScore, archetype) {
 
   if (archetype === 'impulsive_buyer') p += 0.04;
 
-  return Math.min(p, 0.16); // hard cap at 16% — stays rare
+  if (purchasePrice > 0) {
+    const ppRatio = askingPrice / purchasePrice;
+    if      (ppRatio < 1.00)  p += 0.12; // selling below cost — buyers jump
+    else if (ppRatio <= 1.15) p += 0.06; // good deal
+    else if (ppRatio <= 1.30) p += 0;    // neutral
+    else if (ppRatio <= 1.40) p -= 0.04; // premium — direct buy unlikely
+    else                      p -= 0.06; // near cap — direct buy very rare
+  }
+
+  return Math.max(0.01, Math.min(p, 0.20));
 }
 
 
@@ -196,7 +221,7 @@ export async function generateBuyerInquiry(listingId, log, { force = false } = {
   // Load listing + car + player state
   const [listing] = await sql`
     SELECT l.id, l.asking_price, l.listed_at, l.status, l.next_inquiry_allowed_at,
-           c.id AS car_id, c.make, c.model, c.year, c.mileage, c.market_value,
+           c.id AS car_id, c.make, c.model, c.year, c.mileage, c.market_value, c.purchase_price,
            p.id AS player_id, p.reputation_score, p.in_game_day
     FROM listings l
     JOIN cars c ON c.id = l.car_id
@@ -229,6 +254,7 @@ export async function generateBuyerInquiry(listingId, log, { force = false } = {
     listing.market_value ?? listing.asking_price,
     daysListed,
     listing.reputation_score,
+    listing.purchase_price ?? 0,
   );
 
   // No inquiry today?
@@ -278,7 +304,7 @@ export async function generateBuyerInquiry(listingId, log, { force = false } = {
     // ── Direct-buy roll ────────────────────────────────────────────────────
     // Small chance the buyer is willing to pay asking price without negotiating.
     // Blocked if they found defects — they'd want a discount in that case.
-    const isDirectBuy = !discoveredQuickFixes && Math.random() < directBuyProbability(listing.reputation_score, archetype);
+    const isDirectBuy = !discoveredQuickFixes && Math.random() < directBuyProbability(listing.reputation_score, archetype, listing.asking_price, listing.purchase_price ?? 0);
 
     // Generate buyer dialogue via aiProxy (stub in Phase 5, real in Phase 7)
     let messageText = '';

@@ -123,14 +123,14 @@ function resolveInspectionProfile(inspectionTier, ownedEquipmentIds, ownedSkillI
  * @param {boolean} hasUndercarAccess
  * @returns {number} probability 0–1
  */
-function computeDetectionProb(defect, profile, skillSet, equipSet, hasUndercarAccess) {
+function computeDetectionProb(defect, profile, skillSet, equipSet, hasUndercarAccess, baseMultiplier = 1.0) {
   // Undercarriage defects require access
   if (UNDERCARRIAGE_DEFECT_IDS.has(defect.defect_type) && !hasUndercarAccess) {
     return 0;
   }
 
   const probs = BASE_PROB[profile];
-  let base = probs[defect.detection_tier] ?? 0;
+  let base = (probs[defect.detection_tier] ?? 0) * baseMultiplier;
 
   // OBD scans only cover engine+electrical for Tier-2
   if ((profile === 'obd_basic' || profile === 'obd_pro') &&
@@ -262,3 +262,122 @@ export const INSPECTION_XP = {
   obd:      20,
   full:     35,
 };
+
+// ─── Pre-purchase inspection ──────────────────────────────────────────────────
+
+/**
+ * Energy costs for pre-purchase (market) inspection.
+ * +1 vs post-purchase in each tier — harder on the street than in your garage.
+ */
+export const PRE_PURCHASE_ENERGY_COST = {
+  visual:   3,
+  tap_test: 4,
+  obd:      4,
+  full:     5,
+};
+
+/**
+ * Detection accuracy multiplier applied to all base probabilities
+ * when inspecting a car on the market before buying it.
+ * 0.65 = ~35% harder than garage inspection.
+ */
+const PRE_PURCHASE_ACCURACY = 0.65;
+
+/**
+ * Run a pre-purchase inspection on a market listing.
+ *
+ * Key differences from runInspection():
+ *  - Car must be in 'available_in_market' state (not owned yet)
+ *  - All base detection probabilities are multiplied by PRE_PURCHASE_ACCURACY (0.65)
+ *  - Defects that ARE found are still marked is_revealed_to_player=true so they
+ *    persist when the player later buys the car (garage inspection picks up the rest)
+ *  - Logs to pre_purchase_inspections, not inspections
+ *
+ * @param {string} carId
+ * @param {string} playerId
+ * @param {'visual'|'tap_test'|'obd'|'full'} inspectionTier
+ * @returns {Promise<{ revealed: object[], alreadyKnown: number }>}
+ */
+export async function runPrePurchaseInspection(carId, playerId, inspectionTier) {
+  // Verify car is still an active market listing
+  const [car] = await sql`
+    SELECT id FROM cars
+    WHERE id = ${carId}
+      AND state = 'available_in_market'
+      AND market_listing_expires_at > NOW()
+  `;
+  if (!car) throw Object.assign(new Error('Listing not found or expired'), { statusCode: 404 });
+
+  // Fetch player's owned skills and equipment
+  const playerSkills = await sql`
+    SELECT skill_id FROM player_skills WHERE player_id = ${playerId}
+  `;
+  const playerEquipment = await sql`
+    SELECT equipment_id FROM player_equipment WHERE player_id = ${playerId}
+  `;
+
+  const skillSet = new Set(playerSkills.map(r => r.skill_id));
+  const equipSet = new Set(playerEquipment.map(r => r.equipment_id));
+
+  // Resolve to a named profile (validates prerequisites — same as garage inspection)
+  const ownedSkillIds = [...skillSet];
+  const ownedEquipmentIds = [...equipSet];
+  const profile = resolveInspectionProfile(inspectionTier, ownedEquipmentIds, ownedSkillIds);
+
+  // Undercarriage access (same rules as garage)
+  const hasUndercarAccess = skillSet.has('undercar_crawl') || equipSet.has('lift_ramp') || equipSet.has('diagnostic_stand');
+
+  // Fetch ALL hidden defects on this car
+  const hiddenDefects = await sql`
+    SELECT id, defect_type, category, severity, detection_tier,
+           proper_repair_cost, quick_fix_cost, repair_time_minutes,
+           resale_impact, is_odometer_fraud, qf_discovery_base
+    FROM defects
+    WHERE car_id = ${carId}
+      AND is_revealed_to_player = false
+  `;
+
+  // Fetch already-revealed defects (for pattern recognition bonus)
+  const alreadyRevealed = await sql`
+    SELECT category FROM defects
+    WHERE car_id = ${carId}
+      AND is_revealed_to_player = true
+  `;
+  const revealedCategories = new Set(alreadyRevealed.map(d => d.category));
+
+  const newlyRevealed = [];
+
+  for (const defect of hiddenDefects) {
+    // Apply PRE_PURCHASE_ACCURACY to base probs — harder outside your own garage
+    let prob = computeDetectionProb(defect, profile, skillSet, equipSet, hasUndercarAccess, PRE_PURCHASE_ACCURACY);
+
+    if (prob === 0) continue;
+
+    // Pattern recognition bonus still applies (GMS §7.2)
+    if (revealedCategories.has(defect.category)) {
+      prob = Math.min(prob + 0.20, 0.98);
+    }
+
+    if (Math.random() < prob) {
+      newlyRevealed.push(defect);
+      revealedCategories.add(defect.category);
+    }
+  }
+
+  // Mark revealed defects — intentionally persists through purchase
+  if (newlyRevealed.length > 0) {
+    const revealedIds = newlyRevealed.map(d => d.id);
+    await sql`
+      UPDATE defects
+      SET is_revealed_to_player = true
+      WHERE id = ANY(${revealedIds}::uuid[])
+    `;
+  }
+
+  const safeRevealed = newlyRevealed.map(({ qf_discovery_base: _qf, ...rest }) => rest);
+
+  return {
+    revealed: safeRevealed,
+    alreadyKnown: alreadyRevealed.length,
+  };
+}

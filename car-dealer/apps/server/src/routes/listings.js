@@ -94,7 +94,7 @@ async function createListing(request, reply) {
     listing = await sql.begin(async tx => {
       // Verify ownership and state
       const [car] = await tx`
-        SELECT id, state, make, model, year FROM cars
+        SELECT id, state, make, model, year, purchase_price FROM cars
         WHERE id = ${carId} AND player_id = ${playerId} AND state = 'purchased'
         FOR UPDATE
       `;
@@ -103,6 +103,17 @@ async function createListing(request, reply) {
           new Error('Car not found, not owned, or not in a listable state (must be "purchased")'),
           { statusCode: 404 },
         );
+      }
+
+      // Hard cap: asking price cannot exceed 150% of what was paid (GMS §4.1)
+      if (car.purchase_price > 0) {
+        const maxAllowed = Math.round(car.purchase_price * 1.5);
+        if (askingPrice > maxAllowed) {
+          throw Object.assign(
+            new Error(`Asking price cannot exceed 150% of your purchase price (max ${maxAllowed} BYN)`),
+            { statusCode: 400 },
+          );
+        }
       }
 
       // No active listing on this car already (UNIQUE constraint on car_id covers this too)
@@ -448,7 +459,11 @@ async function _processInquiryResponse(playerId, listingId, inquiryId, action, c
     await sql`
       UPDATE listings SET next_inquiry_allowed_at = ${nextAllowedAt} WHERE id = ${listingId}
     `;
-    return { outcome: 'rejected', inquiryId, nextInquiryAllowedAt: nextAllowedAt };
+    const rejectMessage = await generateDialogue('player_reject_buyer', {
+      buyer_archetype: inquiry.buyer_archetype,
+      buyer_offered_price: inquiry.offered_price,
+    }).catch(() => 'Ну что ж, не судьба. Пойду дальше.');
+    return { outcome: 'rejected', inquiryId, nextInquiryAllowedAt: nextAllowedAt, message: rejectMessage };
   }
 
   if (action === 'accept') {
@@ -480,7 +495,13 @@ async function _processInquiryResponse(playerId, listingId, inquiryId, action, c
   `;
 
   if (negotiationResult.outcome === 'accepted') {
-    return await _completeSale(playerId, listing, inquiry, negotiationResult.finalPrice);
+    const saleResult = await _completeSale(playerId, listing, inquiry, negotiationResult.finalPrice);
+    const acceptMessage = await generateDialogue('buyer_accept', {
+      buyer_archetype: inquiry.buyer_archetype,
+      final_price: negotiationResult.finalPrice,
+      negotiation_round: (inquiry.negotiation_round ?? 0) + 1,
+    }).catch(() => 'По рукам! Деньги при мне, готов прямо сейчас.');
+    return { ...saleResult, message: acceptMessage };
   }
 
   if (negotiationResult.outcome === 'counter') {
@@ -515,7 +536,12 @@ async function _processInquiryResponse(playerId, listingId, inquiryId, action, c
   await sql`
     UPDATE listings SET next_inquiry_allowed_at = ${nextAllowedAt} WHERE id = ${listingId}
   `;
-  return { outcome: 'rejected', inquiryId, nextInquiryAllowedAt: nextAllowedAt };
+  const walkMessage = await generateDialogue('buyer_reject_walk', {
+    buyer_archetype: inquiry.buyer_archetype,
+    player_counter_offer: counterPrice,
+    negotiation_round: (inquiry.negotiation_round ?? 0) + 1,
+  }).catch(() => 'Не договорились. Бывает. Удачи.');
+  return { outcome: 'rejected', inquiryId, nextInquiryAllowedAt: nextAllowedAt, message: walkMessage };
 }
 
 /**

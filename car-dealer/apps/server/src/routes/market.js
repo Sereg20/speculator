@@ -13,6 +13,7 @@ import { transitionCar } from '../services/carStateMachine.js';
 import { consumeEnergy } from '../services/energyService.js';
 import { awardXP } from '../services/xpService.js';
 import { resolvePurchaseNegotiation } from '../services/negotiationEngine.js';
+import { runPrePurchaseInspection, PRE_PURCHASE_ENERGY_COST, INSPECTION_XP } from '../services/inspectionEngine.js';
 import { sql } from '../db/client.js';
 import { requireAuth } from '../middleware/auth.js';
 import { LISTING_REFRESH_MANUAL_COST, INGAME_DAY_REAL_MINUTES } from '../config.js';
@@ -379,19 +380,194 @@ async function negotiatePurchase(request, reply) {
       ${sql.json({ carId, retryAllowed: result.retryAllowed })})
   `;
 
+  const failMessage = await generateDialogue('seller_negotiate_reject', {
+    seller_archetype: car.seller_archetype,
+    asking_price: car.asking_price,
+    retry_allowed: result.retryAllowed,
+  }, request.log).catch(() => 'Цена окончательная, не торгуюсь.');
+
   return reply.send({
-    data: { outcome: 'failure', retryAllowed: result.retryAllowed },
+    data: { outcome: 'failure', retryAllowed: result.retryAllowed, message: failMessage },
     error: null,
     meta: null,
+  });
+}
+
+// ─── Seller hint probabilities by archetype ───────────────────────────────────
+const SELLER_HINT_PROB = {
+  old_man:       0.30,
+  private_owner: 0.15,
+  enthusiast:    0.20,
+  shady_dealer:  0.05,
+  urgent_sale:   0.10,
+};
+
+/**
+ * POST /market/listings/:carId/chat
+ * Player talks to the NPC seller. The seller may spontaneously hint at a defect.
+ * Costs 1 energy.
+ *
+ * Response:
+ *   data.dialogue — NPC line
+ *   data.hint     — { defectType, category, severity } or null
+ */
+async function chatWithSeller(request, reply) {
+  const { carId } = request.params;
+  const playerId = request.playerId;
+
+  const ENERGY_COST_CHAT = 1;
+
+  // Verify listing is still active
+  const [car] = await sql`
+    SELECT id, make, model, year, seller_archetype
+    FROM cars
+    WHERE id = ${carId}
+      AND state = 'available_in_market'
+      AND market_listing_expires_at > NOW()
+  `;
+  if (!car) {
+    return reply.code(404).send({ data: null, error: 'Listing not found or expired', meta: null });
+  }
+
+  const hasEnergy = await consumeEnergy(playerId, ENERGY_COST_CHAT);
+  if (!hasEnergy) {
+    return reply.code(400).send({ data: null, error: 'Not enough energy', meta: null });
+  }
+
+  // Roll whether the seller drops a hint
+  const hintProb = SELLER_HINT_PROB[car.seller_archetype] ?? 0.10;
+  let hint = null;
+
+  if (Math.random() < hintProb) {
+    // Pick one random unrevealed non-fraud defect to hint about
+    const [defect] = await sql`
+      SELECT defect_type, category, severity
+      FROM defects
+      WHERE car_id = ${carId}
+        AND is_revealed_to_player = false
+        AND is_odometer_fraud = false
+      ORDER BY RANDOM()
+      LIMIT 1
+    `;
+
+    if (defect) {
+      // Mark it revealed
+      await sql`
+        UPDATE defects
+        SET is_revealed_to_player = true
+        WHERE car_id = ${carId}
+          AND defect_type = ${defect.defect_type}
+          AND is_revealed_to_player = false
+      `;
+      hint = {
+        defectType: defect.defect_type,
+        category:   defect.category,
+        severity:   defect.severity,
+      };
+    }
+  }
+
+  const dialogue = await generateDialogue('seller_chat_hint', {
+    seller_archetype:    car.seller_archetype,
+    car_make_model_year: `${car.make} ${car.model}, ${car.year} г.`,
+    hint_category:       hint?.category ?? null,
+    hint_severity:       hint?.severity ?? null,
+  }, request.log).catch(() => hint
+    ? 'Ну, мелочи по кузову есть, как без них. Ничего серьёзного.'
+    : 'Слушай, хорошая машина, я бы сам на ней ещё ездил.'
+  );
+
+  return reply.send({
+    data: { dialogue, hint },
+    error: null,
+    meta: null,
+  });
+}
+
+/**
+ * POST /market/listings/:carId/pre-inspect
+ * Body: { tier: 'visual'|'tap_test'|'obd'|'full' }
+ *
+ * Inspect a market car before buying. Uses PRE_PURCHASE_ENERGY_COST (post-purchase + 1)
+ * and 0.65× detection accuracy. Revealed defects persist after purchase.
+ */
+async function prePurchaseInspect(request, reply) {
+  const { carId } = request.params;
+  const playerId = request.playerId;
+  const { tier } = request.body || {};
+
+  if (!tier || !PRE_PURCHASE_ENERGY_COST[tier]) {
+    return reply.code(400).send({
+      data: null,
+      error: 'tier must be one of: visual, tap_test, obd, full',
+      meta: null,
+    });
+  }
+
+  const energyCost = PRE_PURCHASE_ENERGY_COST[tier];
+
+  // Check if this pre-purchase tier was already done by this player on this car
+  const [existing] = await sql`
+    SELECT id, revealed_count FROM pre_purchase_inspections
+    WHERE car_id = ${carId} AND player_id = ${playerId} AND tier = ${tier}
+  `;
+  if (existing) {
+    return reply.code(409).send({
+      data: null,
+      error: `${tier} pre-purchase inspection already performed on this listing`,
+      meta: { alreadyRevealedCount: existing.revealed_count },
+    });
+  }
+
+  const hasEnergy = await consumeEnergy(playerId, energyCost);
+  if (!hasEnergy) {
+    return reply.code(400).send({ data: null, error: 'Not enough energy', meta: null });
+  }
+
+  let result;
+  try {
+    result = await runPrePurchaseInspection(carId, playerId, tier);
+  } catch (err) {
+    // Refund energy on prerequisite/validation failure
+    await sql`
+      UPDATE players
+      SET energy_current = LEAST(energy_current + ${energyCost}, 30),
+          updated_at = NOW()
+      WHERE id = ${playerId}
+    `;
+    const statusCode = err.statusCode || 500;
+    return reply.code(statusCode).send({ data: null, error: err.message, meta: null });
+  }
+
+  // Log the inspection (enforces uniqueness)
+  await sql`
+    INSERT INTO pre_purchase_inspections (car_id, player_id, tier, revealed_count, energy_cost)
+    VALUES (${carId}, ${playerId}, ${tier}, ${result.revealed.length}, ${energyCost})
+    ON CONFLICT (car_id, player_id, tier) DO NOTHING
+  `;
+
+  // Award same XP as garage inspection — same learning value
+  const xpAmount = INSPECTION_XP[tier] || 10;
+  await awardXP(playerId, xpAmount, `pre_purchase_inspection_${tier}`);
+
+  return reply.send({
+    data: { revealed: result.revealed },
+    error: null,
+    meta: {
+      newlyRevealedCount: result.revealed.length,
+      xpAwarded: xpAmount,
+    },
   });
 }
 
 export default async function marketRoutes(fastify) {
   const auth = { preHandler: requireAuth };
 
-  fastify.get('/market/listings',                          auth, getListings);
-  fastify.get('/market/listings/:carId/dialogue',          auth, getDialogue);
-  fastify.post('/market/listings/:carId/purchase',         auth, purchaseCar);
-  fastify.post('/market/listings/:carId/negotiate',        auth, negotiatePurchase);
-  fastify.post('/market/listings/refresh',                 auth, forceRefresh);
+  fastify.get('/market/listings',                              auth, getListings);
+  fastify.get('/market/listings/:carId/dialogue',              auth, getDialogue);
+  fastify.post('/market/listings/:carId/purchase',             auth, purchaseCar);
+  fastify.post('/market/listings/:carId/negotiate',            auth, negotiatePurchase);
+  fastify.post('/market/listings/:carId/chat',                 auth, chatWithSeller);
+  fastify.post('/market/listings/:carId/pre-inspect',          auth, prePurchaseInspect);
+  fastify.post('/market/listings/refresh',                     auth, forceRefresh);
 }
