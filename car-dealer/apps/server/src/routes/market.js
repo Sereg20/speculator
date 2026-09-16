@@ -429,10 +429,30 @@ async function chatWithSeller(request, reply) {
     return reply.code(404).send({ data: null, error: 'Listing not found or expired', meta: null });
   }
 
+  // One chat per player per listing — stored as tier='chat' in pre_purchase_inspections
+  const [alreadyChatted] = await sql`
+    SELECT 1 FROM pre_purchase_inspections
+    WHERE car_id = ${carId} AND player_id = ${playerId} AND tier = 'chat'
+  `;
+  if (alreadyChatted) {
+    return reply.code(409).send({
+      data: null,
+      error: 'You have already spoken with this seller',
+      meta: null,
+    });
+  }
+
   const hasEnergy = await consumeEnergy(playerId, ENERGY_COST_CHAT);
   if (!hasEnergy) {
     return reply.code(400).send({ data: null, error: 'Not enough energy', meta: null });
   }
+
+  // Record the chat before rolling so even a failed hint attempt counts
+  await sql`
+    INSERT INTO pre_purchase_inspections (car_id, player_id, tier, revealed_count, energy_cost)
+    VALUES (${carId}, ${playerId}, 'chat', 0, ${ENERGY_COST_CHAT})
+    ON CONFLICT (car_id, player_id, tier) DO NOTHING
+  `;
 
   // Roll whether the seller drops a hint
   const hintProb = SELLER_HINT_PROB[car.seller_archetype] ?? 0.10;
@@ -476,6 +496,15 @@ async function chatWithSeller(request, reply) {
     ? 'Ну, мелочи по кузову есть, как без них. Ничего серьёзного.'
     : 'Слушай, хорошая машина, я бы сам на ней ещё ездил.'
   );
+
+  // Update revealed_count now that we know whether a hint fired
+  if (hint) {
+    await sql`
+      UPDATE pre_purchase_inspections
+      SET revealed_count = 1
+      WHERE car_id = ${carId} AND player_id = ${playerId} AND tier = 'chat'
+    `;
+  }
 
   return reply.send({
     data: { dialogue, hint },

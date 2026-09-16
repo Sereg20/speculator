@@ -116,6 +116,22 @@ async function createListing(request, reply) {
         }
       }
 
+      // Block listing if car has known unfixed defects (player must repair first)
+      const [unfixedDefect] = await tx`
+        SELECT id FROM defects
+        WHERE car_id = ${carId}
+          AND is_revealed_to_player = true
+          AND is_quick_fixed = false
+          AND proper_repair_cost IS NOT NULL
+        LIMIT 1
+      `;
+      if (unfixedDefect) {
+        throw Object.assign(
+          new Error('Cannot list a car with known unfixed defects. Repair or quick-fix all known issues first.'),
+          { statusCode: 400 },
+        );
+      }
+
       // No active listing on this car already (UNIQUE constraint on car_id covers this too)
       const [existing] = await tx`
         SELECT id FROM listings WHERE car_id = ${carId} AND status = 'active'
@@ -349,7 +365,8 @@ async function getInquiries(request, reply) {
 async function respondToInquiry(request, reply) {
   const { listingId, inquiryId } = request.params;
   const playerId = request.playerId;
-  const { action, counterPrice } = request.body || {};
+  const { action } = request.body || {};
+  const counterPrice = Number(request.body?.counterPrice) || 0;
 
   if (!['accept', 'reject', 'counter'].includes(action)) {
     return reply.code(400).send({

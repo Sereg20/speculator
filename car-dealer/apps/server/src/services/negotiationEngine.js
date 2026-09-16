@@ -192,7 +192,12 @@ export async function resolveSaleNegotiation(playerId, context) {
     buyerArchetype = 'careful_buyer',
   } = context;
 
-  if (!askingPrice || !buyerOfferedPrice || !playerCounterOffer) {
+  // Coerce to numbers — guards against string values arriving from request body
+  const _asking   = Number(askingPrice);
+  const _buyer    = Number(buyerOfferedPrice);
+  const _counter  = Number(playerCounterOffer);
+
+  if (!_asking || !_buyer || !_counter) {
     throw Object.assign(new Error('Missing required negotiation context'), { statusCode: 400 });
   }
 
@@ -238,14 +243,14 @@ export async function resolveSaleNegotiation(playerId, context) {
   prob = clamp(prob, NEGOTIATION_SUCCESS_FLOOR, NEGOTIATION_SUCCESS_CAP);
 
   // Auto-accept when prices are within 1% of asking price — deal is effectively done.
-  if (Math.abs(playerCounterOffer - buyerOfferedPrice) / askingPrice <= 0.01) {
-    return { outcome: 'accepted', finalPrice: playerCounterOffer };
+  if (Math.abs(_counter - _buyer) / _asking <= 0.01) {
+    return { outcome: 'accepted', finalPrice: _counter };
   }
 
   // Counter-offer delta: how far above buyer's offer is the player asking?
   // Larger delta = harder to accept
-  const delta = playerCounterOffer - buyerOfferedPrice;
-  const maxAcceptableDelta = askingPrice - buyerOfferedPrice;
+  const delta = _counter - _buyer;
+  const maxAcceptableDelta = _asking - _buyer;
   const deltaFraction = maxAcceptableDelta > 0 ? delta / maxAcceptableDelta : 1;
 
   // Penalty proportional to how aggressive the counter-offer is.
@@ -257,16 +262,16 @@ export async function resolveSaleNegotiation(playerId, context) {
   const r = Math.random();
 
   if (r < adjustedProb) {
-    return { outcome: 'accepted', finalPrice: playerCounterOffer };
+    return { outcome: 'accepted', finalPrice: _counter };
   }
 
   // Walk Away skill: 40% chance buyer calls back with up to 5% additional discount
   if (skillSet.has('walk_away') && Math.random() < 0.40) {
     const callbackDiscount = 1 - (Math.random() * 0.05);
-    const callbackPrice = Math.round(playerCounterOffer * callbackDiscount);
+    const callbackPrice = Math.round(_counter * callbackDiscount);
     return {
       outcome: 'accepted',
-      finalPrice: Math.max(callbackPrice, buyerOfferedPrice),
+      finalPrice: Math.max(callbackPrice, _buyer),
     };
   }
 
@@ -274,7 +279,7 @@ export async function resolveSaleNegotiation(playerId, context) {
   // Only outright rejects (~30%) when the player's counter is far from their offer.
   const buyerCounter = Math.random() < 0.70;
   if (buyerCounter) {
-    const midpoint = Math.round((buyerOfferedPrice + playerCounterOffer) / 2);
+    const midpoint = Math.round((_buyer + _counter) / 2);
     return { outcome: 'counter', finalPrice: midpoint };
   }
 
