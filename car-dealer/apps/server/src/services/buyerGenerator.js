@@ -196,7 +196,7 @@ export async function generateBuyerInquiry(listingId, log, { force = false } = {
   // Load listing + car + player state
   const [listing] = await sql`
     SELECT l.id, l.asking_price, l.listed_at, l.status, l.next_inquiry_allowed_at,
-           c.id AS car_id, c.make, c.model, c.year, c.market_value,
+           c.id AS car_id, c.make, c.model, c.year, c.mileage, c.market_value,
            p.id AS player_id, p.reputation_score, p.in_game_day
     FROM listings l
     JOIN cars c ON c.id = l.car_id
@@ -259,28 +259,6 @@ export async function generateBuyerInquiry(listingId, log, { force = false } = {
       discoveredQuickFixes = discoveredDefectIds.length > 0;
     }
 
-    // Generate buyer dialogue via aiProxy (stub in Phase 5, real in Phase 7)
-    let messageText = '';
-    try {
-      messageText = await generateDialogue('buyer_inquiry', {
-        buyer_archetype: archetype,
-        car_make_model_year: `${listing.make} ${listing.model}, ${listing.year}`,
-        asking_price: listing.asking_price,
-        days_since_listing: daysListed,
-        player_reputation_tier: getRepTierName(listing.reputation_score),
-        offer_amount: offeredPrice,
-        negotiation_round: 1,
-        inspection_result: didInspect
-          ? (discoveredQuickFixes ? 'issues_found' : 'clean')
-          : 'not_requested',
-        defects_discovered: discoveredDefectIds,
-        region: 'Беларусь',
-      });
-    } catch (err) {
-      log?.warn({ err, listingId }, '[buyerGenerator] Failed to generate dialogue, using empty');
-      messageText = '';
-    }
-
     // Compute offered price penalty if quick fixes discovered (GMS §9.4)
     let finalOfferedPrice = offeredPrice;
     if (discoveredQuickFixes && discoveredDefectIds.length > 0) {
@@ -301,6 +279,29 @@ export async function generateBuyerInquiry(listingId, log, { force = false } = {
     // Small chance the buyer is willing to pay asking price without negotiating.
     // Blocked if they found defects — they'd want a discount in that case.
     const isDirectBuy = !discoveredQuickFixes && Math.random() < directBuyProbability(listing.reputation_score, archetype);
+
+    // Generate buyer dialogue via aiProxy (stub in Phase 5, real in Phase 7)
+    let messageText = '';
+    try {
+      messageText = await generateDialogue('buyer_inquiry', {
+        buyer_archetype: archetype,
+        car_make_model_year: `${listing.make} ${listing.model}, ${listing.year}`,
+        car_mileage: listing.mileage,
+        asking_price: listing.asking_price,
+        days_since_listing: daysListed,
+        player_reputation_tier: getRepTierName(listing.reputation_score),
+        offer_amount: finalOfferedPrice,
+        is_direct_buy: isDirectBuy,
+        inspection_result: didInspect
+          ? (discoveredQuickFixes ? 'issues_found' : 'clean')
+          : 'not_requested',
+        defects_discovered: discoveredDefectIds,
+        region: 'Беларусь',
+      });
+    } catch (err) {
+      log?.warn({ err, listingId }, '[buyerGenerator] Failed to generate dialogue, using empty');
+      messageText = '';
+    }
 
     const insertPrice = isDirectBuy ? listing.asking_price : finalOfferedPrice;
 

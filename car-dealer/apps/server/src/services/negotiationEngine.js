@@ -237,6 +237,11 @@ export async function resolveSaleNegotiation(playerId, context) {
 
   prob = clamp(prob, NEGOTIATION_SUCCESS_FLOOR, NEGOTIATION_SUCCESS_CAP);
 
+  // Auto-accept when prices are within 1% of asking price — deal is effectively done.
+  if (Math.abs(playerCounterOffer - buyerOfferedPrice) / askingPrice <= 0.01) {
+    return { outcome: 'accepted', finalPrice: playerCounterOffer };
+  }
+
   // Counter-offer delta: how far above buyer's offer is the player asking?
   // Larger delta = harder to accept
   const delta = playerCounterOffer - buyerOfferedPrice;
