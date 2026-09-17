@@ -14,10 +14,7 @@
  */
 
 import { sql } from '../db/client.js';
-import {
-  NEGOTIATION_BASE_SUCCESS,
-  REPUTATION_TIERS,
-} from '../config.js';
+import { REPUTATION_TIERS } from '../config.js';
 
 const NEGOTIATION_SUCCESS_CAP   = 0.85;
 const NEGOTIATION_SUCCESS_FLOOR = 0.05;
@@ -56,49 +53,50 @@ const SALE_REP_MODS = {
   'Легенда':   0.20,
 };
 
-// ─── Discount tier table (GMS §5.1) ──────────────────────────────────────────
-// Used on purchase negotiation success roll.
-// Roll 0–1 within the success space.
-function rollPurchaseDiscount(hasDealCloser) {
-  const r = Math.random();
-  if (!hasDealCloser) {
-    // Max discount 15%
-    if (r <= 0.40) return 0.05;
-    if (r <= 0.70) return 0.10;
-    return 0.15;
-  } else {
-    // Max discount 25%
-    if (r <= 0.40) return 0.05;
-    if (r <= 0.70) return 0.10;
-    if (r <= 0.90) return 0.15;
-    return 0.20 + Math.random() * 0.05; // 20–25%
-  }
-}
-
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
- * Resolve a PURCHASE negotiation attempt (player vs market seller).
+ * Resolve a MARKET PURCHASE negotiation (player proposes price to market seller).
+ *
+ * Multi-round system mirroring resolveSaleNegotiation:
+ *   - Seller can accept, reject, or counter with a midpoint offer.
+ *   - Acceptance probability is driven by how aggressive the player's offer is.
+ *   - Seller hardens after each round (negotiationRound counter).
+ *   - Max player discount: 30% below original asking price (validated in route).
  *
  * Context fields:
- *   - listingAge: number of in-game days the listing has been active
- *   - sellerMoodRevealed: 'cooperative'|'neutral'|'guarded'|null (null = unknown)
- *   - recentFailedNegotiation: boolean — player already failed with this seller
- *   - carQualityTier: 'bad'|'below_avg'|'fair'|'good'|'bargain'
+ *   - originalPrice:     number — the car's original asking_price before any discounts
+ *   - currentPrice:      number — current asking_price (may already be discounted)
+ *   - proposedPrice:     number — player's proposed price
+ *   - listingAge:        number — in-game days the listing has been active
+ *   - negotiationRound:  number — how many rounds have already happened (0 = first attempt)
+ *   - sellerArchetype:   string — seller_archetype value
+ *   - defectsRevealed:   number — count of defects already revealed (via chat/pre-inspect)
  *
  * @param {string} playerId
  * @param {object} context
- * @returns {Promise<{ outcome: 'success'|'failure', discount: number, retryAllowed: boolean }>}
+ * @returns {Promise<{ outcome: 'accepted'|'rejected'|'counter', finalPrice: number }>}
  */
-export async function resolvePurchaseNegotiation(playerId, context) {
+export async function resolveMarketNegotiation(playerId, context) {
   const {
+    originalPrice,
+    currentPrice,
+    proposedPrice,
     listingAge = 0,
-    sellerMoodRevealed = null,
-    recentFailedNegotiation = false,
-    carQualityTier = 'fair',
+    negotiationRound = 0,
+    sellerArchetype = 'private_owner',
+    defectsRevealed = 0,
   } = context;
 
-  // Load player state
+  // Coerce to numbers
+  const _original = Number(originalPrice);
+  const _current  = Number(currentPrice);
+  const _proposed = Number(proposedPrice);
+
+  if (!_original || !_current || !_proposed) {
+    throw Object.assign(new Error('Missing required negotiation context'), { statusCode: 400 });
+  }
+
   const [player] = await sql`
     SELECT reputation_score, cash_stress_active FROM players WHERE id = ${playerId}
   `;
@@ -108,60 +106,95 @@ export async function resolvePurchaseNegotiation(playerId, context) {
     SELECT skill_id FROM player_skills WHERE player_id = ${playerId}
   `;
   const skillSet = new Set(ownedSkills.map(r => r.skill_id));
-
   const repTier = getRepTierName(player.reputation_score);
 
-  // ── Compute probability ───────────────────────────────────────────────────
-  let prob = NEGOTIATION_BASE_SUCCESS;
+  // ── Base acceptance probability ───────────────────────────────────────────
+  // Starts lower than sale negotiation — the market seller has the product,
+  // they're less desperate than an NPC buyer.
+  let prob = 0.30;
 
-  // Negotiation skills (GMS §3.2 + §5.1)
-  if (skillSet.has('smooth_talker'))      prob += 0.15;
-  if (skillSet.has('deal_closer'))        prob += 0.10;
-  if (skillSet.has('casual_chat'))        prob += 0.05;
-  if (skillSet.has('price_research'))     prob += 0.05; // sellers overpriced get −5% resistance
-  if (skillSet.has('point_out_flaws'))    prob += 0.10; // requires at least 1 defect found (context)
-  if (skillSet.has('anchor_low'))         prob += 0.05;
-  if (skillSet.has('comfortable_silence')) prob += 0.08;
-  if (skillSet.has('show_cash'))          prob += 0.10;
-  if (skillSet.has('professional_closer')) prob += 0.10;
-  if (skillSet.has('market_authority') && skillSet.has('price_research')) prob += 0.12;
-
-  // Reputation modifier
+  // Reputation modifiers (GMS §5.1)
   prob += PURCHASE_REP_MODS[repTier] ?? 0;
 
-  // Seller mood (GMS §5.1)
-  if (sellerMoodRevealed === 'cooperative') prob += 0.10;
-  if (sellerMoodRevealed === 'guarded')     prob -= 0.10;
+  // Negotiation skills
+  if (skillSet.has('smooth_talker'))       prob += 0.10;
+  if (skillSet.has('deal_closer'))         prob += 0.10;
+  if (skillSet.has('casual_chat'))         prob += 0.05;
+  if (skillSet.has('price_research'))      prob += 0.05;
+  if (skillSet.has('anchor_low'))          prob += 0.05;
+  if (skillSet.has('comfortable_silence')) prob += 0.08;
+  if (skillSet.has('show_cash'))           prob += 0.10;
+  if (skillSet.has('professional_closer')) prob += 0.10;
+  if (skillSet.has('market_authority') && skillSet.has('price_research')) prob += 0.10;
 
-  // Listing age
+  // Defects revealed strengthen player's position — they have leverage
+  if (defectsRevealed >= 1) prob += 0.08;
+  if (defectsRevealed >= 3) prob += 0.05; // cumulative: 3+ defects found = +0.13 total
+
+  // Listing age: seller more eager to deal if listing is stale
   if (listingAge >= 4) prob += 0.08;
+  if (listingAge >= 6) prob += 0.05; // cumulative
 
-  // Recent failed negotiation with same seller
-  if (recentFailedNegotiation) prob -= 0.15;
+  // Seller archetype: some are more flexible than others
+  const ARCHETYPE_FLEX = {
+    urgent_sale:    +0.15,  // desperate to sell
+    old_man:        +0.08,  // tends to negotiate informally
+    private_owner:  +0.00,  // baseline
+    enthusiast:     -0.05,  // attached to the car, won't budge much
+    shady_dealer:   -0.10,  // experienced, doesn't discount easily
+  };
+  prob += ARCHETYPE_FLEX[sellerArchetype] ?? 0;
 
-  // Bad deal listing
-  if (carQualityTier === 'bad') prob += 0.05;
+  // Round penalty: seller hardens each round
+  if (negotiationRound >= 1) prob -= 0.08 * negotiationRound;
 
-  // Cash stress (Phase 6: GMS §10.4)
+  // Cash stress: desperation shows, seller exploits it
   if (player.cash_stress_active) prob -= 0.10;
-
-  // Build Rapport bonus for specific seller archetypes is handled in caller context
-  if (context.buildRapportBonus) prob += context.buildRapportBonus;
 
   prob = clamp(prob, NEGOTIATION_SUCCESS_FLOOR, NEGOTIATION_SUCCESS_CAP);
 
-  const succeeded = Math.random() < prob;
-
-  if (!succeeded) {
-    // Smooth Talker allows one retry at 60% of modified probability (2 extra energy — enforced by route)
-    const retryAllowed = skillSet.has('smooth_talker');
-    return { outcome: 'failure', discount: 0, retryAllowed };
+  // Auto-accept when player's price is within 2% of current asking — deal is done
+  if ((_current - _proposed) / _current <= 0.02) {
+    return { outcome: 'accepted', finalPrice: _proposed };
   }
 
-  const hasDealCloser = skillSet.has('deal_closer');
-  const discount = rollPurchaseDiscount(hasDealCloser);
+  // ── Delta penalty — how aggressive is the offer? ──────────────────────────
+  // delta = how much below current price the player is asking
+  // maxAcceptableDelta = maximum discount from original price (30%)
+  const delta = _current - _proposed;
+  const maxAcceptableDelta = _original * 0.30;
+  const deltaFraction = maxAcceptableDelta > 0 ? delta / maxAcceptableDelta : 1;
 
-  return { outcome: 'success', discount, retryAllowed: false };
+  // Penalty: up to 0.25 for very aggressive offers (slightly harsher than sale)
+  const deltaPenalty = deltaFraction * 0.25;
+  const adjustedProb = clamp(prob - deltaPenalty, NEGOTIATION_SUCCESS_FLOOR, NEGOTIATION_SUCCESS_CAP);
+
+  const r = Math.random();
+
+  if (r < adjustedProb) {
+    return { outcome: 'accepted', finalPrice: _proposed };
+  }
+
+  // Walk Away skill: 35% chance seller calls back with up to 3% additional movement
+  // (seller is less generous than NPC buyer — only 3% extra wiggle)
+  if (skillSet.has('walk_away') && Math.random() < 0.35) {
+    const callbackDiscount = 1 - Math.random() * 0.03;
+    const callbackPrice = Math.round(_proposed * callbackDiscount);
+    return {
+      outcome: 'accepted',
+      finalPrice: Math.max(callbackPrice, Math.round(_original * 0.70)),
+    };
+  }
+
+  // Counter-back: 65% of the time the seller counters (midpoint), else outright reject
+  const sellerCounters = Math.random() < 0.65;
+  if (sellerCounters) {
+    // Seller meets halfway between their current price and the player's offer
+    const midpoint = Math.round((_current + _proposed) / 2);
+    return { outcome: 'counter', finalPrice: midpoint };
+  }
+
+  return { outcome: 'rejected', finalPrice: 0 };
 }
 
 /**

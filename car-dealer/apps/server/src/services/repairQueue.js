@@ -9,7 +9,8 @@
  *   - One active (incomplete) repair per car at a time
  *   - is_quick_fixed set on the defect at completion, not at start
  *   - Postgres is authoritative for timers; completes_at is the source of truth
- *   - Proper repair requires the relevant repair skill; without it only quick_fix allowed
+ *   - Proper repair is always available — repair skills reduce time via tier multiplier
+ *     but never block access. Without a matching skill the 1.0× base multiplier applies.
  */
 
 import { sql } from '../db/client.js';
@@ -78,6 +79,36 @@ const SKILL_REPAIR_TIER = {
   engine_overhaul: 3, auto_gearbox: 3, full_respray: 3,
   wiring_harness: 3, subframe_chassis: 3, turbo_induction: 3,
 };
+
+// ─── Tool cost discount ───────────────────────────────────────────────────────
+// Each piece of owned equipment that targets the defect's category reduces
+// proper repair cost by TOOL_COST_DISCOUNT_PER_TOOL, capped at TOOL_COST_DISCOUNT_CAP.
+// Rationale: owning diagnostic tools means the shop charges less (less diagnosis work).
+const TOOL_COST_DISCOUNT_PER_TOOL = 0.10;  // 10% per relevant tool
+const TOOL_COST_DISCOUNT_CAP      = 0.30;  // max 30% (3 tools covering same category)
+
+/**
+ * Compute the cost discount fraction (0.0–0.30) from owned equipment
+ * for a defect in a given category.
+ *
+ * @param {string} defectCategory  - e.g. 'engine', 'body', 'electrical'
+ * @param {string[]} ownedEquipIds - array of equipment_id strings
+ * @param {object} client          - postgres sql client
+ * @returns {Promise<number>}      - discount fraction 0.0–0.30
+ */
+async function computeToolCostDiscount(defectCategory, ownedEquipIds, client) {
+  if (ownedEquipIds.length === 0) return 0;
+
+  const matching = await client`
+    SELECT id FROM equipment
+    WHERE id = ANY(${ownedEquipIds})
+      AND (defect_categories_targeted IS NULL
+           OR ${defectCategory} = ANY(defect_categories_targeted))
+  `;
+
+  const discount = matching.length * TOOL_COST_DISCOUNT_PER_TOOL;
+  return Math.min(discount, TOOL_COST_DISCOUNT_CAP);
+}
 
 // Base repair times in in-game days (GMS §8.2)
 const BASE_DAYS_PROPER = { minor: 0.5, moderate: 1, major: 3, severe: 4 };
@@ -184,26 +215,35 @@ export async function startRepair(carId, defectId, repairType, playerId) {
       );
     }
 
-    // Proper repair: check skill availability
+    // Proper repair: skills reduce time but do not block the repair.
+    // skillTier = null means no matching skill owned — repair proceeds at base time (1.0× multiplier).
     let skillTier = null;
+    let ownedEquipIds = [];
     if (repairType === 'proper') {
       const ownedSkills = await tx`
         SELECT skill_id FROM player_skills WHERE player_id = ${playerId}
       `;
       const ownedSkillIds = ownedSkills.map(r => r.skill_id);
       skillTier = resolveBestRepairSkillTier(defect.defect_type, ownedSkillIds);
-      if (skillTier === null) {
-        throw Object.assign(
-          new Error('You lack the repair skill for a proper repair on this defect. Quick fix only.'),
-          { statusCode: 400 },
-        );
-      }
+      // null skillTier is allowed — falls back to 1.0× time multiplier
+
+      const ownedEquip = await tx`
+        SELECT equipment_id FROM player_equipment WHERE player_id = ${playerId}
+      `;
+      ownedEquipIds = ownedEquip.map(r => r.equipment_id);
     }
 
-    // Determine cost
-    const cost = repairType === 'proper'
+    // Determine cost — tools reduce proper repair cost, no effect on quick fix
+    const baseCost = repairType === 'proper'
       ? (defect.proper_repair_cost ?? 0)
       : (defect.quick_fix_cost ?? 0);
+
+    let cost = baseCost;
+    let toolDiscount = 0;
+    if (repairType === 'proper' && ownedEquipIds.length > 0) {
+      toolDiscount = await computeToolCostDiscount(defect.category, ownedEquipIds, tx);
+      cost = Math.round(baseCost * (1 - toolDiscount));
+    }
 
     if (player.cash < cost) {
       throw Object.assign(new Error('Insufficient funds'), { statusCode: 400 });
@@ -240,7 +280,7 @@ export async function startRepair(carId, defectId, repairType, playerId) {
       INSERT INTO transactions (player_id, type, amount, reference_id, description)
       VALUES (
         ${playerId}, 'repair', ${-cost}, ${carId},
-        ${`${repairType === 'proper' ? 'Ремонт' : 'Быстрый ремонт'}: ${defect.defect_type}`}
+        ${`${repairType === 'proper' ? 'Ремонт' : 'Быстрый ремонт'}: ${defect.defect_type}${toolDiscount > 0 ? ` (скидка ${Math.round(toolDiscount * 100)}%)` : ''}`}
       )
     `;
 
@@ -250,6 +290,11 @@ export async function startRepair(carId, defectId, repairType, playerId) {
       VALUES (${carId}, ${defectId}, ${repairType}, ${completesAt}, ${cost})
       RETURNING id, car_id, defect_id, repair_type, started_at, completes_at, completed, cost_charged
     `;
+
+    // Attach discount metadata for the route response (not stored in DB)
+    job.toolDiscountApplied = toolDiscount > 0
+      ? { fraction: toolDiscount, savedByn: baseCost - cost }
+      : null;
 
     // If immediate (0-duration), complete inline
     if (isImmediate) {
@@ -263,7 +308,7 @@ export async function startRepair(carId, defectId, repairType, playerId) {
         WHERE id = ${defectId}
       `;
       // Car state stays 'purchased' (no state change needed for immediate repair)
-      return { ...job, completed: true };
+      return { ...job, completed: true, toolDiscountApplied: job.toolDiscountApplied };
     }
 
     // Transition car to in_repair (non-immediate)

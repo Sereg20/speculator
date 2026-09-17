@@ -4,11 +4,11 @@
  * Level thresholds from GMS §1.1 (LEVEL_XP_THRESHOLDS).
  * All state changes wrapped in a Postgres transaction.
  *
- * Level-up cascade (Phase 6):
- *   - Updates players.level
- *   - Logs level_up analytics event
- *   - Skill eligibility is NOT auto-unlocked — the player must manually purchase.
- *     The cascade simply notes that new skills/equipment may now be available.
+ * Key invariants:
+ *   - XP only ever increases — it is NEVER spent or decremented.
+ *   - Level is computed from total XP and only ever increases.
+ *   - Skills and equipment are purchased with BYN cash (not XP).
+ *   - Level-up cascade logs the event; skill eligibility is not auto-unlocked.
  */
 
 import { sql } from '../db/client.js';

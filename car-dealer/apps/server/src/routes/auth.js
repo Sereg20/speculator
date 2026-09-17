@@ -32,6 +32,13 @@ async function register(request, reply) {
               energy_current, garage_slots, in_game_day, onboarding_complete, created_at
   `;
 
+  // Grant all free (byn_price = 0) skills automatically on registration
+  await sql`
+    INSERT INTO player_skills (player_id, skill_id)
+    SELECT ${player.id}, id FROM skill_tree WHERE byn_price = 0
+    ON CONFLICT DO NOTHING
+  `;
+
   const token = await reply.jwtSign({ playerId: player.id }, { expiresIn: '365d' });
 
   return reply.code(201).send({

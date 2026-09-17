@@ -37,6 +37,8 @@ const GEN_CONFIG = {
   seller_negotiation:     { temperature: 0.85, maxOutputTokens: 150, topP: 0.92 },
   seller_chat_hint:       { temperature: 0.85, maxOutputTokens: 120, topP: 0.92 },
   seller_negotiate_reject:{ temperature: 0.85, maxOutputTokens: 120, topP: 0.92 },
+  seller_negotiate_accept:{ temperature: 0.85, maxOutputTokens: 100, topP: 0.92 },
+  seller_negotiate_counter:{ temperature: 0.85, maxOutputTokens: 120, topP: 0.92 },
   buyer_inquiry:          { temperature: 0.80, maxOutputTokens: 180, topP: 0.90 },
   buyer_counter:          { temperature: 0.80, maxOutputTokens: 120, topP: 0.90 },
   buyer_accept:           { temperature: 0.80, maxOutputTokens: 100, topP: 0.90 },
@@ -249,8 +251,8 @@ function buildPrompt(contextType, vars = {}) {
       if (!hint_category) {
         return (
           `Ты — продавец (${archetypeHint}) автомобиля ${car_make_model_year} на авторынке Беларуси.\n` +
-          `Покупатель разговаривает с тобой перед осмотром. Скажи нейтральную фразу — про машину или ситуацию. ` +
-          `Ничего про дефекты не упоминай. Разговорный стиль, 1 предложение. Без кавычек, без мата.`
+          `Покупатель разговаривает с тобой перед осмотром. Скажи нейтральную фразу — про машину или ситуацию. Возможно что-то стериотипное про конкретный автомобиль в хорошем ключе` +
+          `Ничего про дефекты не упоминай. Разговорный стиль, 1-2 предложения. Без кавычек, без мата.`
         );
       }
       const categoryHint = {
@@ -290,6 +292,56 @@ function buildPrompt(contextType, vars = {}) {
         `Покупатель пытался торговаться, но ты отказываешь снижать цену. ${retryNote}\n\n` +
         `Напиши ОДНУ реплику продавца — он твёрдо отказывает. ` +
         `Разговорный стиль авторынка. Без кавычек, без мата.`
+      );
+    }
+
+    case 'seller_negotiate_accept': {
+      const {
+        seller_archetype = 'private_owner',
+        asking_price = 0,
+        agreed_price = 0,
+        negotiation_round = 1,
+      } = vars;
+      const archetypeHint = {
+        old_man:        'пожилой хозяин',
+        private_owner:  'частный продавец',
+        shady_dealer:   'перекупщик',
+        enthusiast:     'энтузиаст-автолюбитель',
+        urgent_sale:    'срочно продаёт',
+      }[seller_archetype] || 'продавец';
+      const roundNote = negotiation_round <= 1
+        ? 'После первого же предложения'
+        : `После ${negotiation_round} раундов торга`;
+      return (
+        `Ты — продавец (${archetypeHint}) на авторынке Беларуси. Исходная цена: ${asking_price} BYN.\n` +
+        `${roundNote} покупатель предложил ${agreed_price} BYN — ты соглашаешься.\n\n` +
+        `Напиши ОДНУ реплику продавца — он принимает сделку. Разговорный стиль, живо и по-человечески. С уместным легким юмором. Без кавычек, без мата.`
+      );
+    }
+
+    case 'seller_negotiate_counter': {
+      const {
+        seller_archetype = 'private_owner',
+        asking_price = 0,
+        proposed_price = 0,
+        counter_price = 0,
+        negotiation_round = 1,
+      } = vars;
+      const archetypeHint = {
+        old_man:        'пожилой хозяин',
+        private_owner:  'частный продавец',
+        shady_dealer:   'перекупщик',
+        enthusiast:     'энтузиаст-автолюбитель',
+        urgent_sale:    'срочно продаёт',
+      }[seller_archetype] || 'продавец';
+      const roundNote = negotiation_round <= 1
+        ? 'Первый раунд торга.'
+        : `Идёт ${negotiation_round}-й раунд торга.`;
+      return (
+        `Ты — продавец (${archetypeHint}) на авторынке Беларуси. Твоя цена: ${asking_price} BYN.\n` +
+        `Покупатель предложил ${proposed_price} BYN — слишком мало. ${roundNote}\n` +
+        `Ты предлагаешь встречную цену: ${counter_price} BYN.\n\n` +
+        `Напиши ОДНУ реплику продавца — он торгуется, называет встречную цену. Разговорный стиль авторынка. Без кавычек, без мата.`
       );
     }
 
@@ -463,6 +515,28 @@ const FALLBACK_DIALOGUES = {
     'Не торгуюсь. Объявление свежее, подождём.',
     'Машина нормальная, цена нормальная. Нет — ищи другую.',
     'Извини, не договоримся. Удачи.',
+  ],
+
+  seller_negotiate_accept: [
+    'Ладно, договорились. Забирай.',
+    'Ну, по рукам. Деньги готовь.',
+    'Хорошо, согласен. Только оформляемся сразу.',
+    'Эх, уговорил. Идёт.',
+    'Добро. Машина твоя.',
+    'По рукам! Не торгуйся больше.',
+    'Ладно, беру твою цену. Оформляем?',
+    'Окей. Договорились, забирай сегодня.',
+  ],
+
+  seller_negotiate_counter: [
+    'Ну нет, столько не могу. Давай хотя бы посередине?',
+    'Нет, слишком мало. Вот моя встречная — думай.',
+    'За эти деньги нет. Но могу подвинуться — вот цена.',
+    'Слушай, давай по-честному — вот мой минимум.',
+    'Ниже не могу, но вот тебе навстречу немного.',
+    'Не, это не серьёзно. Вот тебе встречное предложение.',
+    'Ну слишком дёшево. Давай хотя бы вот так — и по рукам?',
+    'Моя цена была честной, но давай найдём середину.',
   ],
 };
 

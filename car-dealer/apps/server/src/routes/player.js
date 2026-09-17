@@ -99,7 +99,7 @@ async function getSkills(request, reply) {
   const playerId = request.playerId;
 
   const allSkills = await sql`
-    SELECT id, name, description, level_required, xp_cost, skill_type, tier, prerequisites
+    SELECT id, name, description, level_required, byn_price, skill_type, tier, prerequisites
     FROM skill_tree
     ORDER BY skill_type, tier, level_required
   `;
@@ -116,28 +116,28 @@ async function getSkills(request, reply) {
 
 /**
  * POST /player/skills/:skillId/purchase
- * Spends XP to unlock a skill. Validates: level gate, prerequisites, XP, not already owned.
+ * Spends BYN cash to unlock a skill. Validates: level gate, prerequisites, cash, not already owned.
  */
 async function purchaseSkill(request, reply) {
   const { skillId } = request.params;
   const playerId = request.playerId;
 
   const [skill] = await sql`
-    SELECT id, name, level_required, xp_cost, prerequisites
+    SELECT id, name, level_required, byn_price, prerequisites
     FROM skill_tree WHERE id = ${skillId}
   `;
   if (!skill) {
     return reply.code(404).send({ data: null, error: 'Skill not found', meta: null });
   }
 
-  if (skill.xp_cost === 0) {
-    // Free default skills (casual_chat, walkaround_glance, etc.) are auto-owned — not purchasable
-    return reply.code(400).send({ data: null, error: 'This skill cannot be purchased (it is free/default)', meta: null });
+  if (skill.byn_price === 0) {
+    // Free default skills are auto-granted on registration — not purchasable here
+    return reply.code(400).send({ data: null, error: 'This skill is free and granted automatically', meta: null });
   }
 
   await sql.begin(async tx => {
     const [player] = await tx`
-      SELECT xp, level FROM players WHERE id = ${playerId} FOR UPDATE
+      SELECT cash, level FROM players WHERE id = ${playerId} FOR UPDATE
     `;
     if (!player) throw Object.assign(new Error('Player not found'), { statusCode: 404 });
 
@@ -148,9 +148,9 @@ async function purchaseSkill(request, reply) {
       );
     }
 
-    if (player.xp < skill.xp_cost) {
+    if (player.cash < skill.byn_price) {
       throw Object.assign(
-        new Error(`Not enough XP (need ${skill.xp_cost}, have ${player.xp})`),
+        new Error(`Insufficient funds (need ${skill.byn_price} BYN, have ${player.cash} BYN)`),
         { statusCode: 400 },
       );
     }
@@ -179,27 +179,37 @@ async function purchaseSkill(request, reply) {
       }
     }
 
-    // Deduct XP and insert skill
+    // Deduct BYN cash
     await tx`
-      UPDATE players SET xp = xp - ${skill.xp_cost}, updated_at = NOW()
+      UPDATE players
+      SET cash = cash - ${skill.byn_price},
+          cash_stress_active = CASE
+            WHEN cash - ${skill.byn_price} < 400 THEN true
+            WHEN cash - ${skill.byn_price} > 900 THEN false
+            ELSE cash_stress_active
+          END,
+          updated_at = NOW()
       WHERE id = ${playerId}
     `;
     await tx`
       INSERT INTO player_skills (player_id, skill_id) VALUES (${playerId}, ${skillId})
     `;
-
+    await tx`
+      INSERT INTO transactions (player_id, type, amount, reference_id, description)
+      VALUES (${playerId}, 'skill_purchase', ${-skill.byn_price}, NULL, ${`Навык: ${skill.name}`})
+    `;
     await tx`
       INSERT INTO analytics_events (player_id, event_type, metadata)
-      VALUES (${playerId}, 'skill_purchased', ${tx.json({ skillId, xpSpent: skill.xp_cost })})
+      VALUES (${playerId}, 'skill_purchased', ${tx.json({ skillId, bynSpent: skill.byn_price })})
     `;
   });
 
-  const [updatedPlayer] = await sql`SELECT xp, level FROM players WHERE id = ${playerId}`;
+  const [updatedPlayer] = await sql`SELECT cash FROM players WHERE id = ${playerId}`;
 
   return reply.code(201).send({
     data: { skillId, name: skill.name },
     error: null,
-    meta: { xpAfter: updatedPlayer.xp },
+    meta: { cashAfter: updatedPlayer.cash },
   });
 }
 
@@ -410,12 +420,12 @@ async function getProgression(request, reply) {
     return reply.code(404).send({ data: null, error: 'Player not found', meta: null });
   }
 
-  // Skills unlockable at current level (not yet owned)
+  // Skills unlockable at current level (not yet owned, costs BYN)
   const availableSkills = await sql`
-    SELECT st.id, st.name, st.xp_cost, st.skill_type, st.tier, st.level_required
+    SELECT st.id, st.name, st.byn_price, st.skill_type, st.tier, st.level_required
     FROM skill_tree st
     WHERE st.level_required <= ${player.level}
-      AND st.xp_cost > 0
+      AND st.byn_price > 0
       AND NOT EXISTS (
         SELECT 1 FROM player_skills ps
         WHERE ps.player_id = ${playerId} AND ps.skill_id = st.id
