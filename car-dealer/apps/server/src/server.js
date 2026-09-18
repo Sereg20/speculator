@@ -8,6 +8,7 @@ import { startRepairCompletionJob } from './jobs/repairCompletion.js';
 import { startHoldingCostJob } from './jobs/holdingCost.js';
 import { startBuyerInquiryJob } from './jobs/buyerInquiry.js';
 import { startListingExpiryJob } from './jobs/listingExpiry.js';
+import cors from '@fastify/cors';
 
 const fastify = Fastify({
   logger: {
@@ -19,6 +20,9 @@ const fastify = Fastify({
 });
 
 // ─── Plugins ────────────────────────────────────────────────────────────────
+
+await fastify.register(cors, { origin: [ 'http://localhost:8081', 'http://127.0.0.1:8081', ], credentials: true, });
+
 await fastify.register(fjwt, { secret: JWT_SECRET });
 
 // ─── Error handler ──────────────────────────────────────────────────────────
