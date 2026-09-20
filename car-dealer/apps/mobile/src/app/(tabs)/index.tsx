@@ -1,63 +1,57 @@
-// src/app/(tabs)/index.tsx
+import { CarSlot } from "@/components/car-slot/CarSlot";
+import { View, Text, StyleSheet, ImageBackground } from "react-native";
+import { useQuery } from "@tanstack/react-query";
+import { carsQuery } from "@/api/cars";
 
-import { View, Text, StyleSheet } from "react-native";
+const garageBackground = require("@/../assets/images/backgrounds/background_garage1.png");
 
 export default function GarageScreen() {
+  const {
+    data: cars = [],
+    isLoading,
+    error,
+  } = useQuery(carsQuery());
+
+  if(isLoading) {
+    return <View><Text>Loading</Text></View>;
+  }
+
+  if (error) {
+    return <View><Text>Error</Text></View>;
+  }
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Garage</Text>
-
-      <Text style={styles.subtitle}>
-        Your vehicles
-      </Text>
-
-      <View style={styles.card}>
-        <Text style={styles.carName}>
-          Sport Car
-        </Text>
-
-        <Text style={styles.carInfo}>
-          Level 12
-        </Text>
+    <ImageBackground
+      source={garageBackground}
+      style={styles.background}
+      imageStyle={styles.backgroundImage}
+      resizeMode="cover"
+    >
+      <View style={styles.content}>
+        {cars?.map((car) => (
+          <CarSlot key={car.id} car={car} />
+        ))}
       </View>
-    </View>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  background: {
     flex: 1,
     backgroundColor: "#111111",
+  },
+
+  backgroundImage: {
+    width: "100%",
+    height: "100%",
+  },
+
+  content: {
+    flex: 1,
     padding: 20,
+    justifyContent: 'center',
+    alignItems: 'center'
   },
-
-  title: {
-    color: "#ffffff",
-    fontSize: 32,
-    fontWeight: "bold",
-    marginBottom: 8,
-  },
-
-  subtitle: {
-    color: "#888888",
-    fontSize: 16,
-    marginBottom: 20,
-  },
-
-  card: {
-    backgroundColor: "#222222",
-    padding: 20,
-    borderRadius: 12,
-  },
-
-  carName: {
-    color: "#ffffff",
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-
-  carInfo: {
-    color: "#888888",
-    marginTop: 8,
-  },
+  
 });

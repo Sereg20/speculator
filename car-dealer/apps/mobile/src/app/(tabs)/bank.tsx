@@ -4,96 +4,39 @@ import {
   View,
   Text,
   StyleSheet,
+  ImageBackground,
 } from "react-native";
+
+const bankBackground = require("@/../assets/images/backgrounds/background_bank.png");
 
 export default function BankScreen() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Bank</Text>
-
-      <View style={styles.balanceCard}>
-        <Text style={styles.label}>
-          Current Balance
-        </Text>
-
-        <Text style={styles.balance}>
-          $125,450
-        </Text>
+    <ImageBackground
+      source={bankBackground}
+      style={styles.background}
+      imageStyle={styles.backgroundImage}
+      resizeMode="cover"
+    >
+      <View style={styles.content}>
+        {/* Your garage content */}
       </View>
-
-      <View style={styles.transaction}>
-        <Text style={styles.transactionTitle}>
-          Car sold
-        </Text>
-
-        <Text style={styles.income}>
-          +$15,000
-        </Text>
-      </View>
-
-      <View style={styles.transaction}>
-        <Text style={styles.transactionTitle}>
-          Engine purchase
-        </Text>
-
-        <Text style={styles.expense}>
-          -$25,000
-        </Text>
-      </View>
-    </View>
+    </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  background: {
     flex: 1,
     backgroundColor: "#111111",
+  },
+
+  backgroundImage: {
+    width: "100%",
+    height: "100%",
+  },
+
+  content: {
+    flex: 1,
     padding: 20,
-  },
-
-  title: {
-    color: "#ffffff",
-    fontSize: 32,
-    fontWeight: "bold",
-    marginBottom: 20,
-  },
-
-  balanceCard: {
-    backgroundColor: "#222222",
-    padding: 24,
-    borderRadius: 16,
-    marginBottom: 20,
-  },
-
-  label: {
-    color: "#888888",
-    fontSize: 14,
-  },
-
-  balance: {
-    color: "#ffffff",
-    fontSize: 32,
-    fontWeight: "bold",
-    marginTop: 8,
-  },
-
-  transaction: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#222222",
-  },
-
-  transactionTitle: {
-    color: "#ffffff",
-  },
-
-  income: {
-    color: "#4ade80",
-  },
-
-  expense: {
-    color: "#f87171",
-  },
+  }
 });

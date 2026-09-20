@@ -2,7 +2,8 @@
 
 import { View, Text, StyleSheet } from "react-native";
 
-import { useGame } from "@/context/GameContext";
+import { useGame } from "../../app/context/GameContext";
+import { colors } from "@/theme/colors";
 
 export function GameHeader() {
   const {
@@ -21,15 +22,9 @@ export function GameHeader() {
     <View style={styles.container}>
       {/* Level + XP */}
       <View style={styles.levelContainer}>
-        <View style={styles.levelRow}>
-          <Text style={styles.level}>
-            LVL {level}
-          </Text>
-
-          <Text style={styles.xp}>
-            {xp} / {xpToNextLevel} XP
-          </Text>
-        </View>
+        <Text style={styles.title}>
+          Уровень
+        </Text>
 
         <View style={styles.progressBackground}>
           <View
@@ -43,16 +38,17 @@ export function GameHeader() {
               },
             ]}
           />
+            <Text style={styles.xp}>
+              XP {xp} / {xpToNextLevel}
+            </Text>
         </View>
       </View>
 
       {/* Money */}
       <View style={styles.stat}>
-        <Text style={styles.icon}>$</Text>
+        <Text style={styles.title}>Бабки</Text>
 
         <View>
-          <Text style={styles.label}>Money</Text>
-
           <Text style={styles.value}>
             {money.toLocaleString()}
           </Text>
@@ -61,13 +57,12 @@ export function GameHeader() {
 
       {/* Energy */}
       <View style={styles.stat}>
-        <Text style={styles.icon}>⚡</Text>
+        <Text style={styles.title}>Энергия</Text>
 
         <View>
-          <Text style={styles.label}>Energy</Text>
 
           <Text style={styles.value}>
-            {energy}/{maxEnergy}
+            ⚡ {energy}/{maxEnergy}
           </Text>
         </View>
       </View>
@@ -77,60 +72,63 @@ export function GameHeader() {
 
 const styles = StyleSheet.create({
   container: {
-    minHeight: 72,
+    minHeight: 60,
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 8,
 
     flexDirection: "row",
     alignItems: "center",
 
-    backgroundColor: "#181818",
+    backgroundColor: colors.mainBackground,
 
     borderBottomWidth: 1,
-    borderBottomColor: "#2a2a2a",
-
-    gap: 16,
+    borderBottomColor: "#12211A",
   },
 
   levelContainer: {
     flex: 1,
+    gap: 4,
   },
 
-  levelRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 6,
-  },
 
-  level: {
-    color: "#ffffff",
+  title: {
+    color: colors.textMain,
     fontSize: 15,
     fontWeight: "bold",
   },
 
-  xp: {
-    color: "#888888",
-    fontSize: 11,
-  },
 
   progressBackground: {
-    height: 6,
-    backgroundColor: "#303030",
-    borderRadius: 3,
+    height: 16,
+    backgroundColor: colors.darkBackground,
+    borderRadius: 4,
     overflow: "hidden",
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   xpProgress: {
     height: "100%",
-    backgroundColor: "#7c3aed",
-    borderRadius: 3,
+    backgroundColor: "#3B6481",
+    borderRadius: 0,
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+  },
+
+  xp: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    textAlign: "center",
+    color: colors.textMain,
+    fontSize: 12,
   },
 
   stat: {
-    flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    width: '33%',
   },
 
   icon: {

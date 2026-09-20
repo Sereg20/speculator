@@ -4,66 +4,49 @@ import {
   View,
   Text,
   StyleSheet,
+  ImageBackground,
+  Image,
 } from "react-native";
+import { useQuery } from "@tanstack/react-query";
+import { marketListingsQuery } from "@/api/market";
+import { colors } from "@/theme/colors";
+import { MarketList } from "@/components/market-list/MarketList";
+
+const marketBackground = require("@/../assets/images/backgrounds/background_market.png");
 
 export default function MarketScreen() {
+  const {
+    data: listings = [],
+    isLoading,
+    error,
+  } = useQuery(marketListingsQuery());
+    
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Market</Text>
-
-      <View style={styles.card}>
-        <Text style={styles.itemName}>
-          Turbo Engine
-        </Text>
-
-        <Text style={styles.price}>
-          $25,000
-        </Text>
-      </View>
-
-      <View style={styles.card}>
-        <Text style={styles.itemName}>
-          Racing Tires
-        </Text>
-
-        <Text style={styles.price}>
-          $8,500
-        </Text>
-      </View>
+      <Image
+        source={require("@/../assets/images/backgrounds/background_market.png")}
+        style={styles.marketImg}
+        resizeMode="cover"
+      />
+      <MarketList listings={listings} onRefresh={() =>{}}/>
     </View>
+
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#111111",
+    backgroundColor: colors.mainBackground
+  },
+
+  marketImg: {
+    width: "100%",
+    height: "35%",
+  },
+
+  content: {
+    flex: 1,
     padding: 20,
-  },
-
-  title: {
-    color: "#ffffff",
-    fontSize: 32,
-    fontWeight: "bold",
-    marginBottom: 20,
-  },
-
-  card: {
-    backgroundColor: "#222222",
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-
-  itemName: {
-    color: "#ffffff",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-
-  price: {
-    color: "#4ade80",
-    fontSize: 16,
-    marginTop: 8,
   },
 });
