@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { IDialogMessage, DialogSpeakerType } from "@/types/dialog";
 import { router } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
+import { ApiError } from "@/api/client";
 
 const initMessage:IDialogMessage = {
   id: "1",
@@ -19,6 +20,7 @@ const initMessage:IDialogMessage = {
 
 export default function MarketInspectionScreen() {
   const [messages, setMessages] = useState<IDialogMessage[]>([initMessage]);
+  const [chatDisabled, setChatDisabled] = useState<boolean>(false);
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const {data: initialDialogue} = useQuery(listingDialogueQuery(id));
@@ -28,6 +30,13 @@ export default function MarketInspectionScreen() {
     onSuccess: (data) => {
       addMessage(data.dialogue, "npc");
     },
+    onError: (error: ApiError) => {
+      if (error instanceof ApiError && error.status === 409) {
+        addMessage('Я уже все сказал', "npc");
+        setChatDisabled(true);
+        return;
+      }
+    }
   });
 
   useEffect(() => {
@@ -96,10 +105,10 @@ export default function MarketInspectionScreen() {
         </View>
 
         <View style={styles.actionsContainer}>
-          <NegotiateAction text={'КУПИТЬ\n(1200)'} onPress={onBuy} iconName='shopping-cart' iconColor='#84d78c' color='#429958'/>
-          <NegotiateAction text={'ТОРГ'} onPress={onNegotiate} iconName='handshake' iconColor='#be6b22' color='#EBA13C'/>
-          <NegotiateAction text={'СПРОСИТЬ\nО КАСЯКАХ'} onPress={onChat} iconName='bug' iconColor='#09427a' color='#307DC1'/>
-          <NegotiateAction text='УЙТИ' onPress={onQuit} iconName='door-open' iconColor='#821f14' color='#C5453C'/>
+          <NegotiateAction disabled={false} text={'КУПИТЬ\n(1200)'} onPress={onBuy} iconName='shopping-cart' iconColor='#84d78c' color='#429958'/>
+          <NegotiateAction disabled={false} text={'ТОРГ'} onPress={onNegotiate} iconName='handshake' iconColor='#be6b22' color='#EBA13C'/>
+          <NegotiateAction disabled={chatDisabled} text={'СПРОСИТЬ\nО КАСЯКАХ'} onPress={onChat} iconName='bug' iconColor='#09427a' color='#307DC1'/>
+          <NegotiateAction disabled={false} text='УЙТИ' onPress={onQuit} iconName='door-open' iconColor='#821f14' color='#C5453C'/>
         </View>
         
         

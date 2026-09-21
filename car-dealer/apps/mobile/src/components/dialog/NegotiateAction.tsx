@@ -17,11 +17,12 @@ interface NegotiateActionProps {
   text: string,
   iconName: string,
   iconColor: string,
+  disabled: boolean,
   onPress: () => void;
 }
 
 export function NegotiateAction({
-  color, text, iconName, iconColor, onPress
+  color, text, iconName, iconColor, onPress, disabled
 }: NegotiateActionProps) {
   return (
     <Pressable
@@ -29,8 +30,10 @@ export function NegotiateAction({
         styles.button,
         { backgroundColor: color },
         pressed && styles.buttonPressed,
+        disabled && styles.buttonDisabled,
       ]}
       onPress={onPress}
+      disabled={disabled}
     >
       <FontAwesome5 name={iconName} size={20} color={iconColor} />
       <Text style={styles.text}>{text}</Text>
@@ -49,6 +52,10 @@ const styles = StyleSheet.create({
 
   buttonPressed: {
 
+  },
+
+  buttonDisabled: {
+    opacity: 0.5,
   },
 
   text: {
