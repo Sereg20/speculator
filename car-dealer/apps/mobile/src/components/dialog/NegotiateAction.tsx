@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
   },
 
   buttonPressed: {
-
+    opacity: 0.8,
   },
 
   buttonDisabled: {

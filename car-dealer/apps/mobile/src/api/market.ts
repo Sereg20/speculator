@@ -117,9 +117,10 @@ export const chatWithSeller = async (
  * POST /market/listings/:id/negotiate
  */
 export type NegotiateResult = {
-  accepted: boolean;
-  price: number;
-  message?: string;
+  outcome: string;
+  finalPrice?: number;
+  sellerCounterPrice?: number;
+  message: string;
 };
 
 type NegotiateResponse = {
@@ -166,6 +167,7 @@ export const purchaseListing = async (
     `/market/listings/${id}/purchase`,
     {
       method: "POST",
+      body: JSON.stringify({})
     }
   );
 

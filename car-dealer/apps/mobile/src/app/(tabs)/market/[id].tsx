@@ -1,8 +1,8 @@
 import { View, Text, StyleSheet, Image } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { colors } from "@/theme/colors";
-import { listingDialogueQuery, chatWithSeller } from "@/api/market";
-import { useQuery } from "@tanstack/react-query";
+import { listingDialogueQuery, chatWithSeller, MarketListing, negotiateListing, purchaseListing } from "@/api/market";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Dialog } from "@/components/dialog/Dialog";
 import { NegotiateAction } from "@/components/dialog/NegotiateAction";
 import { useEffect, useState } from "react";
@@ -10,21 +10,38 @@ import { IDialogMessage, DialogSpeakerType } from "@/types/dialog";
 import { router } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 import { ApiError } from "@/api/client";
+import { NegotiatePriceSelectorDialog } from "@/components/dialog/NegotiatePriceSelectorDialog";
 
-const initMessage:IDialogMessage = {
+const initMessage: IDialogMessage = {
   id: "1",
   speaker: "player",
-  text: "Привет, продаешь?"
+  text: "Привет, как машинка?"
 }
 
 
 export default function MarketInspectionScreen() {
-  const [messages, setMessages] = useState<IDialogMessage[]>([initMessage]);
-  const [chatDisabled, setChatDisabled] = useState<boolean>(false);
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { data: initialDialogue } = useQuery(listingDialogueQuery(id));
+  const queryClient = useQueryClient();
 
-  const {data: initialDialogue} = useQuery(listingDialogueQuery(id));
+  //get current listing from cache
+  const listings =
+    queryClient.getQueryData<MarketListing[]>([
+      "market",
+      "listings",
+    ]);
+  const listing = listings?.find((item) => item.id === id);
 
+  const [messages, setMessages] = useState<IDialogMessage[]>([initMessage]);
+  const [purchaseDisabled, setPurchaseDisabled] = useState<boolean>(false);
+  const [chatDisabled, setChatDisabled] = useState<boolean>(false);
+  const [quitDisabled, setQuitDisabled] = useState<boolean>(false);
+  const [negotiateDisabled, setNegotiateDisabled] = useState<boolean>(false);
+  const [isPriceModalVisible, setPriceModalVisible] = useState<boolean>(false);
+  const [currentPrice, setCurrentPrice] = useState<number>(listing?.asking_price || 0);
+
+
+  // /chat request
   const chatMutation = useMutation({
     mutationFn: () => chatWithSeller(id),
     onSuccess: (data) => {
@@ -32,16 +49,61 @@ export default function MarketInspectionScreen() {
     },
     onError: (error: ApiError) => {
       if (error instanceof ApiError && error.status === 409) {
-        addMessage('Я уже все сказал', "npc");
+        addMessage('Я уже все сказал.', "npc");
         setChatDisabled(true);
-        return;
+      } else {
+        addMessage("что-то я завтыкал. Давай-ка еще раз", "npc");
+      }
+    }
+  });
+
+  // /negotiate request
+  const negotiateMutation = useMutation({
+    mutationFn: (proposedPrice: number) => negotiateListing(id, proposedPrice),
+
+    onSuccess: (data) => {
+      if (data.outcome === 'counter' && data.sellerCounterPrice) {
+        setCurrentPrice(data.sellerCounterPrice);
+        setNegotiateDisabled(false);
+      } else if (data.outcome === 'accepted' && data.finalPrice) {
+        setCurrentPrice(data.finalPrice);
+      } else if (data.outcome === 'rejected') {
+
+      }
+      addMessage(data.message, "npc");
+    },
+
+    onError: (error) => {
+      setNegotiateDisabled(false);
+      addMessage("что-то я завтыкал. Давай-ка еще раз", "npc");
+    },
+  });
+
+  // /purchase request
+  const purchaseMutation = useMutation({
+    mutationFn: () => purchaseListing(id),
+    onSuccess: () => {
+      setTimeout(() => {
+        router.replace({
+          pathname: "/market"
+        });
+      }, 800);
+    },
+    onError: (error) => {
+      console.log(JSON.stringify(error))
+      if (
+        error instanceof ApiError &&
+        error.status === 400 &&
+        error.body.error === "No free garage slot"
+      ) {
+        addMessage('Совсем забыл! У меня нет свободных мест в гараже', 'player');
       }
     }
   });
 
   useEffect(() => {
     if (!initialDialogue) return;
-    
+
     setMessages((previousMessages) => [
       ...previousMessages,
       {
@@ -64,14 +126,28 @@ export default function MarketInspectionScreen() {
   }
 
   function onBuy() {
+    setPurchaseDisabled(true);
     addMessage('По рукам! Поехали оформляться.', 'player');
-
+    purchaseMutation.mutate();
   }
 
   function onNegotiate() {
     //modal with price selector
-    const proposedPrice = 12;
-    addMessage(`Предложение хорошее, но цена велика. Как насчет ${proposedPrice}?`, 'player');
+    setPriceModalVisible(true);
+  }
+
+  function onInspect() {
+
+  }
+
+  function onQuit() {
+    addMessage('До встречи!', 'player');
+    setQuitDisabled(true);
+    setTimeout(() => {
+      router.replace({
+        pathname: "/market"
+      });
+    }, 800);
   }
 
   function onChat() {
@@ -79,13 +155,11 @@ export default function MarketInspectionScreen() {
     chatMutation.mutate();
   }
 
-  function onQuit() {
-    addMessage('До встречи!', 'player');
-    setTimeout(() => {
-      router.replace({
-        pathname: "/market"
-      });
-    }, 1000);
+  function onConfirmProposedPrice(proposedPrice: number) {
+    setNegotiateDisabled(true);
+    negotiateMutation.mutate(proposedPrice);
+    setPriceModalVisible(false);
+    addMessage(`Предложение хорошее, но цена велика. Как насчет ${proposedPrice}?`, 'player');
   }
 
   return (
@@ -97,24 +171,23 @@ export default function MarketInspectionScreen() {
       />
       <View style={styles.absolutContainer}>
         <View style={styles.title}>
-          <Text style={styles.titleText}>ОСМОТР АВТОМОБИЛЯ</Text>
+          <Text style={styles.titleText}>ОСМОТР АВТОМОБИЛЯ: {listing?.make} {listing?.model}</Text>
         </View>
         <View style={styles.dialogContainer}>
           <View style={styles.sellerContainer}></View>
-          <Dialog messages={messages}/>
+          <Dialog messages={messages} />
         </View>
 
         <View style={styles.actionsContainer}>
-          <NegotiateAction disabled={false} text={'КУПИТЬ\n(1200)'} onPress={onBuy} iconName='shopping-cart' iconColor='#84d78c' color='#429958'/>
-          <NegotiateAction disabled={false} text={'ТОРГ'} onPress={onNegotiate} iconName='handshake' iconColor='#be6b22' color='#EBA13C'/>
-          <NegotiateAction disabled={chatDisabled} text={'СПРОСИТЬ\nО КАСЯКАХ'} onPress={onChat} iconName='bug' iconColor='#09427a' color='#307DC1'/>
-          <NegotiateAction disabled={false} text='УЙТИ' onPress={onQuit} iconName='door-open' iconColor='#821f14' color='#C5453C'/>
+          <NegotiateAction disabled={purchaseDisabled} text={`КУПИТЬ\n(${currentPrice})`} onPress={onBuy} iconName='shopping-cart' iconColor='#84d78c' color='#429958' />
+          <NegotiateAction disabled={negotiateDisabled} text={'ТОРГ'} onPress={onNegotiate} iconName='handshake' iconColor='#be6b22' color='#EBA13C' />
+          <NegotiateAction disabled={false} text={'ПРОВЕРИТЬ'} onPress={onInspect} iconName='bug' iconColor='#09427a' color='#307DC1' />
+          <NegotiateAction disabled={quitDisabled} text='УЙТИ' onPress={onQuit} iconName='door-open' iconColor='#821f14' color='#C5453C' />
         </View>
-        
-        
-      </View>
-      
 
+      </View>
+
+      <NegotiatePriceSelectorDialog visible={isPriceModalVisible} onClose={() => { setPriceModalVisible(false) }} onConfirm={onConfirmProposedPrice} initialPrice={listing?.asking_price || 0} />
     </View>
   );
 }
@@ -151,7 +224,7 @@ const styles = StyleSheet.create({
 
   titleText: {
     color: colors.textMain,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold'
   },
 

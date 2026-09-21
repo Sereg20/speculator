@@ -29,8 +29,8 @@ export function MarketListingCard({
       </ImageBackground>
       <View style={styles.info}>
         <Text style={styles.title}>{listing.make} {listing.model}</Text>
-        <Text style={styles.details}>Год: {listing.year}</Text>
         <Text style={styles.details}>Пробег: {listing.mileage}</Text>
+        <Text style={styles.details}>Год: {listing.year}</Text>
 
         <View style={styles.footer}>
           <Text style={styles.price}>{listing.asking_price} BYN</Text>
