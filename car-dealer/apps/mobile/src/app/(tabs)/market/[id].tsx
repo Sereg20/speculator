@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, Image } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { colors } from "@/theme/colors";
-import { listingDialogueQuery, chatWithSeller, MarketListing, negotiateListing, purchaseListing } from "@/api/market";
+import { listingDialogueQuery, chatWithSeller, MarketListing, negotiateListing, purchaseListing, preInspectListing } from "@/api/market";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Dialog } from "@/components/dialog/Dialog";
 import { NegotiateAction } from "@/components/dialog/NegotiateAction";
@@ -11,6 +11,7 @@ import { router } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 import { ApiError } from "@/api/client";
 import { NegotiatePriceSelectorDialog } from "@/components/dialog/NegotiatePriceSelectorDialog";
+import { InspectDialog } from "@/components/dialog/InspectDialog";
 
 const initMessage: IDialogMessage = {
   id: "1",
@@ -35,9 +36,11 @@ export default function MarketInspectionScreen() {
   const [messages, setMessages] = useState<IDialogMessage[]>([initMessage]);
   const [purchaseDisabled, setPurchaseDisabled] = useState<boolean>(false);
   const [chatDisabled, setChatDisabled] = useState<boolean>(false);
+  const [preInspectDisabled, setPreInspectDisabled] = useState<boolean>(false);
   const [quitDisabled, setQuitDisabled] = useState<boolean>(false);
   const [negotiateDisabled, setNegotiateDisabled] = useState<boolean>(false);
   const [isPriceModalVisible, setPriceModalVisible] = useState<boolean>(false);
+  const [isInspectModalVisible, setInspectModalVisible] = useState<boolean>(false);
   const [currentPrice, setCurrentPrice] = useState<number>(listing?.asking_price || 0);
 
 
@@ -101,6 +104,17 @@ export default function MarketInspectionScreen() {
     }
   });
 
+  // /preinspect request
+  const preInspectMutation = useMutation({
+    mutationFn: () => preInspectListing(id, 'visual'),
+    onSuccess: () => {
+     
+    },
+    onError: (error) => {
+     
+    }
+  });
+
   useEffect(() => {
     if (!initialDialogue) return;
 
@@ -132,12 +146,11 @@ export default function MarketInspectionScreen() {
   }
 
   function onNegotiate() {
-    //modal with price selector
     setPriceModalVisible(true);
   }
 
   function onInspect() {
-
+    setInspectModalVisible(true);
   }
 
   function onQuit() {
@@ -151,8 +164,15 @@ export default function MarketInspectionScreen() {
   }
 
   function onChat() {
+    setInspectModalVisible(false);
     addMessage('Что с машиной? Только честно!', 'player');
     chatMutation.mutate();
+  }
+
+  function onPreInspect() {
+    setInspectModalVisible(false);
+    addMessage('А ну открой капот...', 'player');
+    preInspectMutation.mutate();
   }
 
   function onConfirmProposedPrice(proposedPrice: number) {
@@ -188,6 +208,7 @@ export default function MarketInspectionScreen() {
       </View>
 
       <NegotiatePriceSelectorDialog visible={isPriceModalVisible} onClose={() => { setPriceModalVisible(false) }} onConfirm={onConfirmProposedPrice} initialPrice={listing?.asking_price || 0} />
+      <InspectDialog visible={isInspectModalVisible} onClose={() => {setInspectModalVisible(false)}} onChat={onChat} onPreInspect={onPreInspect} chatDisabled={chatDisabled} preInspectDisabled={preInspectDisabled}/>
     </View>
   );
 }

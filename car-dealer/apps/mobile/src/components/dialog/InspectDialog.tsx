@@ -1,19 +1,9 @@
-import { MarketListing } from "@/api/market";
-import { colors } from "@/theme/colors";
 import {
   View,
-  Text,
   StyleSheet,
-  Pressable,
-  FlatList,
-  ImageBackground,
 } from "react-native";
-import { router } from "expo-router";
-import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
-import { GameModal } from "../modal/GameModal";
-import { GameSlider } from "../game-slider/GameSlider";
-import { useState } from "react";
 import { NegotiateAction } from "./NegotiateAction";
+import { GameModelWithoutButtons } from "../modal/GameModelWithoutButtons";
 
 
 interface InspectDialogProps {
@@ -21,27 +11,34 @@ interface InspectDialogProps {
   onClose: () => void,
   onChat: () => void,
   onPreInspect: () => void
+  chatDisabled: boolean,
+  preInspectDisabled: boolean
 }
 
 export function InspectDialog({
-  visible, onClose, onChat, onPreInspect
+  visible, onClose, onChat, onPreInspect, chatDisabled, preInspectDisabled
 }: InspectDialogProps) {
 
   return (
-    <GameModal
+    <GameModelWithoutButtons
       visible={visible}
-      title="ПРЕДЛОЖИТЬ ЦЕНУ"
+      title="ПОИСК НЕИСПРАВНОСТЕЙ"
       onClose={onClose}
-      onConfirm={onClose}
-      confirmText="ПРЕДЛОЖИТЬ"
     >
-      <NegotiateAction disabled={false} text={'СПРОСИТЬ'} onPress={onChat} iconName='handshake' iconColor='#be6b22' color='#EBA13C'/>
-      <NegotiateAction disabled={false} text={'ПРОВЕРИТЬ'} onPress={onPreInspect} iconName='bug' iconColor='#09427a' color='#307DC1'/>
-    </GameModal>
+      <View style={styles.container}>
+      <NegotiateAction disabled={chatDisabled} text={'СПРОСИТЬ'} onPress={onChat} iconName='handshake' iconColor='#be6b22' color='#EBA13C'/>
+      <NegotiateAction disabled={preInspectDisabled} text={'ПРОВЕРИТЬ'} onPress={onPreInspect} iconName='bug' iconColor='#09427a' color='#307DC1'/>
+      </View>
+    </GameModelWithoutButtons>
   );
 }
 
 const styles = StyleSheet.create({
-
+  container: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 10,
+    width: '100%',
+  }
 
 });
