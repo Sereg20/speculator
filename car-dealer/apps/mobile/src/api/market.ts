@@ -53,7 +53,7 @@ export const marketListingsQuery = () =>
  * GET /market/listings/:id/dialogue
  */
 export type SellerDialogue = {
-  message: string;
+  dialogue: string;
 };
 
 type SellerDialogueResponse = {
@@ -82,14 +82,21 @@ export const listingDialogueQuery = (id: string) =>
 /**
  * POST /market/listings/:id/chat
  */
+export type DefectHint = {
+  defectType: string;
+  category: string;
+  severity: string;
+};
+
 export type ChatResult = {
-  defects: string[];
+  dialogue: string;
+  hints: DefectHint[];  // empty array = seller revealed nothing
 };
 
 type ChatResponse = {
   data: ChatResult;
   error: unknown | null;
-  meta: Record<string, unknown>;
+  meta: { hintsRevealed: number };
 };
 
 export const chatWithSeller = async (
@@ -99,6 +106,7 @@ export const chatWithSeller = async (
     `/market/listings/${id}/chat`,
     {
       method: "POST",
+      body: JSON.stringify({})
     }
   );
 

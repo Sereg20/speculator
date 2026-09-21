@@ -22,7 +22,7 @@ export default function TabsLayout() {
             tabBarInactiveTintColor: '#ffffff',
             tabBarStyle: {
               backgroundColor: colors.mainBackground,
-              borderColor: '#31433B',
+              borderColor: colors.lightBackground,
               boxShadow: '0px -10px 27px 2px rgba(0, 0, 0, 0.50)'
             }
           }}

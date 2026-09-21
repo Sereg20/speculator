@@ -12,7 +12,6 @@ import { marketListingsQuery } from "@/api/market";
 import { colors } from "@/theme/colors";
 import { MarketList } from "@/components/market-list/MarketList";
 
-const marketBackground = require("@/../assets/images/backgrounds/background_market.png");
 
 export default function MarketScreen() {
   const {

@@ -226,8 +226,11 @@ export async function generateListings(playerId, playerLevel = 1) {
                   created_at
       `;
 
-      // Roll and persist defects (hidden)
-      await rollDefects(car.id, entry.condition_tier, qualityTier, { sqlClient: tx });
+      // Roll and persist defects (hidden), scaled to this car's market value
+      await rollDefects(car.id, entry.condition_tier, qualityTier, {
+        sqlClient: tx,
+        marketValue: entry.market_value,
+      });
 
       createdCars.push(car);
     }

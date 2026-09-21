@@ -474,6 +474,14 @@ async function negotiatePurchase(request, reply) {
 }
 
 // ─── Seller hint probabilities by archetype ───────────────────────────────────
+// Base probability that the seller mentions the FIRST defect.
+// Each subsequent defect decays by HINT_DECAY_FACTOR — so revealing many is
+// naturally rare but not impossible.
+//
+// Example with old_man (0.30) and DECAY 0.45:
+//   defect #1: 30%  → defect #2: 13.5%  → defect #3: 6%  → defect #4: 2.7%
+// Example with shady_dealer (0.05):
+//   defect #1:  5%  → defect #2:  2.25% → ...
 const SELLER_HINT_PROB = {
   old_man:       0.30,
   private_owner: 0.15,
@@ -481,15 +489,19 @@ const SELLER_HINT_PROB = {
   shady_dealer:  0.05,
   urgent_sale:   0.10,
 };
+const HINT_DECAY_FACTOR = 0.45;
 
 /**
  * POST /market/listings/:carId/chat
- * Player talks to the NPC seller. The seller may spontaneously hint at a defect.
- * Costs 1 energy.
+ * Player talks to the NPC seller. The seller may spontaneously reveal defects.
+ * One attempt per player per listing. Costs 1 energy.
+ *
+ * Each unrevealed defect gets an independent roll with geometrically decaying
+ * probability — so 0–1 hints is common, 2–3 rare, revealing many is very rare.
  *
  * Response:
- *   data.dialogue — NPC line
- *   data.hint     — { defectType, category, severity } or null
+ *   data.dialogue — NPC dialogue line
+ *   data.hints    — array of { defectType, category, severity } (may be empty)
  */
 async function chatWithSeller(request, reply) {
   const { carId } = request.params;
@@ -527,69 +539,74 @@ async function chatWithSeller(request, reply) {
     return reply.code(400).send({ data: null, error: 'Not enough energy', meta: null });
   }
 
-  // Record the chat before rolling so even a failed hint attempt counts
+  // Record the chat before rolling so even a zero-hint result counts
   await sql`
     INSERT INTO pre_purchase_inspections (car_id, player_id, tier, revealed_count, energy_cost)
     VALUES (${carId}, ${playerId}, 'chat', 0, ${ENERGY_COST_CHAT})
     ON CONFLICT (car_id, player_id, tier) DO NOTHING
   `;
 
-  // Roll whether the seller drops a hint
-  const hintProb = SELLER_HINT_PROB[car.seller_archetype] ?? 0.10;
-  let hint = null;
+  // Fetch all unrevealed non-fraud defects in a stable random order
+  const hiddenDefects = await sql`
+    SELECT id, defect_type, category, severity
+    FROM defects
+    WHERE car_id = ${carId}
+      AND is_revealed_to_player = false
+      AND is_odometer_fraud = false
+    ORDER BY RANDOM()
+  `;
 
-  if (Math.random() < hintProb) {
-    // Pick one random unrevealed non-fraud defect to hint about
-    const [defect] = await sql`
-      SELECT defect_type, category, severity
-      FROM defects
-      WHERE car_id = ${carId}
-        AND is_revealed_to_player = false
-        AND is_odometer_fraud = false
-      ORDER BY RANDOM()
-      LIMIT 1
-    `;
+  // Roll each defect independently with geometrically decaying probability.
+  // Stop as soon as a roll fails — seller loses track of what they were saying.
+  const baseProb = SELLER_HINT_PROB[car.seller_archetype] ?? 0.10;
+  const hints = [];
 
-    if (defect) {
-      // Mark it revealed
-      await sql`
-        UPDATE defects
-        SET is_revealed_to_player = true
-        WHERE car_id = ${carId}
-          AND defect_type = ${defect.defect_type}
-          AND is_revealed_to_player = false
-      `;
-      hint = {
-        defectType: defect.defect_type,
-        category:   defect.category,
-        severity:   defect.severity,
-      };
-    }
+  for (let i = 0; i < hiddenDefects.length; i++) {
+    const prob = baseProb * Math.pow(HINT_DECAY_FACTOR, i);
+    if (Math.random() >= prob) break;  // failed roll — no more hints this chat
+    hints.push(hiddenDefects[i]);
   }
+
+  // Mark revealed defects
+  if (hints.length > 0) {
+    const hintIds = hints.map(h => h.id);
+    await sql`
+      UPDATE defects
+      SET is_revealed_to_player = true
+      WHERE id = ANY(${hintIds})
+        AND is_revealed_to_player = false
+    `;
+  }
+
+  const hintPayload = hints.map(h => ({
+    defectType: h.defect_type,
+    category:   h.category,
+    severity:   h.severity,
+  }));
 
   const dialogue = await generateDialogue('seller_chat_hint', {
     seller_archetype:    car.seller_archetype,
     car_make_model_year: `${car.make} ${car.model}, ${car.year} г.`,
-    hint_category:       hint?.category ?? null,
-    hint_severity:       hint?.severity ?? null,
-  }, request.log).catch(() => hint
+    hint_category:       hints[0]?.category ?? null,
+    hint_severity:       hints[0]?.severity ?? null,
+  }, request.log).catch(() => hints.length > 0
     ? 'Ну, мелочи по кузову есть, как без них. Ничего серьёзного.'
     : 'Слушай, хорошая машина, я бы сам на ней ещё ездил.'
   );
 
-  // Update revealed_count now that we know whether a hint fired
-  if (hint) {
+  // Update revealed_count
+  if (hints.length > 0) {
     await sql`
       UPDATE pre_purchase_inspections
-      SET revealed_count = 1
+      SET revealed_count = ${hints.length}
       WHERE car_id = ${carId} AND player_id = ${playerId} AND tier = 'chat'
     `;
   }
 
   return reply.send({
-    data: { dialogue, hint },
+    data: { dialogue, hints: hintPayload },
     error: null,
-    meta: null,
+    meta: { hintsRevealed: hints.length },
   });
 }
 

@@ -8,6 +8,7 @@ import {
   FlatList,
   ImageBackground,
 } from "react-native";
+import { router } from "expo-router";
 
 
 interface MarketListCardProps {
@@ -34,10 +35,20 @@ export function MarketListingCard({
         <View style={styles.footer}>
           <Text style={styles.price}>{listing.asking_price} BYN</Text>
 
-          <Pressable style={({ pressed }) => [
-            styles.viewButton,
-            pressed && styles.viewButtonPressed,
-          ]}>
+          <Pressable 
+            style={({ pressed }) => [
+              styles.viewButton,
+              pressed && styles.viewButtonPressed,
+            ]}  
+            onPress={() => {
+              router.push({
+                pathname: "/market/[id]",
+                params: {
+                  id: listing.id,
+                },
+              });
+            }}
+          >
             <Text style={styles.viewText}>ОСМОТРЕТЬ</Text>
           </Pressable>
         </View>
@@ -112,7 +123,7 @@ const styles = StyleSheet.create({
   },
 
   viewButtonPressed: {
-    opacity: 0.8
+    backgroundColor: colors.blueButtonColorPressed
   },
 
   viewText: {

@@ -105,6 +105,72 @@ const DEFECT_DEFS = [
     qfDiscovery:  null,
     resaleImpact: -0.35,
   },
+  {
+    id: 'fender_dented',
+    category: 'body',
+    severity: 'minor',
+    detectionTier: 1,
+    occurrence: { poor: 0.50, fair: 0.28, good: 0.08 },
+    properRepair: [120, 320],
+    quickFix:     [30,   70],
+    qfDiscovery:  0.20,
+    resaleImpact: -0.07,
+  },
+  {
+    id: 'bumper_scratched',
+    category: 'body',
+    severity: 'minor',
+    detectionTier: 1,
+    occurrence: { poor: 0.55, fair: 0.32, good: 0.10 },
+    properRepair: [80,  220],
+    quickFix:     [20,   55],
+    qfDiscovery:  0.20,
+    resaleImpact: -0.05,
+  },
+  {
+    id: 'door_rear_right_scratched',
+    category: 'body',
+    severity: 'minor',
+    detectionTier: 1,
+    occurrence: { poor: 0.45, fair: 0.25, good: 0.08 },
+    properRepair: [100, 260],
+    quickFix:     [25,   60],
+    qfDiscovery:  0.18,
+    resaleImpact: -0.05,
+  },
+  {
+    id: 'door_rear_left_scratched',
+    category: 'body',
+    severity: 'minor',
+    detectionTier: 1,
+    occurrence: { poor: 0.45, fair: 0.25, good: 0.08 },
+    properRepair: [100, 260],
+    quickFix:     [25,   60],
+    qfDiscovery:  0.18,
+    resaleImpact: -0.05,
+  },
+  {
+    id: 'door_front_right_scratched',
+    category: 'body',
+    severity: 'minor',
+    detectionTier: 1,
+    occurrence: { poor: 0.42, fair: 0.22, good: 0.07 },
+    properRepair: [100, 260],
+    quickFix:     [25,   60],
+    qfDiscovery:  0.18,
+    resaleImpact: -0.05,
+  },
+  {
+    id: 'door_front_left_scratched',
+    category: 'body',
+    severity: 'minor',
+    detectionTier: 1,
+    occurrence: { poor: 0.42, fair: 0.22, good: 0.07 },
+    properRepair: [100, 260],
+    quickFix:     [25,   60],
+    qfDiscovery:  0.18,
+    resaleImpact: -0.05,
+  },
 
   // ── Engine ───────────────────────────────────────────────────────────────
   {
@@ -183,6 +249,61 @@ const DEFECT_DEFS = [
     quickFix:     [150, 350],
     qfDiscovery:  0.65,
     resaleImpact: -0.30,
+  },
+  {
+    id: 'engine_cold_idle',
+    category: 'engine',
+    severity: 'minor',
+    detectionTier: 1,
+    occurrence: { poor: 0.45, fair: 0.25, good: 0.07 },
+    properRepair: [100, 280],
+    quickFix:     [25,   65],
+    qfDiscovery:  0.35,
+    resaleImpact: -0.08,
+  },
+  {
+    id: 'engine_knocking',
+    category: 'engine',
+    severity: 'major',
+    detectionTier: 2,
+    occurrence: { poor: 0.30, fair: 0.12, good: 0.02 },
+    properRepair: [800, 2200],
+    quickFix:     [120, 300],
+    qfDiscovery:  0.60,
+    resaleImpact: -0.32,
+  },
+  {
+    id: 'engine_misfire',
+    category: 'engine',
+    severity: 'major',
+    detectionTier: 2,
+    occurrence: { poor: 0.28, fair: 0.12, good: 0.02 },
+    properRepair: [350, 950],
+    quickFix:     [80,  200],
+    qfDiscovery:  0.55,
+    resaleImpact: -0.25,
+  },
+  {
+    id: 'blue_smoke_exhaust',
+    category: 'engine',
+    severity: 'major',
+    detectionTier: 1,                  // visible symptom — easy to spot
+    occurrence: { poor: 0.25, fair: 0.10, good: 0.02 },
+    properRepair: [600, 1800],
+    quickFix:     [100, 250],
+    qfDiscovery:  0.65,
+    resaleImpact: -0.28,
+  },
+  {
+    id: 'soot_exhaust',
+    category: 'engine',
+    severity: 'minor',
+    detectionTier: 1,
+    occurrence: { poor: 0.40, fair: 0.22, good: 0.06 },
+    properRepair: [120, 350],
+    quickFix:     [30,   80],
+    qfDiscovery:  0.40,
+    resaleImpact: -0.10,
   },
 
   // ── Transmission ─────────────────────────────────────────────────────────
@@ -443,8 +564,22 @@ function randInt(min, max) {
   return min + Math.floor(Math.random() * (max - min + 1));
 }
 
-function rollCost([min, max]) {
-  return randInt(min, max);
+/**
+ * Scale repair cost ranges by car market value.
+ * Cheap beaters stay affordable; expensive cars remain challenging at any player level.
+ * Uses log-scale brackets so the curve feels natural, not exponential.
+ */
+function carValueMultiplier(marketValue) {
+  if (marketValue < 2000)  return 0.60;
+  if (marketValue < 5000)  return 0.85;
+  if (marketValue < 12000) return 1.00;
+  if (marketValue < 25000) return 1.35;
+  if (marketValue < 50000) return 1.75;
+  return 2.20;
+}
+
+function rollCost([min, max], multiplier = 1.0) {
+  return Math.round(randInt(min, max) * multiplier);
 }
 
 /**
@@ -471,10 +606,12 @@ function repairTimeMinutes(severity, quickFix) {
  * @param {'bad'|'below_avg'|'fair'|'good'|'bargain'|'bargain_trap'} qualityTier
  * @param {object} [opts]
  * @param {object} [opts.sqlClient] - optional postgres transaction client
+ * @param {number} [opts.marketValue] - car market value in BYN; scales repair costs
  * @returns {Promise<void>}
  */
 export async function rollDefects(carId, conditionTier, qualityTier, opts = {}) {
   const client = opts.sqlClient || sql;
+  const multiplier = carValueMultiplier(opts.marketValue ?? 5000);
 
   const counts = DEFECT_COUNT_BY_QUALITY[qualityTier] || DEFECT_COUNT_BY_QUALITY.fair;
   const maxCount = randInt(counts.min, counts.max);
@@ -529,8 +666,8 @@ export async function rollDefects(carId, conditionTier, qualityTier, opts = {}) 
     detection_tier: def.detectionTier,
     is_revealed_to_player: false,
     is_quick_fixed: false,
-    proper_repair_cost: def.properRepair ? rollCost(def.properRepair) : null,
-    quick_fix_cost: def.quickFix ? rollCost(def.quickFix) : null,
+    proper_repair_cost: def.properRepair ? rollCost(def.properRepair, multiplier) : null,
+    quick_fix_cost: def.quickFix ? rollCost(def.quickFix, multiplier) : null,
     qf_discovery_base: def.qfDiscovery ?? null,
     resale_impact: def.resaleImpact,
     repair_time_minutes: repairTimeMinutes(def.severity, false),
