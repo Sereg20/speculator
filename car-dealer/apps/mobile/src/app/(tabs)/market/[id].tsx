@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, Image } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { colors } from "@/theme/colors";
-import { listingDialogueQuery, chatWithSeller, MarketListing, negotiateListing, purchaseListing, preInspectListing } from "@/api/market";
+import { listingDialogueQuery, chatWithSeller, MarketListing, negotiateListing, purchaseListing, preInspectListing, InspectionActionId } from "@/api/market";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Dialog } from "@/components/dialog/Dialog";
 import { NegotiateAction } from "@/components/dialog/NegotiateAction";
@@ -13,6 +13,7 @@ import { ApiError } from "@/api/client";
 import { NegotiatePriceSelectorDialog } from "@/components/dialog/NegotiatePriceSelectorDialog";
 import { InspectDialog } from "@/components/dialog/InspectDialog";
 import { npcAvatars } from "@/assets/images/npc-avatars/npcAvatars";
+import { SuccessPurchaseDialog } from "@/components/dialog/SuccessPurchaseDialog";
 
 const initMessage: IDialogMessage = {
   id: "1",
@@ -44,7 +45,9 @@ export default function MarketInspectionScreen() {
   const [negotiateDisabled, setNegotiateDisabled] = useState<boolean>(false);
   const [isPriceModalVisible, setPriceModalVisible] = useState<boolean>(false);
   const [isInspectModalVisible, setInspectModalVisible] = useState<boolean>(false);
+  const [isSuccessPurchaseVisible, setSuccessPurchaseVisible] = useState<boolean>(false);
   const [currentPrice, setCurrentPrice] = useState<number>(listing?.asking_price || 0);
+  const minPrice = Math.ceil((listing?.asking_price || 0) * 0.7);
 
 
   // /chat request
@@ -89,11 +92,7 @@ export default function MarketInspectionScreen() {
   const purchaseMutation = useMutation({
     mutationFn: () => purchaseListing(id),
     onSuccess: () => {
-      setTimeout(() => {
-        router.replace({
-          pathname: "/market"
-        });
-      }, 800);
+      setSuccessPurchaseVisible(true);
     },
     onError: (error) => {
       console.log(JSON.stringify(error))
@@ -109,7 +108,7 @@ export default function MarketInspectionScreen() {
 
   // /preinspect request
   const preInspectMutation = useMutation({
-    mutationFn: (tier: string) => preInspectListing(id, tier),
+    mutationFn: (actionId: InspectionActionId) => preInspectListing(id, actionId),
     onSuccess: () => {
      
     },
@@ -172,10 +171,10 @@ export default function MarketInspectionScreen() {
     chatMutation.mutate();
   }
 
-  function onPreInspect(tier: string) {
+  function onPreInspect(actionId: InspectionActionId) {
     setInspectModalVisible(false);
     addMessage('А ну открой капот...', 'player');
-    preInspectMutation.mutate(tier);
+    preInspectMutation.mutate(actionId);
   }
 
   function onConfirmProposedPrice(proposedPrice: number) {
@@ -183,6 +182,14 @@ export default function MarketInspectionScreen() {
     negotiateMutation.mutate(proposedPrice);
     setPriceModalVisible(false);
     addMessage(`Предложение хорошее, но цена велика. Как насчет ${proposedPrice}?`, 'player');
+  }
+
+  function onSuccessPurchaseDialogClose() {
+    setTimeout(() => {
+      router.replace({
+        pathname: "/market"
+      });
+    }, 800);
   }
 
   return (
@@ -220,8 +227,9 @@ export default function MarketInspectionScreen() {
 
       </View>
 
-      <NegotiatePriceSelectorDialog visible={isPriceModalVisible} onClose={() => { setPriceModalVisible(false) }} onConfirm={onConfirmProposedPrice} initialPrice={listing?.asking_price || 0} />
+      <NegotiatePriceSelectorDialog visible={isPriceModalVisible} onClose={() => { setPriceModalVisible(false) }} onConfirm={onConfirmProposedPrice} initialPrice={currentPrice} minPrice={minPrice}/>
       <InspectDialog visible={isInspectModalVisible} onClose={() => {setInspectModalVisible(false)}} onChat={onChat} onPreInspect={onPreInspect} chatDisabled={chatDisabled} preInspectDisabled={preInspectDisabled}/>
+      <SuccessPurchaseDialog car={listing} visible={isSuccessPurchaseVisible} onClose={onSuccessPurchaseDialogClose}/>
     </View>
   );
 }

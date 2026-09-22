@@ -13,7 +13,7 @@ import { transitionCar } from '../services/carStateMachine.js';
 import { consumeEnergy } from '../services/energyService.js';
 import { awardXP } from '../services/xpService.js';
 import { resolveMarketNegotiation } from '../services/negotiationEngine.js';
-import { runPrePurchaseInspection, PRE_PURCHASE_ENERGY_COST, INSPECTION_XP } from '../services/inspectionEngine.js';
+import { runPrePurchaseInspection, INSPECTION_ACTIONS, inspectionXP, resolveAvailableActions } from '../services/inspectionEngine.js';
 import { sql } from '../db/client.js';
 import { requireAuth } from '../middleware/auth.js';
 import { LISTING_REFRESH_MANUAL_COST, INGAME_DAY_REAL_MINUTES } from '../config.js';
@@ -599,7 +599,7 @@ async function chatWithSeller(request, reply) {
     await sql`
       UPDATE pre_purchase_inspections
       SET revealed_count = ${hints.length}
-      WHERE car_id = ${carId} AND player_id = ${playerId} AND tier = 'chat'
+      WHERE car_id = ${carId} AND player_id = ${playerId} AND action_id = 'chat'
     `;
   }
 
@@ -612,35 +612,36 @@ async function chatWithSeller(request, reply) {
 
 /**
  * POST /market/listings/:carId/pre-inspect
- * Body: { tier: 'visual'|'tap_test'|'obd'|'full' }
+ * Body: { actionId: string }
  *
- * Inspect a market car before buying. Uses PRE_PURCHASE_ENERGY_COST (post-purchase + 1)
+ * Inspect a market car before buying. Uses action.prePurchaseEnergy (+1 vs garage)
  * and 0.65× detection accuracy. Revealed defects persist after purchase.
  */
 async function prePurchaseInspect(request, reply) {
   const { carId } = request.params;
   const playerId = request.playerId;
-  const { tier } = request.body || {};
+  const { actionId } = request.body || {};
 
-  if (!tier || !PRE_PURCHASE_ENERGY_COST[tier]) {
+  const action = INSPECTION_ACTIONS[actionId];
+  if (!action) {
     return reply.code(400).send({
       data: null,
-      error: 'tier must be one of: visual, tap_test, obd, full',
+      error: `Unknown actionId. Valid actions: ${Object.keys(INSPECTION_ACTIONS).join(', ')}`,
       meta: null,
     });
   }
 
-  const energyCost = PRE_PURCHASE_ENERGY_COST[tier];
+  const energyCost = action.prePurchaseEnergy;
 
-  // Check if this pre-purchase tier was already done by this player on this car
+  // Check if this action was already performed by this player on this listing
   const [existing] = await sql`
     SELECT id, revealed_count FROM pre_purchase_inspections
-    WHERE car_id = ${carId} AND player_id = ${playerId} AND tier = ${tier}
+    WHERE car_id = ${carId} AND player_id = ${playerId} AND action_id = ${actionId}
   `;
   if (existing) {
     return reply.code(409).send({
       data: null,
-      error: `${tier} pre-purchase inspection already performed on this listing`,
+      error: `Action '${actionId}' already performed on this listing`,
       meta: { alreadyRevealedCount: existing.revealed_count },
     });
   }
@@ -652,37 +653,89 @@ async function prePurchaseInspect(request, reply) {
 
   let result;
   try {
-    result = await runPrePurchaseInspection(carId, playerId, tier);
+    result = await runPrePurchaseInspection(carId, playerId, actionId);
   } catch (err) {
-    // Refund energy on prerequisite/validation failure
     await sql`
       UPDATE players
-      SET energy_current = LEAST(energy_current + ${energyCost}, 30),
-          updated_at = NOW()
+      SET energy_current = LEAST(energy_current + ${energyCost}, 30), updated_at = NOW()
       WHERE id = ${playerId}
     `;
-    const statusCode = err.statusCode || 500;
-    return reply.code(statusCode).send({ data: null, error: err.message, meta: null });
+    return reply.code(err.statusCode || 500).send({ data: null, error: err.message, meta: null });
   }
 
-  // Log the inspection (enforces uniqueness)
   await sql`
-    INSERT INTO pre_purchase_inspections (car_id, player_id, tier, revealed_count, energy_cost)
-    VALUES (${carId}, ${playerId}, ${tier}, ${result.revealed.length}, ${energyCost})
-    ON CONFLICT (car_id, player_id, tier) DO NOTHING
+    INSERT INTO pre_purchase_inspections (car_id, player_id, action_id, revealed_count, energy_cost)
+    VALUES (${carId}, ${playerId}, ${actionId}, ${result.revealed.length}, ${energyCost})
+    ON CONFLICT (car_id, player_id, action_id) DO NOTHING
   `;
 
-  // Award same XP as garage inspection — same learning value
-  const xpAmount = INSPECTION_XP[tier] || 10;
-  await awardXP(playerId, xpAmount, `pre_purchase_inspection_${tier}`);
+  const xpAmount = inspectionXP(actionId);
+  await awardXP(playerId, xpAmount, `pre_purchase_inspection_${actionId}`);
 
   return reply.send({
     data: { revealed: result.revealed },
     error: null,
     meta: {
+      actionId,
       newlyRevealedCount: result.revealed.length,
+      energySpent: energyCost,
       xpAwarded: xpAmount,
     },
+  });
+}
+
+/**
+ * GET /market/listings/:carId/inspections
+ * Returns available inspection actions for a market listing.
+ * Same shape as GET /cars/:carId/inspections so the UI can reuse the same component.
+ */
+async function getListingInspections(request, reply) {
+  const { carId } = request.params;
+  const playerId = request.playerId;
+
+  const [car] = await sql`
+    SELECT id FROM cars
+    WHERE id = ${carId}
+      AND player_id = ${playerId}
+      AND state = 'available_in_market'
+      AND market_listing_expires_at > NOW()
+  `;
+  if (!car) {
+    return reply.code(404).send({ data: null, error: 'Listing not found', meta: null });
+  }
+
+  const completedRows = await sql`
+    SELECT action_id, revealed_count, energy_cost, performed_at
+    FROM pre_purchase_inspections
+    WHERE car_id = ${carId} AND player_id = ${playerId}
+    ORDER BY performed_at ASC
+  `;
+  const completedSet = new Set(completedRows.map(r => r.action_id));
+
+  const [playerSkills, playerEquipment] = await Promise.all([
+    sql`SELECT skill_id FROM player_skills WHERE player_id = ${playerId}`,
+    sql`SELECT equipment_id FROM player_equipment WHERE player_id = ${playerId}`,
+  ]);
+  const skillSet = new Set(playerSkills.map(r => r.skill_id));
+  const equipSet = new Set(playerEquipment.map(r => r.equipment_id));
+
+  const availableIds = resolveAvailableActions(skillSet, equipSet);
+
+  const availableActions = availableIds.map(id => {
+    const a = INSPECTION_ACTIONS[id];
+    return {
+      id,
+      label:       a.label,
+      categories:  a.categories,
+      energy:      a.prePurchaseEnergy,
+      alreadyDone: completedSet.has(id),
+    };
+  });
+
+  return reply.send({
+    data: { completedActions: completedRows },
+    error: null,
+    meta: { availableActions },
   });
 }
 
@@ -691,6 +744,7 @@ export default async function marketRoutes(fastify) {
 
   fastify.get('/market/listings',                              auth, getListings);
   fastify.get('/market/listings/:carId/dialogue',              auth, getDialogue);
+  fastify.get('/market/listings/:carId/inspections',           auth, getListingInspections);
   fastify.post('/market/listings/:carId/purchase',             auth, purchaseCar);
   fastify.post('/market/listings/:carId/negotiate',            auth, negotiatePurchase);
   fastify.post('/market/listings/:carId/chat',                 auth, chatWithSeller);

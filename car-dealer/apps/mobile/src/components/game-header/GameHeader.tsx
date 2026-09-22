@@ -1,29 +1,22 @@
 // src/components/game-header/GameHeader.tsx
 
 import { View, Text, StyleSheet } from "react-native";
-
 import { useGame } from "../../app/context/GameContext";
 import { colors } from "@/theme/colors";
 
-export function GameHeader() {
-  const {
-    level,
-    xp,
-    xpToNextLevel,
-    money,
-    energy,
-    maxEnergy,
-  } = useGame();
+import { useQuery } from "@tanstack/react-query";
+import { playerQuery } from "@/api/player";
 
-  const xpProgress = xp / xpToNextLevel;
-  const energyProgress = energy / maxEnergy;
+export function GameHeader() {
+  const { data: player } = useQuery(playerQuery());
+  const xpProgress = player!.xp / (player!.xp + player!.xp_to_next_level);
 
   return (
     <View style={styles.container}>
       {/* Level + XP */}
       <View style={styles.levelContainer}>
         <Text style={styles.title}>
-          Уровень
+          Уровень {player?.level}
         </Text>
 
         <View style={styles.progressBackground}>
@@ -39,7 +32,7 @@ export function GameHeader() {
             ]}
           />
             <Text style={styles.xp}>
-              XP {xp} / {xpToNextLevel}
+              XP {player?.xp} / {`${(player?.xp || 0) + (player?.xp_to_next_level || 0)}`}
             </Text>
         </View>
       </View>
@@ -50,7 +43,7 @@ export function GameHeader() {
 
         <View>
           <Text style={styles.value}>
-            {money.toLocaleString()}
+            {player?.cash.toLocaleString()}
           </Text>
         </View>
       </View>
@@ -62,7 +55,7 @@ export function GameHeader() {
         <View>
 
           <Text style={styles.value}>
-            ⚡ {energy}/{maxEnergy}
+            ⚡ {player?.energy_current}/100
           </Text>
         </View>
       </View>

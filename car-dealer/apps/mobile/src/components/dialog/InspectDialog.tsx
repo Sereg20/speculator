@@ -4,13 +4,14 @@ import {
 } from "react-native";
 import { GameModal } from "../modal/GameModal";
 import { InspectDialogAction } from "./InspectDialogAction";
+import { InspectionActionId } from "@/api/market";
 
 
 interface InspectDialogProps {
   visible: boolean,
   onClose: () => void,
   onChat: () => void,
-  onPreInspect: (tier: string) => void
+  onPreInspect: (actionId: InspectionActionId) => void
   chatDisabled: boolean,
   preInspectDisabled: boolean
 }
@@ -28,9 +29,6 @@ export function InspectDialog({
     >
       <View style={styles.container}>
       <InspectDialogAction disabled={chatDisabled} text={'СПРОСИТЬ'} onPress={onChat} energyCost={3} color='#EBA13C'/>
-      <InspectDialogAction disabled={preInspectDisabled} text={'ОСМОТРЕТЬ'} onPress={() => {onPreInspect('visual')}} energyCost={3} color='#429958'/>
-      <InspectDialogAction disabled={chatDisabled} text={'ПРОВЕРИТЬ'} onPress={() => {onPreInspect('tap_test')}} energyCost={3} color='#307DC1'/>
-      <InspectDialogAction disabled={preInspectDisabled} text={'СКАНЕР'} onPress={() => {onPreInspect('obd')}} energyCost={3} color='#C5453C'/>
       </View>
     </GameModal>
   );

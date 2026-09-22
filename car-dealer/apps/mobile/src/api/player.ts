@@ -3,18 +3,33 @@ import { apiClient } from "./client";
 
 export type Player = {
   id: string;
-  name: string;
-  level: number;
+  display_name: string;
+  cash: number;
   xp: number;
-  money: number;
+  level: number;
+  reputation_score: number;
+  energy_current: number;
+  garage_slots: number;
+  in_game_day: number;
+  reputation_tier: string;
+  xp_to_next_level: number;
 };
 
-export const getPlayer = () => {
-  return apiClient<Player>("/player");
+type PlayerResponse = {
+  data: Player;
+  error: string | null;
+  meta: unknown;
 };
+
+export async function getPlayer(): Promise<Player> {
+  const response = await apiClient<PlayerResponse>("/player/me");
+
+  return response.data;
+}
 
 export const playerQuery = () =>
   queryOptions({
-    queryKey: ["player"],
+    queryKey: ["player", "me"],
     queryFn: getPlayer,
+    staleTime: 30_000,
   });

@@ -1,28 +1,21 @@
 /**
- * Inspection route — Phase 3
+ * Inspection routes
  *
  * POST /cars/:carId/inspect
- *   Body: { tier: 'visual'|'tap_test'|'obd'|'full' }
- *   Reveals defects probabilistically. Returns ONLY revealed defects.
- *   Never returns total defect count or IDs of unrevealed defects.
+ *   Body: { actionId: string }
+ *   Performs one inspection action on an owned car.
+ *   Returns only the defects revealed by this action.
  *
  * GET /cars/:carId/inspections
- *   Returns inspection history for the car (tiers performed, counts found).
+ *   Returns completed actions + full list of available actions with energy costs.
+ *   UI uses this to render the inspection picker.
  */
 
-import { runInspection, INSPECTION_XP } from '../services/inspectionEngine.js';
+import { runInspection, inspectionXP, INSPECTION_ACTIONS, resolveAvailableActions } from '../services/inspectionEngine.js';
 import { consumeEnergy } from '../services/energyService.js';
 import { awardXP } from '../services/xpService.js';
 import { sql } from '../db/client.js';
 import { requireAuth } from '../middleware/auth.js';
-
-// Energy costs per inspection tier (GMS §1.3)
-const ENERGY_COST = {
-  visual:   2,
-  tap_test: 3,
-  obd:      3,
-  full:     4,
-};
 
 /**
  * POST /cars/:carId/inspect
@@ -30,12 +23,13 @@ const ENERGY_COST = {
 async function inspect(request, reply) {
   const { carId } = request.params;
   const playerId = request.playerId;
-  const { tier } = request.body || {};
+  const { actionId } = request.body || {};
 
-  if (!tier || !ENERGY_COST[tier]) {
+  const action = INSPECTION_ACTIONS[actionId];
+  if (!action) {
     return reply.code(400).send({
       data: null,
-      error: 'tier must be one of: visual, tap_test, obd, full',
+      error: `Unknown actionId. Valid actions: ${Object.keys(INSPECTION_ACTIONS).join(', ')}`,
       meta: null,
     });
   }
@@ -51,21 +45,21 @@ async function inspect(request, reply) {
     return reply.code(404).send({ data: null, error: 'Car not found or not owned', meta: null });
   }
 
-  // Check if this tier was already performed on this car (re-running same tier yields nothing)
-  const [existingInspection] = await sql`
+  // Each action can only be performed once per car
+  const [existing] = await sql`
     SELECT id, revealed_count FROM inspections
-    WHERE car_id = ${carId} AND tier = ${tier}
+    WHERE car_id = ${carId} AND action_id = ${actionId}
   `;
-  if (existingInspection) {
+  if (existing) {
     return reply.code(409).send({
       data: null,
-      error: `${tier} inspection already performed on this car`,
-      meta: { alreadyRevealedCount: existingInspection.revealed_count },
+      error: `Action '${actionId}' already performed on this car`,
+      meta: { alreadyRevealedCount: existing.revealed_count },
     });
   }
 
-  // Consume energy atomically first
-  const energyCost = ENERGY_COST[tier];
+  // Consume energy first
+  const energyCost = action.energy;
   const hasEnergy = await consumeEnergy(playerId, energyCost);
   if (!hasEnergy) {
     return reply.code(400).send({ data: null, error: 'Not enough energy', meta: null });
@@ -73,35 +67,33 @@ async function inspect(request, reply) {
 
   let result;
   try {
-    result = await runInspection(carId, playerId, tier);
+    result = await runInspection(carId, playerId, actionId);
   } catch (err) {
-    // Refund energy on prerequisite/validation failure
+    // Refund energy on prerequisite failure
     await sql`
       UPDATE players
-      SET energy_current = LEAST(energy_current + ${energyCost}, 30),
-          updated_at = NOW()
+      SET energy_current = LEAST(energy_current + ${energyCost}, 30), updated_at = NOW()
       WHERE id = ${playerId}
     `;
-    const statusCode = err.statusCode || 500;
-    return reply.code(statusCode).send({ data: null, error: err.message, meta: null });
+    return reply.code(err.statusCode || 500).send({ data: null, error: err.message, meta: null });
   }
 
-  // Log the inspection (also enforces uniqueness via UNIQUE constraint)
   await sql`
-    INSERT INTO inspections (car_id, player_id, tier, revealed_count, energy_cost)
-    VALUES (${carId}, ${playerId}, ${tier}, ${result.revealed.length}, ${energyCost})
-    ON CONFLICT (car_id, tier) DO NOTHING
+    INSERT INTO inspections (car_id, player_id, action_id, revealed_count, energy_cost)
+    VALUES (${carId}, ${playerId}, ${actionId}, ${result.revealed.length}, ${energyCost})
+    ON CONFLICT (car_id, action_id) DO NOTHING
   `;
 
-  // Award XP once per car per tier
-  const xpAmount = INSPECTION_XP[tier] || 10;
-  await awardXP(playerId, xpAmount, `inspection_${tier}`);
+  const xpAmount = inspectionXP(actionId);
+  await awardXP(playerId, xpAmount, `inspection_${actionId}`);
 
   return reply.send({
     data: { revealed: result.revealed },
     error: null,
     meta: {
+      actionId,
       newlyRevealedCount: result.revealed.length,
+      energySpent: energyCost,
       xpAwarded: xpAmount,
     },
   });
@@ -109,13 +101,12 @@ async function inspect(request, reply) {
 
 /**
  * GET /cars/:carId/inspections
- * Returns which inspection tiers have been done on the car.
+ * Returns completed actions and the full available-action list for the UI picker.
  */
 async function getInspectionHistory(request, reply) {
   const { carId } = request.params;
   const playerId = request.playerId;
 
-  // Verify ownership
   const [car] = await sql`
     SELECT id FROM cars
     WHERE id = ${carId} AND player_id = ${playerId}
@@ -125,29 +116,44 @@ async function getInspectionHistory(request, reply) {
     return reply.code(404).send({ data: null, error: 'Car not found or not owned', meta: null });
   }
 
-  const inspections = await sql`
-    SELECT tier, revealed_count, performed_at
+  // What the player has done on this car
+  const completed = await sql`
+    SELECT action_id, revealed_count, energy_cost, performed_at
     FROM inspections
     WHERE car_id = ${carId}
     ORDER BY performed_at ASC
   `;
+  const completedSet = new Set(completed.map(r => r.action_id));
 
-  const completedTiers = new Set(inspections.map(i => i.tier));
+  // Player's skills and equipment — to compute available actions
+  const [playerSkills, playerEquipment] = await Promise.all([
+    sql`SELECT skill_id FROM player_skills WHERE player_id = ${playerId}`,
+    sql`SELECT equipment_id FROM player_equipment WHERE player_id = ${playerId}`,
+  ]);
+  const skillSet = new Set(playerSkills.map(r => r.skill_id));
+  const equipSet = new Set(playerEquipment.map(r => r.equipment_id));
+
+  const availableIds = resolveAvailableActions(skillSet, equipSet);
+
+  const availableActions = availableIds.map(id => {
+    const a = INSPECTION_ACTIONS[id];
+    return {
+      id,
+      label:      a.label,
+      categories: a.categories,
+      energy:     a.energy,
+      alreadyDone: completedSet.has(id),
+    };
+  });
 
   return reply.send({
-    data: { inspections },
+    data: { completedActions: completed },
     error: null,
-    meta: {
-      tiersCompleted: [...completedTiers],
-      canDoVisual:   !completedTiers.has('visual'),
-      canDoTapTest:  !completedTiers.has('tap_test'),
-      canDoObd:      !completedTiers.has('obd'),
-      canDoFull:     !completedTiers.has('full'),
-    },
+    meta: { availableActions },
   });
 }
 
 export default async function inspectionRoutes(fastify) {
-  fastify.post('/cars/:carId/inspect',       { preHandler: requireAuth }, inspect);
-  fastify.get('/cars/:carId/inspections',    { preHandler: requireAuth }, getInspectionHistory);
+  fastify.post('/cars/:carId/inspect',    { preHandler: requireAuth }, inspect);
+  fastify.get('/cars/:carId/inspections', { preHandler: requireAuth }, getInspectionHistory);
 }

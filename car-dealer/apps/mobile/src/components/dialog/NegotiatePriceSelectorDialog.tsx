@@ -17,17 +17,17 @@ import { useState } from "react";
 
 interface NegotiatePriceSelectorDialogProps {
   initialPrice: number,
+  minPrice: number,
   visible: boolean,
   onClose: () => void,
   onConfirm: (proposedPrice: number) => void
 }
 
 export function NegotiatePriceSelectorDialog({
-  visible, onClose, onConfirm, initialPrice
+  visible, onClose, onConfirm, initialPrice, minPrice
 }: NegotiatePriceSelectorDialogProps) {
   const [proposedPrice, setProposedPrice] = useState(initialPrice);
-  const maxPrice = Math.floor(initialPrice * 1.3);
-  const minPrice = Math.ceil(initialPrice * 0.7);
+  const maxPrice = initialPrice;
 
   return (
     <GameModal

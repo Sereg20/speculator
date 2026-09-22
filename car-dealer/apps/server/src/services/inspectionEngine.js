@@ -1,203 +1,314 @@
 /**
  * Inspection Engine — server-side only.
  *
- * Runs probabilistic detection rolls against a car's hidden defects.
- * Only defects that pass the roll are revealed (is_revealed_to_player = true).
- * The caller ONLY receives the revealed defect objects — never total counts,
- * never IDs of defects that failed the roll.
+ * Players choose a discrete inspection ACTION from their available list.
+ * Each action is unlocked by owning a specific skill or tool, targets
+ * one or more defect categories, and has its own energy cost and
+ * per-detection-tier probability profile.
  *
- * Inspection tiers (GMS §7.1):
- *   1  — Visual Check       (no equipment)
- *   2A — Tap Test           (requires tap_test skill + torch_mirror equipment)
- *   2B — OBD Scan           (requires generic_obdii or obdii_live_data equipment)
- *   3  — Full Diagnostic    (requires diagnostic_stand equipment)
- *
- * Skill modifiers (GMS §7.2) are applied on top of base tier probabilities.
+ * Key rules:
+ *  - No probability is ever 0.  Cheap/basic actions have very low but
+ *    non-zero chances on harder tiers — finding a tier-3 defect with
+ *    a visual walkround is rare but not impossible.
+ *  - Each action can only be performed once per car (UNIQUE constraint).
+ *  - Pre-purchase inspections use prePurchaseEnergy and a 0.65× accuracy
+ *    multiplier — harder on the street than in your own garage.
+ *  - Pattern-recognition bonus (+0.20) applies when a defect in the same
+ *    category was already revealed earlier on the same car.
+ *  - Undercarriage defects require an action with grantsUndercarAccess.
  */
 
 import { sql } from '../db/client.js';
 
-// ─── Base detection probabilities by inspection tier ─────────────────────────
-// Format: { [detectionTier]: probability }
-// "inspection tier" is what the player is performing (1/2A/2B/3)
-// "detection tier" is the defect's difficulty (1/2/3)
+// ─── Inspection action definitions ───────────────────────────────────────────
+// requires: null = always available
+//           { skill: 'id' } = player must own this skill
+//           { equipment: 'id' } = player must own this equipment
+// prob: detection probability per defect detection_tier (1/2/3)
+//       No zeros — minimum floor is 0.02 everywhere.
+// grantsUndercarAccess: true = can detect undercarriage defect IDs
 
-const BASE_PROB = {
-  visual:     { 1: 0.70, 2: 0.00, 3: 0.00 },
-  tap_test:   { 1: 0.85, 2: 0.65, 3: 0.00 },
-  obd_basic:  { 1: 0.85, 2: 0.65, 3: 0.00 },  // engine+electrical only at 2
-  obd_pro:    { 1: 0.85, 2: 0.80, 3: 0.00 },  // named scanner
-  full_diag:  { 1: 0.95, 2: 0.90, 3: 0.75 },
+export const INSPECTION_ACTIONS = {
+  visual_walkaround: {
+    label:             'Визуальный осмотр',
+    categories:        ['body', 'interior'],
+    energy:            1,
+    prePurchaseEnergy: 2,
+    requires:          null,
+    prob:              { 1: 0.30, 2: 0.05, 3: 0.02 },
+  },
+  listen_engine: {
+    label:             'Послушать двигатель',
+    categories:        ['engine'],
+    energy:            1,
+    prePurchaseEnergy: 2,
+    requires:          { skill: 'listen_engine' },
+    prob:              { 1: 0.45, 2: 0.06, 3: 0.02 },
+  },
+  cold_start_test: {
+    label:             'Холодный запуск',
+    categories:        ['engine'],
+    energy:            1,
+    prePurchaseEnergy: 2,
+    requires:          { skill: 'cold_start_test' },
+    prob:              { 1: 0.55, 2: 0.15, 3: 0.03 },
+  },
+  interior_smell: {
+    label:             'Осмотр и запах салона',
+    categories:        ['interior', 'electrical'],
+    energy:            1,
+    prePurchaseEnergy: 2,
+    requires:          { skill: 'interior_smell' },
+    prob:              { 1: 0.45, 2: 0.06, 3: 0.02 },
+  },
+  panel_feel: {
+    label:             'Проверка панелей на ощупь',
+    categories:        ['body'],
+    energy:            1,
+    prePurchaseEnergy: 2,
+    requires:          { skill: 'panel_feel' },
+    prob:              { 1: 0.50, 2: 0.15, 3: 0.03 },
+  },
+  tap_test: {
+    label:             'Простукивание кузова',
+    categories:        ['body'],
+    energy:            1,
+    prePurchaseEnergy: 2,
+    requires:          { skill: 'tap_test' },
+    prob:              { 1: 0.55, 2: 0.35, 3: 0.04 },
+  },
+  fluid_check: {
+    label:             'Проверка уровня жидкостей',
+    categories:        ['engine', 'transmission'],
+    energy:            1,
+    prePurchaseEnergy: 2,
+    requires:          { skill: 'fluid_level_check' },
+    prob:              { 1: 0.40, 2: 0.20, 3: 0.03 },
+  },
+  tyre_brake_visual: {
+    label:             'Осмотр шин и тормозов',
+    categories:        ['suspension'],
+    energy:            1,
+    prePurchaseEnergy: 2,
+    requires:          { skill: 'tyre_brake_visual' },
+    prob:              { 1: 0.55, 2: 0.10, 3: 0.02 },
+  },
+  undercar_crawl: {
+    label:             'Осмотр снизу',
+    categories:        ['suspension', 'body', 'transmission'],
+    energy:            2,
+    prePurchaseEnergy: 3,
+    requires:          { skill: 'undercar_crawl' },
+    prob:              { 1: 0.50, 2: 0.35, 3: 0.05 },
+    grantsUndercarAccess: true,
+  },
+  test_drive: {
+    label:             'Тест-драйв',
+    categories:        ['transmission', 'suspension'],
+    energy:            2,
+    prePurchaseEnergy: 3,
+    requires:          { skill: 'test_drive' },
+    prob:              { 1: 0.50, 2: 0.40, 3: 0.05 },
+  },
+  obd_basic: {
+    label:             'OBD сканер (базовый)',
+    categories:        ['engine', 'electrical'],
+    energy:            2,
+    prePurchaseEnergy: 3,
+    requires:          { equipment: 'generic_obdii' },
+    prob:              { 1: 0.70, 2: 0.55, 3: 0.05 },
+  },
+  obd_live: {
+    label:             'OBD с живыми данными',
+    categories:        ['engine', 'electrical', 'transmission'],
+    energy:            2,
+    prePurchaseEnergy: 3,
+    requires:          { equipment: 'obdii_live_data' },
+    prob:              { 1: 0.75, 2: 0.65, 3: 0.08 },
+  },
+  obd_pro: {
+    label:             'Профи OBD CAN',
+    categories:        ['engine', 'electrical', 'transmission'],
+    energy:            3,
+    prePurchaseEnergy: 4,
+    requires:          { equipment: 'full_obdii_can' },
+    prob:              { 1: 0.80, 2: 0.75, 3: 0.12 },
+  },
+  compression_test: {
+    label:             'Компрессометр',
+    categories:        ['engine'],
+    energy:            2,
+    prePurchaseEnergy: 3,
+    requires:          { equipment: 'compression_tester' },
+    prob:              { 1: 0.70, 2: 0.60, 3: 0.25 },
+  },
+  stethoscope: {
+    label:             'Автомобильный стетоскоп',
+    categories:        ['engine', 'suspension'],
+    energy:            2,
+    prePurchaseEnergy: 3,
+    requires:          { equipment: 'stethoscope' },
+    prob:              { 1: 0.65, 2: 0.55, 3: 0.06 },
+  },
+  smoke_test: {
+    label:             'Дымогенератор',
+    categories:        ['engine'],
+    energy:            2,
+    prePurchaseEnergy: 3,
+    requires:          { equipment: 'smoke_machine' },
+    prob:              { 1: 0.70, 2: 0.65, 3: 0.18 },
+  },
+  paint_gauge: {
+    label:             'Толщиномер краски',
+    categories:        ['body'],
+    energy:            1,
+    prePurchaseEnergy: 2,
+    requires:          { equipment: 'paint_gauge' },
+    prob:              { 1: 0.80, 2: 0.75, 3: 0.08 },
+  },
+  brake_fluid_test: {
+    label:             'Тестер тормозной жидкости',
+    categories:        ['suspension'],
+    energy:            1,
+    prePurchaseEnergy: 2,
+    requires:          { equipment: 'brake_fluid_tester' },
+    prob:              { 1: 0.80, 2: 0.30, 3: 0.04 },
+  },
+  battery_test: {
+    label:             'Тестер АКБ/генератора',
+    categories:        ['electrical'],
+    energy:            1,
+    prePurchaseEnergy: 2,
+    requires:          { equipment: 'battery_tester' },
+    prob:              { 1: 0.80, 2: 0.50, 3: 0.04 },
+  },
+  oscilloscope: {
+    label:             'Осциллограф',
+    categories:        ['electrical'],
+    energy:            2,
+    prePurchaseEnergy: 3,
+    requires:          { equipment: 'oscilloscope' },
+    prob:              { 1: 0.75, 2: 0.70, 3: 0.38 },
+  },
+  lift_ramp: {
+    label:             'Подъёмник',
+    categories:        ['suspension', 'body'],
+    energy:            3,
+    prePurchaseEnergy: 4,
+    requires:          { equipment: 'lift_ramp' },
+    prob:              { 1: 0.75, 2: 0.70, 3: 0.38 },
+    grantsUndercarAccess: true,
+  },
+  full_diagnostic: {
+    label:             'Диагностический стенд',
+    categories:        ['body', 'engine', 'transmission', 'suspension', 'electrical', 'interior'],
+    energy:            4,
+    prePurchaseEnergy: 5,
+    requires:          { equipment: 'diagnostic_stand' },
+    prob:              { 1: 0.90, 2: 0.85, 3: 0.68 },
+    grantsUndercarAccess: true,
+  },
 };
 
-// OBD scans only cover these categories for Tier-2 defects (GMS §7.1)
-const OBD_TIER2_CATEGORIES = new Set(['engine', 'electrical']);
-
-// ─── Equipment slug → inspection profile map ─────────────────────────────────
-// What tier of scan a piece of equipment enables
-const EQUIPMENT_SCAN_PROFILE = {
-  generic_obdii:    'obd_basic',
-  obdii_live_data:  'obd_pro',
-  full_obdii_can:   'obd_pro',   // same detection rates, broader protocol coverage
-  diagnostic_stand: 'full_diag',
-};
-
-// ─── Skill passive detection modifiers ───────────────────────────────────────
-// Applied as additive bonus to roll probability for matching defect categories
-// Source: GMS §7.2, §3.1 Tier-0/1 skill effects
-const SKILL_MODIFIERS = {
-  // passive: applies to all inspections automatically when owned
-  panel_feel:       { categories: ['body'],                    bonus: 0.20, applyTo: 'hidden_body_repairs' },
-  torch_mirror:     { categories: ['body', 'interior'],        bonus: 0.20, tier: [1] },
-  undercar_crawl:   { categories: ['suspension', 'body'],      bonus: 0.00, unlocks_undercarriage: true },
-  paint_gauge:      { categories: ['body'],                    bonus: 0.90, tier: [2, 3], defect_ids: ['accident_history', 'paint_damage'] },
-  // skill-based inspections add detection coverage
-  listen_engine:    { categories: ['engine'],                  bonus: 0.15, tier: [1] },
-  interior_smell:   { categories: ['interior', 'electrical'],  bonus: 0.10, tier: [1] },
-  cold_start_test:  { categories: ['engine'],                  bonus: 0.15, tier: [1], defect_ids: ['starting_issues', 'overheating', 'low_compression'] },
-  tyre_brake_visual:{ categories: ['suspension'],              bonus: 0.15, tier: [1] },
-  fluid_level_check:{ categories: ['engine', 'transmission'],  bonus: 0.10, tier: [1, 2] },
-  magnet_test:      { categories: ['body'],                    bonus: 0.10, tier: [2] },
-  test_drive:       { categories: ['transmission', 'suspension'], bonus: 0.15, tier: [2] },
-  tap_test:         { categories: ['body'],                    bonus: 0.10, tier: [2] },
-  stethoscope:      { categories: ['engine', 'suspension'],    bonus: 0.10, tier: [2] },
-  compression_tester: { categories: ['engine'],               bonus: 0.10, tier: [3], defect_ids: ['low_compression'] },
-  leakdown_tester:  { categories: ['engine'],                  bonus: 0.10, tier: [3] },
-  battery_tester:   { categories: ['electrical'],              bonus: 0.20, tier: [1, 2] },
-  smoke_machine:    { categories: ['engine'],                  bonus: 0.10, tier: [2, 3] },
-  oscilloscope:     { categories: ['electrical'],              bonus: 0.10, tier: [3] },
-  lift_ramp:        { categories: ['suspension', 'body'],      bonus: 0.20, tier: [2, 3] },
-  brake_fluid_tester: { categories: ['suspension'],            bonus: 0.20, tier: [1] },
-};
-
-// Undercarriage defects only visible with undercar_crawl or lift_ramp (GMS §7.2)
+// Undercarriage defects require grantsUndercarAccess on the chosen action
 const UNDERCARRIAGE_DEFECT_IDS = new Set([
   'structural_rust', 'damaged_subframe', 'gearbox_bearing_wear',
   'transmission_fluid_leak',
 ]);
 
-/**
- * Determine inspection profile from player's owned equipment.
- * Higher capability overrides lower.
- *
- * @param {string[]} ownedEquipmentIds
- * @returns {'visual'|'tap_test'|'obd_basic'|'obd_pro'|'full_diag'}
- */
-function resolveInspectionProfile(inspectionTier, ownedEquipmentIds, ownedSkillIds) {
-  if (inspectionTier === 'visual') return 'visual';
+// Pre-purchase accuracy multiplier — harder on the street than in your garage
+const PRE_PURCHASE_ACCURACY = 0.65;
 
-  if (inspectionTier === 'tap_test') {
-    // tap_test skill required
-    if (!ownedSkillIds.includes('tap_test')) {
-      throw Object.assign(new Error('tap_test skill required for Tap Test inspection'), { statusCode: 400 });
-    }
-    return 'tap_test';
-  }
+// Pattern-recognition bonus when a defect in same category was already revealed
+const PATTERN_BONUS = 0.20;
 
-  if (inspectionTier === 'obd') {
-    // Require at least one OBD device
-    for (const eq of ['full_obdii_can', 'obdii_live_data', 'generic_obdii']) {
-      if (ownedEquipmentIds.includes(eq)) return EQUIPMENT_SCAN_PROFILE[eq];
-    }
-    throw Object.assign(new Error('OBD scanner equipment required for OBD inspection'), { statusCode: 400 });
-  }
-
-  if (inspectionTier === 'full') {
-    if (!ownedEquipmentIds.includes('diagnostic_stand')) {
-      throw Object.assign(new Error('diagnostic_stand equipment required for Full Diagnostic'), { statusCode: 400 });
-    }
-    return 'full_diag';
-  }
-
-  throw Object.assign(new Error(`Unknown inspection tier: ${inspectionTier}`), { statusCode: 400 });
-}
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 /**
- * Compute the effective detection probability for a single defect,
- * given inspection profile and owned skills/equipment.
+ * Returns action IDs the player can currently perform, given owned skills/equipment.
+ * Always includes visual_walkaround (no requirements).
  *
- * @param {object} defect - defect row from DB
- * @param {string} profile - inspection profile key
  * @param {Set<string>} skillSet
  * @param {Set<string>} equipSet
- * @param {boolean} hasUndercarAccess
- * @returns {number} probability 0–1
+ * @returns {string[]}
  */
-function computeDetectionProb(defect, profile, skillSet, equipSet, hasUndercarAccess, baseMultiplier = 1.0) {
-  // Undercarriage defects require access
-  if (UNDERCARRIAGE_DEFECT_IDS.has(defect.defect_type) && !hasUndercarAccess) {
-    return 0;
-  }
-
-  const probs = BASE_PROB[profile];
-  let base = (probs[defect.detection_tier] ?? 0) * baseMultiplier;
-
-  // OBD scans only cover engine+electrical for Tier-2
-  if ((profile === 'obd_basic' || profile === 'obd_pro') &&
-      defect.detection_tier === 2 &&
-      !OBD_TIER2_CATEGORIES.has(defect.category)) {
-    base = 0;
-  }
-
-  if (base === 0) return 0;  // no point applying bonuses
-
-  // Apply skill modifiers
-  let bonus = 0;
-  for (const [skillId, mod] of Object.entries(SKILL_MODIFIERS)) {
-    if (!skillSet.has(skillId) && !equipSet.has(skillId)) continue;
-
-    // Check category match
-    if (!mod.categories.includes(defect.category)) continue;
-
-    // Check detection tier match (if specified)
-    if (mod.tier && !mod.tier.includes(defect.detection_tier)) continue;
-
-    // Check specific defect_ids match (if specified)
-    if (mod.defect_ids && !mod.defect_ids.includes(defect.defect_type)) continue;
-
-    bonus += mod.bonus;
-  }
-
-  // Pattern recognition: if another defect in same category was already revealed
-  // this is applied post-roll in the loop — handled separately
-
-  return Math.min(base + bonus, 0.98);  // cap at 98%
+export function resolveAvailableActions(skillSet, equipSet) {
+  return Object.entries(INSPECTION_ACTIONS)
+    .filter(([, action]) => {
+      if (!action.requires) return true;
+      if (action.requires.skill)      return skillSet.has(action.requires.skill);
+      if (action.requires.equipment)  return equipSet.has(action.requires.equipment);
+      return false;
+    })
+    .map(([id]) => id);
 }
 
 /**
- * Run inspection on a car. Writes revealed defects to DB.
- * Returns ONLY the defect objects that passed the detection roll.
+ * Compute detection probability for a single defect under a given action.
  *
- * @param {string} carId
- * @param {string} playerId
- * @param {'visual'|'tap_test'|'obd'|'full'} inspectionTier
- * @param {object} [opts]
- * @param {object} [opts.sqlClient]
+ * @param {object} defect          - defect row from DB
+ * @param {object} action          - INSPECTION_ACTIONS entry
+ * @param {boolean} hasPatternBonus - true if same category already revealed
+ * @param {number}  baseMultiplier  - 1.0 for garage, 0.65 for pre-purchase
+ * @returns {number} probability 0.02–0.97
+ */
+function computeDetectionProb(defect, action, hasPatternBonus, baseMultiplier = 1.0) {
+  // Action only covers its declared categories
+  if (!action.categories.includes(defect.category)) return 0;
+
+  // Undercarriage defects need explicit undercar access
+  if (UNDERCARRIAGE_DEFECT_IDS.has(defect.defect_type) && !action.grantsUndercarAccess) return 0;
+
+  const base = (action.prob[defect.detection_tier] ?? 0.02) * baseMultiplier;
+  const bonus = hasPatternBonus ? PATTERN_BONUS * baseMultiplier : 0;
+
+  return Math.min(base + bonus, 0.97);
+}
+
+// ─── Core inspection runner ───────────────────────────────────────────────────
+
+/**
+ * Shared inspection logic used by both post-purchase and pre-purchase flows.
+ *
+ * @param {string}  carId
+ * @param {string}  playerId
+ * @param {string}  actionId        - key from INSPECTION_ACTIONS
+ * @param {object}  client          - postgres client (sql or transaction)
+ * @param {number}  baseMultiplier  - 1.0 or PRE_PURCHASE_ACCURACY
  * @returns {Promise<{ revealed: object[], alreadyKnown: number }>}
  */
-export async function runInspection(carId, playerId, inspectionTier, opts = {}) {
-  const client = opts.sqlClient || sql;
+async function executeInspectionAction(carId, playerId, actionId, client, baseMultiplier = 1.0) {
+  const action = INSPECTION_ACTIONS[actionId];
+  if (!action) {
+    throw Object.assign(new Error(`Unknown inspection action: ${actionId}`), { statusCode: 400 });
+  }
 
-  // Fetch player's owned skills and equipment
-  const playerSkills = await client`
-    SELECT skill_id FROM player_skills WHERE player_id = ${playerId}
-  `;
-  const playerEquipment = await client`
-    SELECT equipment_id FROM player_equipment WHERE player_id = ${playerId}
-  `;
+  // Validate player owns the required skill or equipment
+  if (action.requires) {
+    if (action.requires.skill) {
+      const [row] = await client`
+        SELECT 1 FROM player_skills WHERE player_id = ${playerId} AND skill_id = ${action.requires.skill}
+      `;
+      if (!row) {
+        throw Object.assign(
+          new Error(`Skill '${action.requires.skill}' required for this inspection`),
+          { statusCode: 400 },
+        );
+      }
+    } else if (action.requires.equipment) {
+      const [row] = await client`
+        SELECT 1 FROM player_equipment WHERE player_id = ${playerId} AND equipment_id = ${action.requires.equipment}
+      `;
+      if (!row) {
+        throw Object.assign(
+          new Error(`Equipment '${action.requires.equipment}' required for this inspection`),
+          { statusCode: 400 },
+        );
+      }
+    }
+  }
 
-  const skillSet = new Set(playerSkills.map(r => r.skill_id));
-  const equipSet = new Set(playerEquipment.map(r => r.equipment_id));
-
-  // Resolve to a named profile (validates prerequisites)
-  const ownedSkillIds = [...skillSet];
-  const ownedEquipmentIds = [...equipSet];
-  const profile = resolveInspectionProfile(inspectionTier, ownedEquipmentIds, ownedSkillIds);
-
-  // Undercarriage access = undercar_crawl skill OR lift_ramp equipment
-  const hasUndercarAccess = skillSet.has('undercar_crawl') || equipSet.has('lift_ramp') || equipSet.has('diagnostic_stand');
-
-  // Fetch ALL hidden defects (not yet revealed) on this car
+  // Fetch hidden defects in the action's categories
   const hiddenDefects = await client`
     SELECT id, defect_type, category, severity, detection_tier,
            proper_repair_cost, quick_fix_cost, repair_time_minutes,
@@ -205,100 +316,75 @@ export async function runInspection(carId, playerId, inspectionTier, opts = {}) 
     FROM defects
     WHERE car_id = ${carId}
       AND is_revealed_to_player = false
+      AND category = ANY(${action.categories})
   `;
 
-  // Fetch already-revealed defects (for pattern recognition bonus)
+  // Pattern recognition: categories that already have a revealed defect
   const alreadyRevealed = await client`
     SELECT category FROM defects
-    WHERE car_id = ${carId}
-      AND is_revealed_to_player = true
+    WHERE car_id = ${carId} AND is_revealed_to_player = true
   `;
   const revealedCategories = new Set(alreadyRevealed.map(d => d.category));
 
   const newlyRevealed = [];
 
   for (const defect of hiddenDefects) {
-    let prob = computeDetectionProb(defect, profile, skillSet, equipSet, hasUndercarAccess);
+    const hasPatternBonus = revealedCategories.has(defect.category);
+    const prob = computeDetectionProb(defect, action, hasPatternBonus, baseMultiplier);
 
     if (prob === 0) continue;
 
-    // Pattern recognition bonus (GMS §7.2): +20% if a defect in same category already found
-    if (revealedCategories.has(defect.category)) {
-      prob = Math.min(prob + 0.20, 0.98);
-    }
-
     if (Math.random() < prob) {
       newlyRevealed.push(defect);
-      revealedCategories.add(defect.category);  // enables pattern recognition for later in same inspection
+      revealedCategories.add(defect.category); // enables pattern bonus for later defects in same run
     }
   }
 
-  // Mark revealed defects in DB
+  // Persist revealed defects
   if (newlyRevealed.length > 0) {
     const revealedIds = newlyRevealed.map(d => d.id);
     await client`
-      UPDATE defects
-      SET is_revealed_to_player = true
+      UPDATE defects SET is_revealed_to_player = true
       WHERE id = ANY(${revealedIds}::uuid[])
     `;
   }
 
-  // Return only the safe subset of revealed defect fields (no qf_discovery_base)
+  // Strip internal field before returning
   const safeRevealed = newlyRevealed.map(({ qf_discovery_base: _qf, ...rest }) => rest);
 
   return {
-    revealed: safeRevealed,
+    revealed:     safeRevealed,
     alreadyKnown: alreadyRevealed.length,
   };
 }
 
-/**
- * XP awards for inspection (GMS §1.2).
- * basic=10, intermediate=20, advanced=35 (cumulative per car, awarded once each tier).
- */
-export const INSPECTION_XP = {
-  visual:   10,
-  tap_test: 20,
-  obd:      20,
-  full:     35,
-};
-
-// ─── Pre-purchase inspection ──────────────────────────────────────────────────
+// ─── Public API ───────────────────────────────────────────────────────────────
 
 /**
- * Energy costs for pre-purchase (market) inspection.
- * +1 vs post-purchase in each tier — harder on the street than in your garage.
- */
-export const PRE_PURCHASE_ENERGY_COST = {
-  visual:   3,
-  tap_test: 4,
-  obd:      4,
-  full:     5,
-};
-
-/**
- * Detection accuracy multiplier applied to all base probabilities
- * when inspecting a car on the market before buying it.
- * 0.65 = ~35% harder than garage inspection.
- */
-const PRE_PURCHASE_ACCURACY = 0.65;
-
-/**
- * Run a pre-purchase inspection on a market listing.
- *
- * Key differences from runInspection():
- *  - Car must be in 'available_in_market' state (not owned yet)
- *  - All base detection probabilities are multiplied by PRE_PURCHASE_ACCURACY (0.65)
- *  - Defects that ARE found are still marked is_revealed_to_player=true so they
- *    persist when the player later buys the car (garage inspection picks up the rest)
- *  - Logs to pre_purchase_inspections, not inspections
+ * Run a post-purchase inspection action on an owned car.
  *
  * @param {string} carId
  * @param {string} playerId
- * @param {'visual'|'tap_test'|'obd'|'full'} inspectionTier
+ * @param {string} actionId
+ * @param {object} [opts]
+ * @param {object} [opts.sqlClient]
  * @returns {Promise<{ revealed: object[], alreadyKnown: number }>}
  */
-export async function runPrePurchaseInspection(carId, playerId, inspectionTier) {
+export async function runInspection(carId, playerId, actionId, opts = {}) {
+  const client = opts.sqlClient || sql;
+  return executeInspectionAction(carId, playerId, actionId, client, 1.0);
+}
+
+/**
+ * Run a pre-purchase inspection action on a market listing.
+ * Defects revealed persist through purchase.
+ *
+ * @param {string} carId
+ * @param {string} playerId
+ * @param {string} actionId
+ * @returns {Promise<{ revealed: object[], alreadyKnown: number }>}
+ */
+export async function runPrePurchaseInspection(carId, playerId, actionId) {
   // Verify car is still an active market listing
   const [car] = await sql`
     SELECT id FROM cars
@@ -306,78 +392,24 @@ export async function runPrePurchaseInspection(carId, playerId, inspectionTier) 
       AND state = 'available_in_market'
       AND market_listing_expires_at > NOW()
   `;
-  if (!car) throw Object.assign(new Error('Listing not found or expired'), { statusCode: 404 });
-
-  // Fetch player's owned skills and equipment
-  const playerSkills = await sql`
-    SELECT skill_id FROM player_skills WHERE player_id = ${playerId}
-  `;
-  const playerEquipment = await sql`
-    SELECT equipment_id FROM player_equipment WHERE player_id = ${playerId}
-  `;
-
-  const skillSet = new Set(playerSkills.map(r => r.skill_id));
-  const equipSet = new Set(playerEquipment.map(r => r.equipment_id));
-
-  // Resolve to a named profile (validates prerequisites — same as garage inspection)
-  const ownedSkillIds = [...skillSet];
-  const ownedEquipmentIds = [...equipSet];
-  const profile = resolveInspectionProfile(inspectionTier, ownedEquipmentIds, ownedSkillIds);
-
-  // Undercarriage access (same rules as garage)
-  const hasUndercarAccess = skillSet.has('undercar_crawl') || equipSet.has('lift_ramp') || equipSet.has('diagnostic_stand');
-
-  // Fetch ALL hidden defects on this car
-  const hiddenDefects = await sql`
-    SELECT id, defect_type, category, severity, detection_tier,
-           proper_repair_cost, quick_fix_cost, repair_time_minutes,
-           resale_impact, is_odometer_fraud, qf_discovery_base
-    FROM defects
-    WHERE car_id = ${carId}
-      AND is_revealed_to_player = false
-  `;
-
-  // Fetch already-revealed defects (for pattern recognition bonus)
-  const alreadyRevealed = await sql`
-    SELECT category FROM defects
-    WHERE car_id = ${carId}
-      AND is_revealed_to_player = true
-  `;
-  const revealedCategories = new Set(alreadyRevealed.map(d => d.category));
-
-  const newlyRevealed = [];
-
-  for (const defect of hiddenDefects) {
-    // Apply PRE_PURCHASE_ACCURACY to base probs — harder outside your own garage
-    let prob = computeDetectionProb(defect, profile, skillSet, equipSet, hasUndercarAccess, PRE_PURCHASE_ACCURACY);
-
-    if (prob === 0) continue;
-
-    // Pattern recognition bonus still applies (GMS §7.2)
-    if (revealedCategories.has(defect.category)) {
-      prob = Math.min(prob + 0.20, 0.98);
-    }
-
-    if (Math.random() < prob) {
-      newlyRevealed.push(defect);
-      revealedCategories.add(defect.category);
-    }
+  if (!car) {
+    throw Object.assign(new Error('Listing not found or expired'), { statusCode: 404 });
   }
 
-  // Mark revealed defects — intentionally persists through purchase
-  if (newlyRevealed.length > 0) {
-    const revealedIds = newlyRevealed.map(d => d.id);
-    await sql`
-      UPDATE defects
-      SET is_revealed_to_player = true
-      WHERE id = ANY(${revealedIds}::uuid[])
-    `;
-  }
+  return executeInspectionAction(carId, playerId, actionId, sql, PRE_PURCHASE_ACCURACY);
+}
 
-  const safeRevealed = newlyRevealed.map(({ qf_discovery_base: _qf, ...rest }) => rest);
-
-  return {
-    revealed: safeRevealed,
-    alreadyKnown: alreadyRevealed.length,
-  };
+/**
+ * XP awarded per inspection action (same for garage and pre-purchase).
+ * More expensive/accurate actions yield more XP.
+ */
+export function inspectionXP(actionId) {
+  const action = INSPECTION_ACTIONS[actionId];
+  if (!action) return 10;
+  // Scale by energy cost as a proxy for complexity
+  const base = action.energy;
+  if (base <= 1) return 10;
+  if (base <= 2) return 20;
+  if (base <= 3) return 30;
+  return 40;
 }

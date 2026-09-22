@@ -188,40 +188,62 @@ export const purchaseListing = async (
  * POST /market/listings/:id/pre-inspect
  */
 
-type RevealedType = {
-  category: string;
-  defect_type: string;
-  detection_tier: number;
+export type InspectionActionId =
+  | "visual_walkaround"
+  | "listen_engine"
+  | "cold_start_test"
+  | "interior_smell"
+  | "panel_feel"
+  | "tap_test"
+  | "fluid_check"
+  | "tyre_brake_visual"
+  | "undercar_crawl"
+  | "test_drive"
+  | "obd_basic"
+  | "obd_live"
+  | "obd_pro"
+  | "compression_test"
+  | "stethoscope"
+  | "smoke_test"
+  | "paint_gauge"
+  | "brake_fluid_test"
+  | "battery_test"
+  | "oscilloscope"
+  | "lift_ramp"
+  | "full_diagnostic";
+
+type RevealedDefect = {
   id: string;
-  is_odometer_fraud: boolean;
-  proper_repair_cost: number;
-  quick_fix_cost: number;
-  repair_time_minutes: number;
-  resale_impact: string;
+  defect_type: string;
+  category: string;
   severity: string;
+  detection_tier: number;
+  proper_repair_cost: number | null;
+  quick_fix_cost: number | null;
+  repair_time_minutes: number;
+  resale_impact: number;
+  is_odometer_fraud: boolean;
 };
 
 export type PreInspectResult = {
-  revealed: RevealedType[];
+  revealed: RevealedDefect[];
 };
 
 type PreInspectResponse = {
   data: PreInspectResult;
   error: unknown | null;
-  meta: Record<string, unknown>;
+  meta: { actionId: string; newlyRevealedCount: number; energySpent: number; xpAwarded: number };
 };
 
 export const preInspectListing = async (
   id: string,
-  tier: string
+  actionId: InspectionActionId,
 ): Promise<PreInspectResult> => {
   const response = await apiClient<PreInspectResponse>(
     `/market/listings/${id}/pre-inspect`,
     {
       method: "POST",
-      body: JSON.stringify({
-        tier
-      })
+      body: JSON.stringify({ actionId }),
     }
   );
 
