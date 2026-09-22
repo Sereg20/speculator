@@ -32,6 +32,7 @@ export default function TabsLayout() {
           <Tabs.Screen
             name="market"
             options={{
+              popToTopOnBlur: true,
               tabBarIcon: ({ color, focused }) => (
                 <Ionicons name="storefront-outline" size={28} color={color} />
               ),

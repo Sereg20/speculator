@@ -53,6 +53,15 @@ const CONDITION_WEIGHTS = {
 
 const SELLER_ARCHETYPES = ['old_man', 'private_owner', 'shady_dealer', 'enthusiast', 'urgent_sale'];
 
+const SELLER_NAMES = [
+  'Александр', 'Сергей',   'Андрей',   'Дмитрий',  'Николай',
+  'Михаил',    'Алексей',  'Владимир', 'Иван',      'Василий',
+  'Пётр',      'Евгений',  'Артём',    'Роман',     'Виктор',
+  'Анатолий',  'Игорь',    'Константин','Павел',    'Геннадий',
+  'Борис',     'Леонид',   'Руслан',   'Аркадий',   'Степан',
+  'Тимур',     'Денис',    'Кирилл',   'Илья',      'Антон',
+];
+
 const COLORS = [
   'Белый', 'Чёрный', 'Серебристый', 'Серый', 'Синий', 'Красный',
   'Зелёный', 'Бежевый', 'Коричневый', 'Жёлтый',
@@ -130,6 +139,7 @@ function buildCarEntry(qualityTier, playerLevel) {
   );
 
   const sellerArchetype = SELLER_ARCHETYPES[Math.floor(Math.random() * SELLER_ARCHETYPES.length)];
+  const sellerName = SELLER_NAMES[Math.floor(Math.random() * SELLER_NAMES.length)];
   const color = COLORS[Math.floor(Math.random() * COLORS.length)];
   const expiryDays = rollExpiryDays();
 
@@ -148,6 +158,7 @@ function buildCarEntry(qualityTier, playerLevel) {
     asking_price: askingPrice,
     purchase_price: 0,       // set on actual purchase
     seller_archetype: sellerArchetype,
+    seller_name: sellerName,
     is_turbo: isTurbo,
     expiryDays,
   };
@@ -211,18 +222,18 @@ export async function generateListings(playerId, playerLevel = 1) {
         INSERT INTO cars (
           player_id, make, model, year, mileage, color,
           condition_tier, quality_tier, market_value, asking_price, purchase_price,
-          seller_archetype, is_turbo, state, market_listing_expires_at
+          seller_archetype, seller_name, is_turbo, state, market_listing_expires_at
         ) VALUES (
           ${playerId},
           ${entry.make}, ${entry.model}, ${entry.year}, ${entry.mileage}, ${entry.color},
           ${entry.condition_tier}, ${entry.quality_tier}, ${entry.market_value},
           ${entry.asking_price}, ${entry.purchase_price},
-          ${entry.seller_archetype}, ${entry.is_turbo},
+          ${entry.seller_archetype}, ${entry.seller_name}, ${entry.is_turbo},
           'available_in_market', ${expiresAt}
         )
         RETURNING id, make, model, year, mileage, color,
                   condition_tier, quality_tier, market_value, asking_price,
-                  seller_archetype, is_turbo, state, market_listing_expires_at,
+                  seller_archetype, seller_name, is_turbo, state, market_listing_expires_at,
                   created_at
       `;
 
@@ -254,7 +265,7 @@ export async function getOrRefreshListings(playerId, playerLevel = 1) {
   const existing = await sql`
     SELECT id, make, model, year, mileage, color,
            condition_tier, quality_tier, market_value, asking_price,
-           seller_archetype, is_turbo, state, market_listing_expires_at,
+           seller_archetype, seller_name, is_turbo, state, market_listing_expires_at,
            seller_dialogue, created_at
     FROM cars
     WHERE player_id = ${playerId}

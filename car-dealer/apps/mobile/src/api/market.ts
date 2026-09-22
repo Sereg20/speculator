@@ -4,6 +4,15 @@ import { apiClient } from "./client";
 /**
  * Car available for purchase on the market.
  */
+
+export type SellerArchetype =
+  | "merchant"
+  | "enthusiast"
+  | "old_man"
+  | "private_owner"
+  | "shady_dealer"
+  | "urgent_sale";
+
 export type MarketListing = {
   id: string;
   make: string;
@@ -14,7 +23,8 @@ export type MarketListing = {
   condition_tier: string;
   purchase_price: number;
   asking_price: number | null;
-  seller_archetype: string;
+  seller_archetype: SellerArchetype;
+  seller_name: string;
   is_turbo: boolean;
   state: string;
   created_at: string;
@@ -204,7 +214,7 @@ type PreInspectResponse = {
 export const preInspectListing = async (
   id: string,
   tier: string
-): Promise<PurchaseResult> => {
+): Promise<PreInspectResult> => {
   const response = await apiClient<PreInspectResponse>(
     `/market/listings/${id}/pre-inspect`,
     {

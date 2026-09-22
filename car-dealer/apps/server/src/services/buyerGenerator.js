@@ -45,13 +45,14 @@ const ARCHETYPE_OFFER_DISCOUNT = {
 };
 
 // Archetype Russian names (for buyer_name generation)
-const ARCHETYPE_NAMES = {
-  careful_buyer:  ['Андрей', 'Сергей', 'Николай', 'Иван', 'Михаил'],
-  bargain_hunter: ['Дима', 'Алексей', 'Вася', 'Костя', 'Рома'],
-  impulsive_buyer: ['Артём', 'Тимур', 'Макс', 'Данил', 'Евгений'],
-  skeptic:        ['Пётр', 'Владимир', 'Геннадий', 'Аркадий', 'Борис'],
-  enthusiast:     ['Кирилл', 'Денис', 'Илья', 'Виктор', 'Антон'],
-};
+const BUYER_NAMES = [
+  'Александр', 'Сергей',    'Андрей',    'Дмитрий',  'Николай',
+  'Михаил',    'Алексей',   'Владимир',  'Иван',      'Василий',
+  'Пётр',      'Евгений',   'Артём',     'Роман',     'Виктор',
+  'Анатолий',  'Игорь',     'Константин','Павел',     'Геннадий',
+  'Борис',     'Леонид',    'Руслан',    'Аркадий',   'Степан',
+  'Тимур',     'Денис',     'Кирилл',    'Илья',      'Антон',
+];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -69,9 +70,8 @@ function pickWeightedArchetype() {
   return 'careful_buyer';
 }
 
-function randomName(archetype) {
-  const names = ARCHETYPE_NAMES[archetype] || ARCHETYPE_NAMES.careful_buyer;
-  return names[Math.floor(Math.random() * names.length)];
+function randomName() {
+  return BUYER_NAMES[Math.floor(Math.random() * BUYER_NAMES.length)];
 }
 
 /**
@@ -261,7 +261,7 @@ export async function generateBuyerInquiry(listingId, log, { force = false } = {
   if (!force && Math.random() >= prob) return 0;
 
   const archetype = pickWeightedArchetype();
-  const buyerName = randomName(archetype);
+  const buyerName = randomName();
   const offeredPrice = computeOfferPrice(listing.asking_price, archetype);
   const expiresAt = inquiryExpiresAt();
 

@@ -2,15 +2,15 @@ import {
   View,
   StyleSheet,
 } from "react-native";
-import { NegotiateAction } from "./NegotiateAction";
-import { GameModelWithoutButtons } from "../modal/GameModelWithoutButtons";
+import { GameModal } from "../modal/GameModal";
+import { InspectDialogAction } from "./InspectDialogAction";
 
 
 interface InspectDialogProps {
   visible: boolean,
   onClose: () => void,
   onChat: () => void,
-  onPreInspect: () => void
+  onPreInspect: (tier: string) => void
   chatDisabled: boolean,
   preInspectDisabled: boolean
 }
@@ -20,23 +20,27 @@ export function InspectDialog({
 }: InspectDialogProps) {
 
   return (
-    <GameModelWithoutButtons
+    <GameModal
       visible={visible}
       title="ПОИСК НЕИСПРАВНОСТЕЙ"
       onClose={onClose}
+      confirmHidden={true}
     >
       <View style={styles.container}>
-      <NegotiateAction disabled={chatDisabled} text={'СПРОСИТЬ'} onPress={onChat} iconName='handshake' iconColor='#be6b22' color='#EBA13C'/>
-      <NegotiateAction disabled={preInspectDisabled} text={'ПРОВЕРИТЬ'} onPress={onPreInspect} iconName='bug' iconColor='#09427a' color='#307DC1'/>
+      <InspectDialogAction disabled={chatDisabled} text={'СПРОСИТЬ'} onPress={onChat} energyCost={3} color='#EBA13C'/>
+      <InspectDialogAction disabled={preInspectDisabled} text={'ОСМОТРЕТЬ'} onPress={() => {onPreInspect('visual')}} energyCost={3} color='#429958'/>
+      <InspectDialogAction disabled={chatDisabled} text={'ПРОВЕРИТЬ'} onPress={() => {onPreInspect('tap_test')}} energyCost={3} color='#307DC1'/>
+      <InspectDialogAction disabled={preInspectDisabled} text={'СКАНЕР'} onPress={() => {onPreInspect('obd')}} energyCost={3} color='#C5453C'/>
       </View>
-    </GameModelWithoutButtons>
+    </GameModal>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
     gap: 10,
     width: '100%',
   }

@@ -12,6 +12,7 @@ import { useMutation } from "@tanstack/react-query";
 import { ApiError } from "@/api/client";
 import { NegotiatePriceSelectorDialog } from "@/components/dialog/NegotiatePriceSelectorDialog";
 import { InspectDialog } from "@/components/dialog/InspectDialog";
+import { npcAvatars } from "@/assets/images/npc-avatars/npcAvatars";
 
 const initMessage: IDialogMessage = {
   id: "1",
@@ -21,6 +22,7 @@ const initMessage: IDialogMessage = {
 
 
 export default function MarketInspectionScreen() {
+  
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: initialDialogue } = useQuery(listingDialogueQuery(id));
   const queryClient = useQueryClient();
@@ -32,6 +34,7 @@ export default function MarketInspectionScreen() {
       "listings",
     ]);
   const listing = listings?.find((item) => item.id === id);
+  const npcAvatar = npcAvatars[listing?.seller_archetype || 'merchant'];
 
   const [messages, setMessages] = useState<IDialogMessage[]>([initMessage]);
   const [purchaseDisabled, setPurchaseDisabled] = useState<boolean>(false);
@@ -106,7 +109,7 @@ export default function MarketInspectionScreen() {
 
   // /preinspect request
   const preInspectMutation = useMutation({
-    mutationFn: () => preInspectListing(id, 'visual'),
+    mutationFn: (tier: string) => preInspectListing(id, tier),
     onSuccess: () => {
      
     },
@@ -169,10 +172,10 @@ export default function MarketInspectionScreen() {
     chatMutation.mutate();
   }
 
-  function onPreInspect() {
+  function onPreInspect(tier: string) {
     setInspectModalVisible(false);
     addMessage('А ну открой капот...', 'player');
-    preInspectMutation.mutate();
+    preInspectMutation.mutate(tier);
   }
 
   function onConfirmProposedPrice(proposedPrice: number) {
@@ -193,14 +196,24 @@ export default function MarketInspectionScreen() {
         <View style={styles.title}>
           <Text style={styles.titleText}>ОСМОТР АВТОМОБИЛЯ: {listing?.make} {listing?.model}</Text>
         </View>
+
         <View style={styles.dialogContainer}>
-          <View style={styles.sellerContainer}></View>
+          <View style={styles.sellerContainer}>
+            <Image
+              source={npcAvatar}
+              style={styles.npcAvatar}
+            />
+            <View style={styles.sellerTitleContainer}>
+              <Text style={styles.sellerTitle}>{listing?.seller_name} (продавец)</Text>
+            </View>
+            
+          </View>
           <Dialog messages={messages} />
         </View>
 
         <View style={styles.actionsContainer}>
           <NegotiateAction disabled={purchaseDisabled} text={`КУПИТЬ\n(${currentPrice})`} onPress={onBuy} iconName='shopping-cart' iconColor='#84d78c' color='#429958' />
-          <NegotiateAction disabled={negotiateDisabled} text={'ТОРГ'} onPress={onNegotiate} iconName='handshake' iconColor='#be6b22' color='#EBA13C' />
+          <NegotiateAction disabled={negotiateDisabled} text={'ТОРГ'} onPress={onNegotiate} iconName='handshake' iconColor='#be6b22' color={colors.orangeButtonColor} />
           <NegotiateAction disabled={false} text={'ПРОВЕРИТЬ'} onPress={onInspect} iconName='bug' iconColor='#09427a' color='#307DC1' />
           <NegotiateAction disabled={quitDisabled} text='УЙТИ' onPress={onQuit} iconName='door-open' iconColor='#821f14' color='#C5453C' />
         </View>
@@ -250,6 +263,7 @@ const styles = StyleSheet.create({
   },
 
   dialogContainer: {
+    flex: 1,
     backgroundColor: 'rgba(34, 55, 44, 0.6)',
     width: '90%',
     height: '74%',
@@ -264,12 +278,31 @@ const styles = StyleSheet.create({
   sellerContainer: {
     height: '24%',
     width: '100%',
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 20
+  },
+
+  npcAvatar: {
+    height: 94,
+    width: 94,
+    borderRadius: 10,
+  },
+
+  sellerTitleContainer: {
+    height: 90,
+    justifyContent: 'center'
+  },
+
+  sellerTitle: {
+    color: colors.textMain,
+    fontSize: 20,
   },
 
   actionsContainer: {
     marginTop: 12,
     paddingBottom: 12,
-    flex: 1,
     width: '90%',
     flexDirection: 'row',
     justifyContent: 'space-between'

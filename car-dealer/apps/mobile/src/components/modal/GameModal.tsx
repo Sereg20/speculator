@@ -13,10 +13,11 @@ interface GameModalProps {
   title: string;
   children: React.ReactNode;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm?: () => void;
   confirmText?: string;
   closeText?: string;
   confirmDisabled?: boolean;
+  confirmHidden?: boolean;
 }
 
 export function GameModal({
@@ -28,6 +29,7 @@ export function GameModal({
   confirmText = "ОК",
   closeText = "ЗАКРЫТЬ",
   confirmDisabled = false,
+  confirmHidden = false,
 }: GameModalProps) {
   return (
     <Modal
@@ -71,20 +73,22 @@ export function GameModal({
               </Text>
             </Pressable>
 
-            <Pressable
-              disabled={confirmDisabled}
-              onPress={onConfirm}
-              style={({ pressed }) => [
-                styles.button,
-                styles.confirmButton,
-                pressed && !confirmDisabled && styles.pressed,
-                confirmDisabled && styles.disabled,
-              ]}
-            >
-              <Text style={styles.buttonText}>
-                {confirmText}
-              </Text>
-            </Pressable>
+            { !confirmHidden && 
+              <Pressable
+                disabled={confirmDisabled}
+                onPress={onConfirm}
+                style={({ pressed }) => [
+                  styles.button,
+                  styles.confirmButton,
+                  pressed && !confirmDisabled && styles.pressed,
+                  confirmDisabled && styles.disabled,
+                ]}
+              >
+                <Text style={styles.buttonText}>
+                  {confirmText}
+                </Text>
+              </Pressable>
+            }
           </View>
         </View>
       </View>

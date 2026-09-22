@@ -6,7 +6,7 @@ export const colors = {
   textDark: "#5b6b63",
   textBlack: "#020202",
   accentBlueColor: "#49E2FF",
-  orangeButtonColor: "#E67817",
+  orangeButtonColor: "#EBA13C",
   blueButtonColor: "#1F8EE5",
   blueButtonColorPressed: "#1783d6",
 

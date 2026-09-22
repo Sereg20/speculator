@@ -1,29 +1,24 @@
-import { MarketListing } from "@/api/market";
 import { colors } from "@/theme/colors";
 import {
-  View,
   Text,
   StyleSheet,
   Pressable,
-  FlatList,
-  ImageBackground,
+  View,
 } from "react-native";
-import { router } from "expo-router";
-import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
+import SimpleLineIcons from '@expo/vector-icons/SimpleLineIcons';
 
 
-interface NegotiateActionProps {
+interface InspectDialogActionProps {
   color: string,
   text: string,
-  iconName: string,
-  iconColor: string,
+  energyCost: number,
   disabled: boolean,
   onPress: () => void;
 }
 
-export function NegotiateAction({
-  color, text, iconName, iconColor, onPress, disabled
-}: NegotiateActionProps) {
+export function InspectDialogAction({
+  color, text, energyCost, onPress, disabled
+}: InspectDialogActionProps) {
   return (
     <Pressable
       style={({ pressed }) => [
@@ -35,15 +30,19 @@ export function NegotiateAction({
       onPress={onPress}
       disabled={disabled}
     >
-      <FontAwesome5 name={iconName} size={20} color={iconColor} />
       <Text style={styles.text}>{text}</Text>
+      <View style={styles.energyContainer}>
+        ⚡ <Text style={styles.energyCost}>{energyCost}</Text>
+      </View>
+      
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   button: {
-    width: '23%',
+    width: 80,
+    height: 80,
     borderRadius: 8,
     alignItems: 'center',
     paddingVertical: 10,
@@ -63,6 +62,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 4,
     textAlign: 'center'
+  },
+
+  energyContainer: {
+    flexDirection: 'row'
+  },
+
+  energyCost: {
+    color: colors.textMain,
+    fontWeight: 'bold'
   }
 
 });
