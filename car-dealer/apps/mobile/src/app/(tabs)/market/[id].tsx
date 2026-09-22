@@ -11,7 +11,7 @@ import { router } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 import { ApiError } from "@/api/client";
 import { NegotiatePriceSelectorDialog } from "@/components/dialog/NegotiatePriceSelectorDialog";
-import { InspectDialog } from "@/components/dialog/InspectDialog";
+import { InspectDialog } from "@/features/inspection/InspectDialog";
 import { npcAvatars } from "@/assets/images/npc-avatars/npcAvatars";
 import { SuccessPurchaseDialog } from "@/components/dialog/SuccessPurchaseDialog";
 
@@ -61,6 +61,7 @@ export default function MarketInspectionScreen() {
         addMessage('Я уже все сказал.', "npc");
         setChatDisabled(true);
       } else {
+        setChatDisabled(false);
         addMessage("что-то я завтыкал. Давай-ка еще раз", "npc");
       }
     }
@@ -77,7 +78,7 @@ export default function MarketInspectionScreen() {
       } else if (data.outcome === 'accepted' && data.finalPrice) {
         setCurrentPrice(data.finalPrice);
       } else if (data.outcome === 'rejected') {
-
+        setPreInspectDisabled(true);
       }
       addMessage(data.message, "npc");
     },
@@ -166,7 +167,7 @@ export default function MarketInspectionScreen() {
   }
 
   function onChat() {
-    setInspectModalVisible(false);
+    setChatDisabled(true);
     addMessage('Что с машиной? Только честно!', 'player');
     chatMutation.mutate();
   }
@@ -218,17 +219,22 @@ export default function MarketInspectionScreen() {
           <Dialog messages={messages} />
         </View>
 
-        <View style={styles.actionsContainer}>
-          <NegotiateAction disabled={purchaseDisabled} text={`КУПИТЬ\n(${currentPrice})`} onPress={onBuy} iconName='shopping-cart' iconColor='#84d78c' color='#429958' />
-          <NegotiateAction disabled={negotiateDisabled} text={'ТОРГ'} onPress={onNegotiate} iconName='handshake' iconColor='#be6b22' color={colors.orangeButtonColor} />
-          <NegotiateAction disabled={false} text={'ПРОВЕРИТЬ'} onPress={onInspect} iconName='bug' iconColor='#09427a' color='#307DC1' />
-          <NegotiateAction disabled={quitDisabled} text='УЙТИ' onPress={onQuit} iconName='door-open' iconColor='#821f14' color='#C5453C' />
+        <View style={styles.globalActionsContainer}>
+          <View style={styles.actionsContainer}>
+              <NegotiateAction disabled={negotiateDisabled} text={'ТОРГ'} onPress={onNegotiate} energyCost={2} color={colors.orangeButtonColor} />
+              <NegotiateAction disabled={chatDisabled} text={'СПРОСИТЬ'} onPress={onChat} energyCost={2} color='#26b39b' />
+          </View>
+          <View style={styles.actionsContainer}>
+            <NegotiateAction disabled={purchaseDisabled} text={`КУПИТЬ\n(${currentPrice})`} onPress={onBuy} energyCost={2} color='#429958' />
+            <NegotiateAction disabled={false} text={'ПРОВЕРИТЬ'} onPress={onInspect} energyCost={2} color='#307DC1' />
+            <NegotiateAction disabled={quitDisabled} text='УЙТИ' onPress={onQuit} energyCost={2} color='#C5453C' />
+          </View>
         </View>
 
       </View>
 
       <NegotiatePriceSelectorDialog visible={isPriceModalVisible} onClose={() => { setPriceModalVisible(false) }} onConfirm={onConfirmProposedPrice} initialPrice={currentPrice} minPrice={minPrice}/>
-      <InspectDialog visible={isInspectModalVisible} onClose={() => {setInspectModalVisible(false)}} onChat={onChat} onPreInspect={onPreInspect} chatDisabled={chatDisabled} preInspectDisabled={preInspectDisabled}/>
+      <InspectDialog visible={isInspectModalVisible} onClose={() => {setInspectModalVisible(false)}} onPreInspect={onPreInspect} chatDisabled={chatDisabled} preInspectDisabled={preInspectDisabled}/>
       <SuccessPurchaseDialog car={listing} visible={isSuccessPurchaseVisible} onClose={onSuccessPurchaseDialogClose}/>
     </View>
   );
@@ -308,11 +314,16 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
 
-  actionsContainer: {
+  globalActionsContainer: {
     marginTop: 12,
     paddingBottom: 12,
     width: '90%',
+    gap: 8
+  },
+
+  actionsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between'
+    justifyContent: 'space-between',
+    gap: 8
   }
 });

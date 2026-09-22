@@ -46,10 +46,10 @@ export const GARAGE_UPGRADE_COST = [0, 0, 900, 2200, 5500, 14000];
 export const GARAGE_UPGRADE_LEVEL_REQUIRED = [0, 1, 3, 6, 10, 15];
 
 // Energy (GMS §1.3)
-export const ENERGY_MAX_EARLY = 20;   // levels 1–7
-export const ENERGY_MAX_MID   = 25;   // levels 8–14
-export const ENERGY_MAX_LATE  = 30;   // levels 15+
-export const ENERGY_REGEN_REAL_MINUTES = 12; // 1 energy per 12 real minutes
+export const ENERGY_MAX_EARLY = 50;   // levels 1–7
+export const ENERGY_MAX_MID   = 75;   // levels 8–14
+export const ENERGY_MAX_LATE  = 100;  // levels 15+
+export const ENERGY_REGEN_REAL_MINUTES = 5;  // 1 energy per 5 real minutes
 
 // Reputation thresholds (GMS §1.4)
 export const REPUTATION_TIERS = [

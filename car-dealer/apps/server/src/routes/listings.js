@@ -17,7 +17,7 @@
 import { sql } from '../db/client.js';
 import { requireAuth } from '../middleware/auth.js';
 import { transitionCar } from '../services/carStateMachine.js';
-import { consumeEnergy } from '../services/energyService.js';
+import { consumeEnergy, refundEnergy } from '../services/energyService.js';
 import { awardXP } from '../services/xpService.js';
 import { generateDialogue } from '../services/aiProxy.js';
 import { resolveSaleNegotiation } from '../services/negotiationEngine.js';
@@ -169,11 +169,7 @@ async function createListing(request, reply) {
     });
   } catch (err) {
     // Refund energy on business-logic failure
-    await sql`
-      UPDATE players
-      SET energy_current = LEAST(energy_current + ${ENERGY_COST_LIST}, 30), updated_at = NOW()
-      WHERE id = ${playerId}
-    `;
+    await refundEnergy(playerId, ENERGY_COST_LIST);
     return reply.code(err.statusCode || 500).send({ data: null, error: err.message, meta: null });
   }
 
@@ -420,11 +416,7 @@ async function respondToInquiry(request, reply) {
     result = await _processInquiryResponse(playerId, listingId, inquiryId, action, counterPrice);
   } catch (err) {
     // Refund energy on business-logic failure
-    await sql`
-      UPDATE players
-      SET energy_current = LEAST(energy_current + ${energyCost}, 30), updated_at = NOW()
-      WHERE id = ${playerId}
-    `;
+    await refundEnergy(playerId, energyCost);
     return reply.code(err.statusCode || 500).send({ data: null, error: err.message, meta: null });
   }
 

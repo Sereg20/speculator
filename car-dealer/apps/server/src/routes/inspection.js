@@ -12,7 +12,7 @@
  */
 
 import { runInspection, inspectionXP, INSPECTION_ACTIONS, resolveAvailableActions } from '../services/inspectionEngine.js';
-import { consumeEnergy } from '../services/energyService.js';
+import { consumeEnergy, refundEnergy } from '../services/energyService.js';
 import { awardXP } from '../services/xpService.js';
 import { sql } from '../db/client.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -70,11 +70,7 @@ async function inspect(request, reply) {
     result = await runInspection(carId, playerId, actionId);
   } catch (err) {
     // Refund energy on prerequisite failure
-    await sql`
-      UPDATE players
-      SET energy_current = LEAST(energy_current + ${energyCost}, 30), updated_at = NOW()
-      WHERE id = ${playerId}
-    `;
+    await refundEnergy(playerId, energyCost);
     return reply.code(err.statusCode || 500).send({ data: null, error: err.message, meta: null });
   }
 

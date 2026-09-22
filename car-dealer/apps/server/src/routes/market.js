@@ -10,7 +10,7 @@
 import { getOrRefreshListings, generateListings } from '../services/listingGenerator.js';
 import { generateDialogue } from '../services/aiProxy.js';
 import { transitionCar } from '../services/carStateMachine.js';
-import { consumeEnergy } from '../services/energyService.js';
+import { consumeEnergy, refundEnergy } from '../services/energyService.js';
 import { awardXP } from '../services/xpService.js';
 import { resolveMarketNegotiation } from '../services/negotiationEngine.js';
 import { runPrePurchaseInspection, INSPECTION_ACTIONS, inspectionXP, resolveAvailableActions } from '../services/inspectionEngine.js';
@@ -207,12 +207,7 @@ async function purchaseCar(request, reply) {
     });
   } catch (err) {
     // Refund energy on business-logic failure
-    await sql`
-      UPDATE players
-      SET energy_current = LEAST(energy_current + ${ENERGY_COST_PURCHASE}, 30),
-          updated_at = NOW()
-      WHERE id = ${playerId}
-    `;
+    await refundEnergy(playerId, ENERGY_COST_PURCHASE);
     const statusCode = err.statusCode || 500;
     return reply.code(statusCode).send({ data: null, error: err.message, meta: null });
   }
@@ -325,10 +320,7 @@ async function negotiatePurchase(request, reply) {
   `;
   if (!car) {
     // Refund energy
-    await sql`
-      UPDATE players SET energy_current = LEAST(energy_current + ${ENERGY_COST_NEGOTIATE}, 30),
-        updated_at = NOW() WHERE id = ${playerId}
-    `;
+    await refundEnergy(playerId, ENERGY_COST_NEGOTIATE);
     return reply.code(404).send({ data: null, error: 'Listing not found or expired', meta: null });
   }
 
@@ -343,10 +335,7 @@ async function negotiatePurchase(request, reply) {
   const minAllowedPrice = Math.ceil(originalPrice * 0.70);
   if (proposedPrice < minAllowedPrice) {
     // Refund energy — this is a validation error, not a game attempt
-    await sql`
-      UPDATE players SET energy_current = LEAST(energy_current + ${ENERGY_COST_NEGOTIATE}, 30),
-        updated_at = NOW() WHERE id = ${playerId}
-    `;
+    await refundEnergy(playerId, ENERGY_COST_NEGOTIATE);
     return reply.code(400).send({
       data: null,
       error: `Proposed price is too low. Minimum is ${minAllowedPrice} BYN (70% of original ${originalPrice} BYN).`,
@@ -356,10 +345,7 @@ async function negotiatePurchase(request, reply) {
 
   // Also reject if proposed price is above current asking price — nonsensical
   if (proposedPrice >= currentPrice) {
-    await sql`
-      UPDATE players SET energy_current = LEAST(energy_current + ${ENERGY_COST_NEGOTIATE}, 30),
-        updated_at = NOW() WHERE id = ${playerId}
-    `;
+    await refundEnergy(playerId, ENERGY_COST_NEGOTIATE);
     return reply.code(400).send({
       data: null,
       error: `Proposed price must be below the current asking price of ${currentPrice} BYN.`,
@@ -655,11 +641,7 @@ async function prePurchaseInspect(request, reply) {
   try {
     result = await runPrePurchaseInspection(carId, playerId, actionId);
   } catch (err) {
-    await sql`
-      UPDATE players
-      SET energy_current = LEAST(energy_current + ${energyCost}, 30), updated_at = NOW()
-      WHERE id = ${playerId}
-    `;
+    await refundEnergy(playerId, energyCost);
     return reply.code(err.statusCode || 500).send({ data: null, error: err.message, meta: null });
   }
 

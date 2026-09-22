@@ -53,6 +53,24 @@ export async function getEnergy(playerId) {
 }
 
 /**
+ * Refund energy, capped at the player's level-appropriate max.
+ *
+ * @param {string} playerId
+ * @param {number} amount
+ */
+export async function refundEnergy(playerId, amount) {
+  await sql`
+    UPDATE players
+    SET energy_current = LEAST(
+          energy_current + ${amount},
+          CASE WHEN level >= 15 THEN 100 WHEN level >= 8 THEN 75 ELSE 50 END
+        ),
+        updated_at = NOW()
+    WHERE id = ${playerId}
+  `;
+}
+
+/**
  * Atomically consume energy. Returns false if insufficient energy.
  *
  * @param {string} playerId

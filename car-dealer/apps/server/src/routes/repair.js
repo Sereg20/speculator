@@ -7,7 +7,7 @@
  */
 
 import { startRepair, checkCompletion } from '../services/repairQueue.js';
-import { consumeEnergy } from '../services/energyService.js';
+import { consumeEnergy, refundEnergy } from '../services/energyService.js';
 import { sql } from '../db/client.js';
 import { requireAuth } from '../middleware/auth.js';
 
@@ -45,12 +45,7 @@ async function startRepairRoute(request, reply) {
     job = await startRepair(carId, defectId, repairType, playerId);
   } catch (err) {
     // Refund energy on business-logic failure
-    await sql`
-      UPDATE players
-      SET energy_current = LEAST(energy_current + ${ENERGY_COST_REPAIR}, 30),
-          updated_at = NOW()
-      WHERE id = ${playerId}
-    `;
+    await refundEnergy(playerId, ENERGY_COST_REPAIR);
     return reply.code(err.statusCode || 500).send({ data: null, error: err.message, meta: null });
   }
 

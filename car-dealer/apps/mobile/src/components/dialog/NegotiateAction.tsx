@@ -15,14 +15,13 @@ import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 interface NegotiateActionProps {
   color: string,
   text: string,
-  iconName: string,
-  iconColor: string,
+  energyCost: number,
   disabled: boolean,
   onPress: () => void;
 }
 
 export function NegotiateAction({
-  color, text, iconName, iconColor, onPress, disabled
+  color, text, onPress, disabled, energyCost
 }: NegotiateActionProps) {
   return (
     <Pressable
@@ -35,7 +34,7 @@ export function NegotiateAction({
       onPress={onPress}
       disabled={disabled}
     >
-      <FontAwesome5 name={iconName} size={20} color={iconColor} />
+
       <Text style={styles.text}>{text}</Text>
     </Pressable>
   );
@@ -43,10 +42,11 @@ export function NegotiateAction({
 
 const styles = StyleSheet.create({
   button: {
-    width: '23%',
+    flex: 1,
     borderRadius: 8,
     alignItems: 'center',
-    paddingVertical: 10,
+    justifyContent: 'center',
+    paddingVertical: 8,
   },
 
   buttonPressed: {
@@ -61,7 +61,6 @@ const styles = StyleSheet.create({
     color: colors.textMain,
     fontSize: 12,
     fontWeight: 'bold',
-    marginTop: 4,
     textAlign: 'center'
   }
 

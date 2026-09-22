@@ -8,19 +8,27 @@ import {
 } from "react-native";
 import { colors } from "@/theme/colors";
 
-interface GameModelWithoutButtonsProps {
+interface GameModalWithoutHeaderProps {
   visible: boolean;
-  title: string;
   children: React.ReactNode;
-  onClose: () => void
+  onClose: () => void;
+  onConfirm?: () => void;
+  confirmText?: string;
+  closeText?: string;
+  confirmDisabled?: boolean;
+  confirmHidden?: boolean;
 }
 
-export function GameModelWithoutButtons({
+export function GameModalWithoutHeader({
   visible,
-  title,
   children,
-  onClose
-}: GameModelWithoutButtonsProps) {
+  onClose,
+  onConfirm,
+  confirmText,
+  closeText,
+  confirmDisabled,
+  confirmHidden
+}: GameModalWithoutHeaderProps) {
   return (
     <Modal
       visible={visible}
@@ -38,11 +46,6 @@ export function GameModelWithoutButtons({
         <View style={styles.darkOverlay} />
 
         <View style={styles.modal}>
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>{title}</Text>
-          </View>
-
           {/* Content */}
           <View style={styles.content}>
             {children}
@@ -70,7 +73,7 @@ const styles = StyleSheet.create({
     maxWidth: 500,
     borderRadius: 12,
     overflow: "hidden",
-    backgroundColor: colors.darkBackground,
+    backgroundColor: colors.mainBackground,
     borderWidth: 2,
     borderColor: colors.lightBackground,
     boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.5)",
