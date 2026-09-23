@@ -60,6 +60,22 @@ export const marketListingsQuery = () =>
   });
 
 /**
+ * POST /market/listings/refresh
+ */
+
+export const refreshListings = async (): Promise<MarketListing[]> => {
+  const response = await apiClient<MarketListingsResponse>(
+    `/market/listings/refresh`, 
+    {
+      method: "POST",
+      body: JSON.stringify({ }),
+    }
+  );
+
+  return response.data.listings;
+};
+
+/**
  * GET /market/listings/:id/dialogue
  */
 export type SellerDialogue = {

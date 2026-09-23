@@ -7,18 +7,35 @@ import {
   ImageBackground,
   Image,
 } from "react-native";
-import { useQuery } from "@tanstack/react-query";
-import { marketListingsQuery } from "@/api/market";
+import { useMutation, useQuery, useQueryClient  } from "@tanstack/react-query";
+import { marketListingsQuery, refreshListings } from "@/api/market";
 import { colors } from "@/theme/colors";
 import { MarketList } from "@/components/market-list/MarketList";
 
 
 export default function MarketScreen() {
+  const queryClient = useQueryClient();
   const {
     data: listings = [],
     isLoading,
     error,
   } = useQuery(marketListingsQuery());
+
+  // /refresh request
+  const refreshMutation = useMutation({
+    mutationFn: () => refreshListings(),
+
+    onSuccess: (data) => {
+      queryClient.setQueryData(
+        ["market", "listings"],
+        data
+      );
+    },
+
+    onError: (error) => {
+      
+    },
+  });
     
   return (
     <View style={styles.container}>
@@ -27,7 +44,7 @@ export default function MarketScreen() {
         style={styles.marketImg}
         resizeMode="cover"
       />
-      <MarketList listings={listings} onRefresh={() =>{}}/>
+      <MarketList listings={listings} onRefresh={() =>{refreshMutation.mutate()}}/>
     </View>
 
   );

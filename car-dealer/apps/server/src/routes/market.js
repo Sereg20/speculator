@@ -16,7 +16,7 @@ import { resolveMarketNegotiation } from '../services/negotiationEngine.js';
 import { runPrePurchaseInspection, INSPECTION_ACTIONS, inspectionXP, resolveAvailableActions } from '../services/inspectionEngine.js';
 import { sql } from '../db/client.js';
 import { requireAuth } from '../middleware/auth.js';
-import { LISTING_REFRESH_MANUAL_COST, INGAME_DAY_REAL_MINUTES } from '../config.js';
+import { INGAME_DAY_REAL_MINUTES } from '../config.js';
 
 // Energy cost per GMS §1.3
 const ENERGY_COST_PURCHASE = 2;
@@ -236,42 +236,21 @@ async function purchaseCar(request, reply) {
 
 /**
  * POST /market/listings/refresh
- * Forces a market refresh. Costs LISTING_REFRESH_MANUAL_COST BYN (GMS §4.1).
+ * Forces a market refresh. Free.
  */
 async function forceRefresh(request, reply) {
   const playerId = request.playerId;
 
-  await sql.begin(async tx => {
-    const [player] = await tx`
-      SELECT cash, level FROM players WHERE id = ${playerId} FOR UPDATE
-    `;
-    if (!player) throw Object.assign(new Error('Player not found'), { statusCode: 404 });
-
-    if (player.cash < LISTING_REFRESH_MANUAL_COST) {
-      throw Object.assign(new Error('Insufficient funds for manual refresh'), { statusCode: 400 });
-    }
-
-    await tx`
-      UPDATE players
-      SET cash = cash - ${LISTING_REFRESH_MANUAL_COST},
-          updated_at = NOW()
-      WHERE id = ${playerId}
-    `;
-
-    await tx`
-      INSERT INTO transactions (player_id, type, amount, description)
-      VALUES (${playerId}, 'listing_refresh', ${-LISTING_REFRESH_MANUAL_COST}, 'Обновление объявлений')
-    `;
-  });
-
   const [player] = await sql`SELECT level FROM players WHERE id = ${playerId}`;
+  if (!player) return reply.code(404).send({ data: null, error: 'Player not found', meta: null });
+
   const listings = await generateListings(playerId, player.level);
   const safeListings = listings.map(({ quality_tier: _qt, ...rest }) => rest);
 
   return reply.send({
     data: { listings: safeListings },
     error: null,
-    meta: { cost: LISTING_REFRESH_MANUAL_COST },
+    meta: { cost: 0 },
   });
 }
 
