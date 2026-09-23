@@ -1,12 +1,7 @@
-import {
-  View,
-  StyleSheet,
-  Text,
-  FlatList,
-} from "react-native";
+import {View, StyleSheet, Text, FlatList } from "react-native";
 import { colors } from "@/theme/colors";
 import { InspectionItem } from "./InspectionItem";
-import { InspectionActionId, InspectionTool, InspectionToolWithStableId } from "@/api/market";
+import { InspectionToolWithStableId } from "@/api/market";
 
 
 interface InspectionCategorySectionProps {

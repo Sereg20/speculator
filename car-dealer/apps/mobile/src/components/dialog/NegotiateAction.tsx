@@ -1,15 +1,9 @@
-import { MarketListing } from "@/api/market";
 import { colors } from "@/theme/colors";
 import {
-  View,
   Text,
   StyleSheet,
   Pressable,
-  FlatList,
-  ImageBackground,
 } from "react-native";
-import { router } from "expo-router";
-import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 
 
 interface NegotiateActionProps {

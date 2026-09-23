@@ -1,9 +1,4 @@
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  type GestureResponderEvent,
-} from "react-native";
+import {  Pressable, StyleSheet,  Text, type GestureResponderEvent } from "react-native";
 import { colors } from "@/theme/colors";
 import { InspectionTool } from "@/api/market";
 

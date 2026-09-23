@@ -2,9 +2,7 @@
 
 import {
   View,
-  Text,
   StyleSheet,
-  ImageBackground,
   Image,
 } from "react-native";
 import { useMutation, useQuery, useQueryClient  } from "@tanstack/react-query";

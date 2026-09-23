@@ -5,7 +5,6 @@ import {
   Text,
   StyleSheet,
   Pressable,
-  FlatList,
   ImageBackground,
 } from "react-native";
 import { router } from "expo-router";

@@ -213,11 +213,15 @@ export default function MarketInspectionScreen() {
   }
 
   function onSuccessPurchaseDialogClose() {
-    setTimeout(() => {
-      router.replace({
-        pathname: "/market"
-      });
-    }, 800);
+    router.replace({
+      pathname: "/market"
+    });
+  }
+
+  function onSuccessPurchaseDialogConfirm() {
+    router.replace({
+      pathname: "/"
+    });
   }
 
   return (
@@ -262,7 +266,7 @@ export default function MarketInspectionScreen() {
 
       <NegotiatePriceSelectorDialog visible={isPriceModalVisible} onClose={() => { setPriceModalVisible(false) }} onConfirm={onConfirmProposedPrice} initialPrice={currentPrice} minPrice={minPrice} />
       <InspectDialog listingId={id} visible={isInspectModalVisible} onClose={() => { setInspectModalVisible(false) }} onPreInspect={onPreInspect} />
-      <SuccessPurchaseDialog car={listing} visible={isSuccessPurchaseVisible} onClose={onSuccessPurchaseDialogClose} />
+      <SuccessPurchaseDialog car={listing} visible={isSuccessPurchaseVisible} finalPrice={currentPrice} onClose={onSuccessPurchaseDialogClose} onConfirm={onSuccessPurchaseDialogConfirm}/>
     </View>
   );
 }

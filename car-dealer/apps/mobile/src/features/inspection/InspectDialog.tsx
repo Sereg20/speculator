@@ -1,15 +1,10 @@
-import {
-  View,
-  StyleSheet,
-  Text,
-} from "react-native";
+import {  View, StyleSheet, Text } from "react-native";
 import { CategoryId, InspectionActionId, inspectionToolsQuery } from "@/api/market";
 import { GameModalWithoutHeader } from "../../components/modal/GameModalWithoutHeader";
 import { colors } from "@/theme/colors";
 import { InspectionCategorySection } from "./InspectionCategorySection";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-
 
 interface InspectDialogProps {
   listingId: string,
@@ -69,7 +64,7 @@ export function InspectDialog({
       onConfirm={onConfirm}
       confirmHidden={false}
       closeText="ОТМЕНА"
-      closeColor="#787C7E"
+      closeColor={colors.greyButton}
       confirmText="НАЧАТЬ ОСМОТР"
       confirmColor={colors.blueButtonColor}
     >
