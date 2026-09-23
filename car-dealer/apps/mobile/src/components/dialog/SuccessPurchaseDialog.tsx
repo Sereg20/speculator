@@ -9,6 +9,7 @@ import { GameModalWithoutHeader } from "../modal/GameModalWithoutHeader";
 import { colors } from "@/theme/colors";
 import { ListItem } from "../list-item/ListItem";
 import Foundation from '@expo/vector-icons/Foundation';
+import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 
 
 interface SuccessPurchaseDialogProps {
@@ -42,6 +43,7 @@ export function SuccessPurchaseDialog({
           <ListItem>
             <View style={styles.dealContainer}>
               <Text style={styles.label}>Цена покупки: </Text>
+              <FontAwesome5 name="bitcoin" size={20} color={colors.textGold} />
               <Text style={styles.price}> {finalPrice} BYN</Text>
             </View>
           </ListItem>
