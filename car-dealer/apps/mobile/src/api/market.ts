@@ -184,6 +184,52 @@ export const purchaseListing = async (
   return response.data;
 };
 
+
+/**
+ * GET /market/listings/:id/inspections
+ */
+export interface InspectionTool {
+  id: InspectionActionId;
+  label: string;
+  categories: string[];
+  energy: number;
+  alreadyDone: boolean;
+};
+
+export interface InspectionToolWithStableId extends InspectionTool {
+  stableId: string
+}
+
+type InspectionToolsResponse = {
+  data: {
+    completedActions: [];
+  };
+  error: string | null;
+  meta: {
+    availableActions: InspectionTool[] 
+  };
+};
+
+export async function getInspectionTools(
+  listingId: string,
+): Promise<InspectionTool[]> {
+  const response = await apiClient<InspectionToolsResponse>(
+    `/market/listings/${listingId}/inspections`,
+  );
+
+  return response.meta.availableActions;
+}
+
+export const inspectionToolsQuery = (listingId: string) =>
+  queryOptions({
+    queryKey: ["market", "listings", listingId, "inspection-tools"],
+    queryFn: () => getInspectionTools(listingId),
+    enabled: Boolean(listingId),
+    staleTime: 600_000,
+  });
+
+
+
 /**
  * POST /market/listings/:id/pre-inspect
  */
@@ -212,6 +258,14 @@ export type InspectionActionId =
   | "lift_ramp"
   | "full_diagnostic";
 
+export type CategoryId = 
+  | "engine"
+  | "transmission"
+  | "body"
+  | "suspension"
+  | "electrical"
+  | "interior";
+
 type RevealedDefect = {
   id: string;
   defect_type: string;
@@ -238,12 +292,13 @@ type PreInspectResponse = {
 export const preInspectListing = async (
   id: string,
   actionId: InspectionActionId,
+  categoryId: CategoryId
 ): Promise<PreInspectResult> => {
   const response = await apiClient<PreInspectResponse>(
     `/market/listings/${id}/pre-inspect`,
     {
       method: "POST",
-      body: JSON.stringify({ actionId }),
+      body: JSON.stringify({ actionId, categoryId }),
     }
   );
 

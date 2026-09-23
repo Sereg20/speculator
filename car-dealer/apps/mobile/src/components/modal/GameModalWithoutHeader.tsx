@@ -14,7 +14,9 @@ interface GameModalWithoutHeaderProps {
   onClose: () => void;
   onConfirm?: () => void;
   confirmText?: string;
+  confirmColor?: string;
   closeText?: string;
+  closeColor?: string;
   confirmDisabled?: boolean;
   confirmHidden?: boolean;
 }
@@ -25,7 +27,9 @@ export function GameModalWithoutHeader({
   onClose,
   onConfirm,
   confirmText,
+  confirmColor = colors.greenButton,
   closeText,
+  closeColor = colors.redButtonColor,
   confirmDisabled,
   confirmHidden
 }: GameModalWithoutHeaderProps) {
@@ -50,7 +54,40 @@ export function GameModalWithoutHeader({
           <View style={styles.content}>
             {children}
           </View>
-          
+
+          {/* Actions */}
+          <View style={styles.actions}>
+            <Pressable
+              onPress={onClose}
+              style={({ pressed }) => [
+                styles.button,
+                {backgroundColor: closeColor},
+                pressed && styles.pressed,
+              ]}
+            >
+              <Text style={styles.buttonText}>
+                {closeText}
+              </Text>
+            </Pressable>
+
+            {!confirmHidden &&
+              <Pressable
+                disabled={confirmDisabled}
+                onPress={onConfirm}
+                style={({ pressed }) => [
+                  styles.button,
+                  {backgroundColor: confirmColor},
+                  pressed && !confirmDisabled && styles.pressed,
+                  confirmDisabled && styles.disabled,
+                ]}
+              >
+                <Text style={styles.buttonText}>
+                  {confirmText}
+                </Text>
+              </Pressable>
+            }
+          </View>
+
         </View>
       </View>
     </Modal>
@@ -79,28 +116,11 @@ const styles = StyleSheet.create({
     boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.5)",
   },
 
-  header: {
-    minHeight: 50,
-    paddingHorizontal: 16,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.mainBackground,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.lightBackground,
-  },
-
-  title: {
-    color: colors.textMain,
-    fontSize: 18,
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-
   content: {
-    padding: 20,
+    padding: 14,
   },
 
-  actions: {
+   actions: {
     flexDirection: "row",
     gap: 10,
     padding: 16,
@@ -114,14 +134,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
-  },
-
-  closeButton: {
-    backgroundColor: colors.redButtonColor,
-  },
-
-  confirmButton: {
-    backgroundColor: colors.greenButton,
   },
 
   buttonText: {

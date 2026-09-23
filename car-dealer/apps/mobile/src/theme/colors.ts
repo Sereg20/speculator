@@ -16,5 +16,7 @@ export const colors = {
   greenButton: "#429958",
   
   playerMessageColor: "#3084CE",
-  npcMessageColor: "#2A2A28"
+  npcMessageColor: "#2A2A28",
+
+  greyColor: "#5F6567"
 }

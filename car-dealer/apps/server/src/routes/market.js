@@ -507,10 +507,10 @@ async function chatWithSeller(request, reply) {
     return reply.code(404).send({ data: null, error: 'Listing not found or expired', meta: null });
   }
 
-  // One chat per player per listing — stored as tier='chat' in pre_purchase_inspections
+  // One chat per player per listing — stored as action_id='chat' in pre_purchase_inspections
   const [alreadyChatted] = await sql`
     SELECT 1 FROM pre_purchase_inspections
-    WHERE car_id = ${carId} AND player_id = ${playerId} AND tier = 'chat'
+    WHERE car_id = ${carId} AND player_id = ${playerId} AND action_id = 'chat'
   `;
   if (alreadyChatted) {
     return reply.code(409).send({
@@ -527,9 +527,9 @@ async function chatWithSeller(request, reply) {
 
   // Record the chat before rolling so even a zero-hint result counts
   await sql`
-    INSERT INTO pre_purchase_inspections (car_id, player_id, tier, revealed_count, energy_cost)
+    INSERT INTO pre_purchase_inspections (car_id, player_id, action_id, revealed_count, energy_cost)
     VALUES (${carId}, ${playerId}, 'chat', 0, ${ENERGY_COST_CHAT})
-    ON CONFLICT (car_id, player_id, tier) DO NOTHING
+    ON CONFLICT (car_id, player_id, action_id) DO NOTHING
   `;
 
   // Fetch all unrevealed non-fraud defects in a stable random order
@@ -598,15 +598,16 @@ async function chatWithSeller(request, reply) {
 
 /**
  * POST /market/listings/:carId/pre-inspect
- * Body: { actionId: string }
+ * Body: { actionId: string, category?: string }
  *
  * Inspect a market car before buying. Uses action.prePurchaseEnergy (+1 vs garage)
  * and 0.65× detection accuracy. Revealed defects persist after purchase.
+ * Optional `category` narrows inspection to a single category within the action's scope.
  */
 async function prePurchaseInspect(request, reply) {
   const { carId } = request.params;
   const playerId = request.playerId;
-  const { actionId } = request.body || {};
+  const { actionId, category = null } = request.body || {};
 
   const action = INSPECTION_ACTIONS[actionId];
   if (!action) {
@@ -617,17 +618,27 @@ async function prePurchaseInspect(request, reply) {
     });
   }
 
+  if (category !== null && !action.categories.includes(category)) {
+    return reply.code(400).send({
+      data: null,
+      error: `Category '${category}' is not covered by action '${actionId}'. Valid: ${action.categories.join(', ')}`,
+      meta: null,
+    });
+  }
+
   const energyCost = action.prePurchaseEnergy;
 
-  // Check if this action was already performed by this player on this listing
+  // Check if this action+category combo was already performed by this player on this listing
   const [existing] = await sql`
     SELECT id, revealed_count FROM pre_purchase_inspections
-    WHERE car_id = ${carId} AND player_id = ${playerId} AND action_id = ${actionId}
+    WHERE car_id = ${carId} AND player_id = ${playerId}
+      AND action_id = ${actionId}
+      AND COALESCE(category, '') = ${category ?? ''}
   `;
   if (existing) {
     return reply.code(409).send({
       data: null,
-      error: `Action '${actionId}' already performed on this listing`,
+      error: `Action '${actionId}'${category ? ` (${category})` : ''} already performed on this listing`,
       meta: { alreadyRevealedCount: existing.revealed_count },
     });
   }
@@ -639,16 +650,16 @@ async function prePurchaseInspect(request, reply) {
 
   let result;
   try {
-    result = await runPrePurchaseInspection(carId, playerId, actionId);
+    result = await runPrePurchaseInspection(carId, playerId, actionId, category);
   } catch (err) {
     await refundEnergy(playerId, energyCost);
     return reply.code(err.statusCode || 500).send({ data: null, error: err.message, meta: null });
   }
 
   await sql`
-    INSERT INTO pre_purchase_inspections (car_id, player_id, action_id, revealed_count, energy_cost)
-    VALUES (${carId}, ${playerId}, ${actionId}, ${result.revealed.length}, ${energyCost})
-    ON CONFLICT (car_id, player_id, action_id) DO NOTHING
+    INSERT INTO pre_purchase_inspections (car_id, player_id, action_id, category, revealed_count, energy_cost)
+    VALUES (${carId}, ${playerId}, ${actionId}, ${category}, ${result.revealed.length}, ${energyCost})
+    ON CONFLICT DO NOTHING
   `;
 
   const xpAmount = inspectionXP(actionId);
@@ -659,6 +670,7 @@ async function prePurchaseInspect(request, reply) {
     error: null,
     meta: {
       actionId,
+      category,
       newlyRevealedCount: result.revealed.length,
       energySpent: energyCost,
       xpAwarded: xpAmount,
@@ -687,7 +699,7 @@ async function getListingInspections(request, reply) {
   }
 
   const completedRows = await sql`
-    SELECT action_id, revealed_count, energy_cost, performed_at
+    SELECT action_id, category, revealed_count, energy_cost, performed_at
     FROM pre_purchase_inspections
     WHERE car_id = ${carId} AND player_id = ${playerId}
     ORDER BY performed_at ASC

@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, Image } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { colors } from "@/theme/colors";
-import { listingDialogueQuery, chatWithSeller, MarketListing, negotiateListing, purchaseListing, preInspectListing, InspectionActionId } from "@/api/market";
+import { listingDialogueQuery, chatWithSeller, MarketListing, negotiateListing, purchaseListing, preInspectListing, InspectionActionId, inspectionToolsQuery, CategoryId } from "@/api/market";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Dialog } from "@/components/dialog/Dialog";
 import { NegotiateAction } from "@/components/dialog/NegotiateAction";
@@ -23,7 +23,7 @@ const initMessage: IDialogMessage = {
 
 
 export default function MarketInspectionScreen() {
-  
+
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: initialDialogue } = useQuery(listingDialogueQuery(id));
   const queryClient = useQueryClient();
@@ -48,6 +48,14 @@ export default function MarketInspectionScreen() {
   const [isSuccessPurchaseVisible, setSuccessPurchaseVisible] = useState<boolean>(false);
   const [currentPrice, setCurrentPrice] = useState<number>(listing?.asking_price || 0);
   const minPrice = Math.ceil((listing?.asking_price || 0) * 0.7);
+
+  useEffect(() => {
+    if (!id) return;
+
+    void queryClient
+      .query(inspectionToolsQuery(id))
+      .catch(() => { });
+  }, [id, queryClient]);
 
 
   // /chat request
@@ -96,7 +104,6 @@ export default function MarketInspectionScreen() {
       setSuccessPurchaseVisible(true);
     },
     onError: (error) => {
-      console.log(JSON.stringify(error))
       if (
         error instanceof ApiError &&
         error.status === 400 &&
@@ -109,13 +116,27 @@ export default function MarketInspectionScreen() {
 
   // /preinspect request
   const preInspectMutation = useMutation({
-    mutationFn: (actionId: InspectionActionId) => preInspectListing(id, actionId),
+    mutationFn: ({
+      actionId,
+      categoryId,
+    }: {
+      actionId: InspectionActionId;
+      categoryId: CategoryId;
+    }) => preInspectListing(id, actionId, categoryId),
+
     onSuccess: () => {
-     
+      // ...
     },
+
     onError: (error) => {
-     
-    }
+      if (
+        error instanceof ApiError &&
+        error.status === 409 &&
+        error.body.error?.includes("already performed on this listing")
+      ) {
+        addMessage('Хорош! Ты уже смотрел это.', 'npc');
+      }
+    },
   });
 
   useEffect(() => {
@@ -172,10 +193,15 @@ export default function MarketInspectionScreen() {
     chatMutation.mutate();
   }
 
-  function onPreInspect(actionId: InspectionActionId) {
+  function onPreInspect(actionId: InspectionActionId | null, categoryId: CategoryId | null) {
+    if (!actionId || !categoryId) return;
+
     setInspectModalVisible(false);
     addMessage('А ну открой капот...', 'player');
-    preInspectMutation.mutate(actionId);
+    preInspectMutation.mutate({
+      actionId,
+      categoryId,
+    });
   }
 
   function onConfirmProposedPrice(proposedPrice: number) {
@@ -214,15 +240,15 @@ export default function MarketInspectionScreen() {
             <View style={styles.sellerTitleContainer}>
               <Text style={styles.sellerTitle}>{listing?.seller_name} (продавец)</Text>
             </View>
-            
+
           </View>
           <Dialog messages={messages} />
         </View>
 
         <View style={styles.globalActionsContainer}>
           <View style={styles.actionsContainer}>
-              <NegotiateAction disabled={negotiateDisabled} text={'ТОРГ'} onPress={onNegotiate} energyCost={2} color={colors.orangeButtonColor} />
-              <NegotiateAction disabled={chatDisabled} text={'СПРОСИТЬ'} onPress={onChat} energyCost={2} color='#26b39b' />
+            <NegotiateAction disabled={negotiateDisabled} text={'ТОРГ'} onPress={onNegotiate} energyCost={2} color={colors.orangeButtonColor} />
+            <NegotiateAction disabled={chatDisabled} text={'СПРОСИТЬ'} onPress={onChat} energyCost={2} color='#26b39b' />
           </View>
           <View style={styles.actionsContainer}>
             <NegotiateAction disabled={purchaseDisabled} text={`КУПИТЬ\n(${currentPrice})`} onPress={onBuy} energyCost={2} color='#429958' />
@@ -233,9 +259,9 @@ export default function MarketInspectionScreen() {
 
       </View>
 
-      <NegotiatePriceSelectorDialog visible={isPriceModalVisible} onClose={() => { setPriceModalVisible(false) }} onConfirm={onConfirmProposedPrice} initialPrice={currentPrice} minPrice={minPrice}/>
-      <InspectDialog visible={isInspectModalVisible} onClose={() => {setInspectModalVisible(false)}} onPreInspect={onPreInspect} chatDisabled={chatDisabled} preInspectDisabled={preInspectDisabled}/>
-      <SuccessPurchaseDialog car={listing} visible={isSuccessPurchaseVisible} onClose={onSuccessPurchaseDialogClose}/>
+      <NegotiatePriceSelectorDialog visible={isPriceModalVisible} onClose={() => { setPriceModalVisible(false) }} onConfirm={onConfirmProposedPrice} initialPrice={currentPrice} minPrice={minPrice} />
+      <InspectDialog listingId={id} visible={isInspectModalVisible} onClose={() => { setInspectModalVisible(false) }} onPreInspect={onPreInspect} />
+      <SuccessPurchaseDialog car={listing} visible={isSuccessPurchaseVisible} onClose={onSuccessPurchaseDialogClose} />
     </View>
   );
 }

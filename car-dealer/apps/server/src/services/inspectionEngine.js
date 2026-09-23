@@ -275,13 +275,16 @@ function computeDetectionProb(defect, action, hasPatternBonus, baseMultiplier = 
  * @param {string}  actionId        - key from INSPECTION_ACTIONS
  * @param {object}  client          - postgres client (sql or transaction)
  * @param {number}  baseMultiplier  - 1.0 or PRE_PURCHASE_ACCURACY
+ * @param {string|null} category    - optional single-category filter (must be in action.categories)
  * @returns {Promise<{ revealed: object[], alreadyKnown: number }>}
  */
-async function executeInspectionAction(carId, playerId, actionId, client, baseMultiplier = 1.0) {
+async function executeInspectionAction(carId, playerId, actionId, client, baseMultiplier = 1.0, category = null) {
   const action = INSPECTION_ACTIONS[actionId];
   if (!action) {
     throw Object.assign(new Error(`Unknown inspection action: ${actionId}`), { statusCode: 400 });
   }
+
+  const targetCategories = category ? [category] : action.categories;
 
   // Validate player owns the required skill or equipment
   if (action.requires) {
@@ -308,7 +311,7 @@ async function executeInspectionAction(carId, playerId, actionId, client, baseMu
     }
   }
 
-  // Fetch hidden defects in the action's categories
+  // Fetch hidden defects in the targeted categories
   const hiddenDefects = await client`
     SELECT id, defect_type, category, severity, detection_tier,
            proper_repair_cost, quick_fix_cost, repair_time_minutes,
@@ -316,7 +319,7 @@ async function executeInspectionAction(carId, playerId, actionId, client, baseMu
     FROM defects
     WHERE car_id = ${carId}
       AND is_revealed_to_player = false
-      AND category = ANY(${action.categories})
+      AND category = ANY(${targetCategories})
   `;
 
   // Pattern recognition: categories that already have a revealed defect
@@ -372,7 +375,7 @@ async function executeInspectionAction(carId, playerId, actionId, client, baseMu
  */
 export async function runInspection(carId, playerId, actionId, opts = {}) {
   const client = opts.sqlClient || sql;
-  return executeInspectionAction(carId, playerId, actionId, client, 1.0);
+  return executeInspectionAction(carId, playerId, actionId, client, 1.0, opts.category ?? null);
 }
 
 /**
@@ -382,9 +385,10 @@ export async function runInspection(carId, playerId, actionId, opts = {}) {
  * @param {string} carId
  * @param {string} playerId
  * @param {string} actionId
+ * @param {string|null} [category] - optional single-category filter
  * @returns {Promise<{ revealed: object[], alreadyKnown: number }>}
  */
-export async function runPrePurchaseInspection(carId, playerId, actionId) {
+export async function runPrePurchaseInspection(carId, playerId, actionId, category = null) {
   // Verify car is still an active market listing
   const [car] = await sql`
     SELECT id FROM cars
@@ -396,7 +400,7 @@ export async function runPrePurchaseInspection(carId, playerId, actionId) {
     throw Object.assign(new Error('Listing not found or expired'), { statusCode: 404 });
   }
 
-  return executeInspectionAction(carId, playerId, actionId, sql, PRE_PURCHASE_ACCURACY);
+  return executeInspectionAction(carId, playerId, actionId, sql, PRE_PURCHASE_ACCURACY, category);
 }
 
 /**
