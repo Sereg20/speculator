@@ -529,7 +529,7 @@ async function chatWithSeller(request, reply) {
   await sql`
     INSERT INTO pre_purchase_inspections (car_id, player_id, action_id, revealed_count, energy_cost)
     VALUES (${carId}, ${playerId}, 'chat', 0, ${ENERGY_COST_CHAT})
-    ON CONFLICT (car_id, player_id, action_id) DO NOTHING
+    ON CONFLICT DO NOTHING
   `;
 
   // Fetch all unrevealed non-fraud defects in a stable random order
