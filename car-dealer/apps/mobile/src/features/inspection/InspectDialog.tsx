@@ -27,13 +27,13 @@ export function InspectDialog({
     inspectionToolsQuery(listingId)
   );
 
-  if(isLoading) {
-    return <Text>Loading...</Text>
-  }
-
   useEffect(() => {
     setSelectedToolId(null);
   }, [visible]);
+
+  if(isLoading) {
+    
+  }
 
   const getToolsForCategory = (category: string) =>
     tools.filter((tool) => tool.categories.includes(category)).map((tool) => ({
@@ -57,7 +57,7 @@ export function InspectDialog({
     const splitted = selectedToolId?.split('-') || [];
     const inspectionToolId = splitted.slice(-1)[0] || null;
     const categoryId = splitted[0] || null;
-    console.log(inspectionToolId, categoryId)
+    
     onPreInspect(inspectionToolId as InspectionActionId, categoryId as CategoryId);
   }
 

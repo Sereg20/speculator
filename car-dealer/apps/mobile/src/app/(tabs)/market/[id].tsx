@@ -125,10 +125,11 @@ export default function MarketInspectionScreen() {
     }) => preInspectListing(id, actionId, categoryId),
 
     onSuccess: () => {
-      // ...
+      setPreInspectDisabled(false);
     },
 
     onError: (error) => {
+      setPreInspectDisabled(false);
       if (
         error instanceof ApiError &&
         error.status === 409 &&
@@ -195,7 +196,7 @@ export default function MarketInspectionScreen() {
 
   function onPreInspect(actionId: InspectionActionId | null, categoryId: CategoryId | null) {
     if (!actionId || !categoryId) return;
-
+    setPreInspectDisabled(true);
     setInspectModalVisible(false);
     addMessage('А ну открой капот...', 'player');
     preInspectMutation.mutate({
@@ -252,7 +253,7 @@ export default function MarketInspectionScreen() {
           </View>
           <View style={styles.actionsContainer}>
             <NegotiateAction disabled={purchaseDisabled} text={`КУПИТЬ\n(${currentPrice})`} onPress={onBuy} energyCost={2} color='#429958' />
-            <NegotiateAction disabled={false} text={'ПРОВЕРИТЬ'} onPress={onInspect} energyCost={2} color='#307DC1' />
+            <NegotiateAction disabled={preInspectDisabled} text={'ПРОВЕРИТЬ'} onPress={onInspect} energyCost={2} color='#307DC1' />
             <NegotiateAction disabled={quitDisabled} text='УЙТИ' onPress={onQuit} energyCost={2} color='#C5453C' />
           </View>
         </View>
