@@ -111,8 +111,8 @@ async function computeToolCostDiscount(defectCategory, ownedEquipIds, client) {
 }
 
 // Base repair times in in-game days (GMS §8.2)
-const BASE_DAYS_PROPER = { minor: 0.5, moderate: 1, major: 3, severe: 4 };
-const BASE_DAYS_QUICK  = { minor: 0,   moderate: 0, major: 1, severe: 1.5 };
+const BASE_DAYS_PROPER = { minor: 0.5, major: 3, severe: 4 };
+const BASE_DAYS_QUICK  = { minor: 0,   major: 1, severe: 1.5 };
 
 // Defect severity overrides: some defects are "significant" (2 days base)
 const SIGNIFICANT_DEFECTS = new Set([

@@ -14,6 +14,7 @@ import { consumeEnergy, refundEnergy } from '../services/energyService.js';
 import { awardXP } from '../services/xpService.js';
 import { resolveMarketNegotiation } from '../services/negotiationEngine.js';
 import { runPrePurchaseInspection, INSPECTION_ACTIONS, inspectionXP, resolveAvailableActions } from '../services/inspectionEngine.js';
+import { labelDefect } from '../services/defectEngine.js';
 import { sql } from '../db/client.js';
 import { requireAuth } from '../middleware/auth.js';
 import { INGAME_DAY_REAL_MINUTES } from '../config.js';
@@ -513,7 +514,9 @@ async function chatWithSeller(request, reply) {
 
   // Fetch all unrevealed non-fraud defects in a stable random order
   const hiddenDefects = await sql`
-    SELECT id, defect_type, category, severity
+    SELECT id, defect_type, category, severity, detection_tier,
+           proper_repair_cost, quick_fix_cost, repair_time_minutes,
+           resale_impact, is_odometer_fraud
     FROM defects
     WHERE car_id = ${carId}
       AND is_revealed_to_player = false
@@ -543,11 +546,19 @@ async function chatWithSeller(request, reply) {
     `;
   }
 
-  const hintPayload = hints.map(h => ({
-    defectType: h.defect_type,
-    category:   h.category,
-    severity:   h.severity,
-  }));
+  const hintPayload = labelDefect(hints.map(({ id, defect_type, category, severity, detection_tier,
+    proper_repair_cost, quick_fix_cost, repair_time_minutes, resale_impact, is_odometer_fraud }) => ({
+    id,
+    defect_type,
+    category,
+    severity,
+    detection_tier,
+    proper_repair_cost,
+    quick_fix_cost,
+    repair_time_minutes,
+    resale_impact,
+    is_odometer_fraud,
+  })));
 
   const dialogue = await generateDialogue('seller_chat_hint', {
     seller_archetype:    car.seller_archetype,
@@ -569,9 +580,9 @@ async function chatWithSeller(request, reply) {
   }
 
   return reply.send({
-    data: { dialogue, hints: hintPayload },
+    data: { dialogue, revealed: hintPayload },
     error: null,
-    meta: { hintsRevealed: hints.length },
+    meta: { newlyRevealedCount: hints.length },
   });
 }
 
@@ -605,6 +616,16 @@ async function prePurchaseInspect(request, reply) {
     });
   }
 
+  // If the action covers multiple categories, category is required so the player
+  // is explicit about what they're inspecting — prevents ambiguous duplicate detection.
+  if (category === null && action.categories.length > 1) {
+    return reply.code(400).send({
+      data: null,
+      error: `Action '${actionId}' covers multiple categories (${action.categories.join(', ')}). Specify one via 'category'.`,
+      meta: null,
+    });
+  }
+
   const energyCost = action.prePurchaseEnergy;
 
   // Check if this action+category combo was already performed by this player on this listing
@@ -612,7 +633,7 @@ async function prePurchaseInspect(request, reply) {
     SELECT id, revealed_count FROM pre_purchase_inspections
     WHERE car_id = ${carId} AND player_id = ${playerId}
       AND action_id = ${actionId}
-      AND COALESCE(category, '') = ${category ?? ''}
+      AND category IS NOT DISTINCT FROM ${category}
   `;
   if (existing) {
     return reply.code(409).send({

@@ -1,5 +1,5 @@
 /**
- * @typedef {'minor'|'moderate'|'major'} DefectSeverity
+ * @typedef {'minor'|'major'} DefectSeverity
  * @typedef {'body'|'engine'|'transmission'|'suspension'|'interior'|'electrics'} DefectCategory
  *
  * @typedef {Object} Defect

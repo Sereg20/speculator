@@ -295,7 +295,7 @@ export async function generateBuyerInquiry(listingId, log, { force = false } = {
       `;
       // Buyer demands 50–130% of proper repair cost depending on severity
       for (const d of defects) {
-        const severityFactor = d.severity === 'major' ? 1.15 : d.severity === 'moderate' ? 0.85 : 0.65;
+        const severityFactor = d.severity === 'major' ? 1.15 : 0.65;
         const penalty = Math.round(d.proper_repair_cost * severityFactor);
         finalOfferedPrice = Math.max(0, finalOfferedPrice - penalty);
       }

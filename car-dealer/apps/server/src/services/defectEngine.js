@@ -53,7 +53,7 @@ const DEFECT_DEFS = [
   {
     id: 'dent_major',
     category: 'body',
-    severity: 'moderate',
+    severity: 'major',
     detectionTier: 1,
     occurrence: { poor: 0.40, fair: 0.20, good: 0.05 },
     properRepair: [350, 900],
@@ -187,7 +187,7 @@ const DEFECT_DEFS = [
   {
     id: 'oil_leak_major',
     category: 'engine',
-    severity: 'moderate',
+    severity: 'major',
     detectionTier: 2,
     occurrence: { poor: 0.30, fair: 0.15, good: 0.04 },
     properRepair: [400, 1000],
@@ -198,7 +198,7 @@ const DEFECT_DEFS = [
   {
     id: 'worn_timing_belt',
     category: 'engine',
-    severity: 'moderate',
+    severity: 'major',
     detectionTier: 2,
     occurrence: { poor: 0.40, fair: 0.20, good: 0.05 },
     properRepair: [280, 650],
@@ -209,7 +209,7 @@ const DEFECT_DEFS = [
   {
     id: 'overheating',
     category: 'engine',
-    severity: 'moderate',
+    severity: 'major',
     detectionTier: 2,
     occurrence: { poor: 0.35, fair: 0.18, good: 0.05 },
     properRepair: [200, 550],
@@ -321,7 +321,7 @@ const DEFECT_DEFS = [
   {
     id: 'slipping_gears_manual',
     category: 'transmission',
-    severity: 'moderate',
+    severity: 'major',
     detectionTier: 2,
     occurrence: { poor: 0.35, fair: 0.20, good: 0.05 },
     properRepair: [380, 900],
@@ -343,7 +343,7 @@ const DEFECT_DEFS = [
   {
     id: 'clutch_wear',
     category: 'transmission',
-    severity: 'moderate',
+    severity: 'major',
     detectionTier: 2,
     occurrence: { poor: 0.45, fair: 0.28, good: 0.08 },
     properRepair: [420, 950],
@@ -367,7 +367,7 @@ const DEFECT_DEFS = [
   {
     id: 'worn_shocks',
     category: 'suspension',
-    severity: 'moderate',
+    severity: 'minor',
     detectionTier: 1,
     occurrence: { poor: 0.60, fair: 0.35, good: 0.10 },
     properRepair: [200, 500],
@@ -378,7 +378,7 @@ const DEFECT_DEFS = [
   {
     id: 'loose_ball_joints',
     category: 'suspension',
-    severity: 'moderate',
+    severity: 'major',
     detectionTier: 2,
     occurrence: { poor: 0.40, fair: 0.22, good: 0.06 },
     properRepair: [150, 400],
@@ -446,7 +446,7 @@ const DEFECT_DEFS = [
   {
     id: 'faulty_ac_compressor',
     category: 'interior',
-    severity: 'moderate',
+    severity: 'major',
     detectionTier: 2,
     occurrence: { poor: 0.35, fair: 0.20, good: 0.05 },
     properRepair: [380, 950],
@@ -504,7 +504,7 @@ const DEFECT_DEFS = [
   {
     id: 'faulty_alternator',
     category: 'electrical',
-    severity: 'moderate',
+    severity: 'major',
     detectionTier: 2,
     occurrence: { poor: 0.30, fair: 0.18, good: 0.05 },
     properRepair: [220, 550],
@@ -537,7 +537,7 @@ const DEFECT_DEFS = [
   {
     id: 'airbag_fault',
     category: 'electrical',
-    severity: 'moderate',
+    severity: 'major',
     detectionTier: 2,
     occurrence: { poor: 0.25, fair: 0.12, good: 0.03 },
     properRepair: [160, 420],
@@ -546,6 +546,82 @@ const DEFECT_DEFS = [
     resaleImpact: -0.18,
   },
 ];
+
+// ─── Defect labels (Russian) ──────────────────────────────────────────────────
+
+export const DEFECT_LABELS = {
+  // Body
+  surface_rust:               'Поверхностная ржавчина',
+  structural_rust:            'Сквозная ржавчина кузова',
+  dent_minor:                 'Небольшая вмятина',
+  dent_major:                 'Серьёзная вмятина',
+  cracked_windscreen:         'Трещина на лобовом стекле',
+  cracked_glass:              'Трещина на стекле',
+  paint_damage:               'Повреждение лакокрасочного покрытия',
+  panel_gap:                  'Неравномерные зазоры панелей',
+  accident_history:           'История ДТП',
+  fender_dented:              'Вмятина на крыле',
+  bumper_scratched:           'Царапины на бампере',
+  door_rear_right_scratched:  'Царапины на задней правой двери',
+  door_rear_left_scratched:   'Царапины на задней левой двери',
+  door_front_right_scratched: 'Царапины на передней правой двери',
+  door_front_left_scratched:  'Царапины на передней левой двери',
+
+  // Engine
+  oil_leak_minor:   'Небольшой подтёк масла',
+  oil_leak_major:   'Серьёзная утечка масла',
+  worn_timing_belt: 'Износ ремня ГРМ',
+  overheating:      'Перегрев двигателя',
+  starting_issues:  'Проблемы с запуском',
+  low_compression:  'Низкая компрессия',
+  turbo_wear:       'Износ турбины',
+  engine_cold_idle: 'Нестабильный холодный пуск',
+  engine_knocking:  'Стук двигателя',
+  engine_misfire:   'Пропуски зажигания',
+  blue_smoke_exhaust: 'Синий дым из выхлопа',
+  soot_exhaust:     'Сажа в выхлопе',
+
+  // Transmission
+  slipping_gears_auto:    'Пробуксовка АКПП',
+  slipping_gears_manual:  'Пробуксовка МКПП',
+  transmission_fluid_leak: 'Утечка жидкости КПП',
+  clutch_wear:            'Износ сцепления',
+  gearbox_bearing_wear:   'Износ подшипников КПП',
+
+  // Suspension
+  worn_shocks:       'Износ амортизаторов',
+  loose_ball_joints: 'Люфт шаровых опор',
+  alignment_issues:  'Нарушение развал-схождения',
+  worn_bushings:     'Износ сайлентблоков',
+  damaged_subframe:  'Повреждение подрамника',
+
+  // Interior
+  torn_upholstery:      'Порванная обивка',
+  broken_electronics:   'Неисправная электроника салона',
+  faulty_ac_compressor: 'Неисправность компрессора кондиционера',
+  ac_regas:             'Требуется заправка кондиционера',
+  odometer_rollback:    'Скрутка пробега',
+  water_damage:         'Следы залива водой',
+
+  // Electrical
+  dead_battery:         'Разряженный аккумулятор',
+  faulty_alternator:    'Неисправность генератора',
+  abs_esp_fault:        'Ошибка ABS/ESP',
+  wiring_harness_damage: 'Повреждение проводки',
+  airbag_fault:         'Ошибка подушек безопасности',
+};
+
+/**
+ * Append a `label` field to a defect object (or array of defect objects).
+ * Safe to call on any shape — unknown defect_type gets a fallback label.
+ *
+ * @param {object|object[]} defect
+ * @returns {object|object[]}
+ */
+export function labelDefect(defect) {
+  if (Array.isArray(defect)) return defect.map(labelDefect);
+  return { ...defect, label: DEFECT_LABELS[defect.defect_type] ?? defect.defect_type };
+}
 
 // Max 2 defects per category (GMS §6.8)
 const MAX_DEFECTS_PER_CATEGORY = 2;
@@ -591,7 +667,6 @@ function repairTimeMinutes(severity, quickFix) {
   const INGAME_DAY = 120;
   const baseDays = {
     minor:    quickFix ? 0     : 0.5,
-    moderate: quickFix ? 0     : 1,
     major:    quickFix ? 1     : 3,
   };
   return Math.ceil((baseDays[severity] || 1) * INGAME_DAY);
@@ -638,7 +713,7 @@ export async function rollDefects(carId, conditionTier, qualityTier, opts = {}) 
   }
 
   // Sort by severity (major first) so we keep the worst when trimming
-  const severityOrder = { major: 0, moderate: 1, minor: 2 };
+  const severityOrder = { major: 0, minor: 1 };
   rolled.sort((a, b) => (severityOrder[a.severity] ?? 2) - (severityOrder[b.severity] ?? 2));
 
   // Apply category cap (max 2 per category)

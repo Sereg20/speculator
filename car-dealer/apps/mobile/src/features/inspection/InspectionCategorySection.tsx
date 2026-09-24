@@ -1,4 +1,4 @@
-import {View, StyleSheet, Text, FlatList } from "react-native";
+import { View, StyleSheet, Text, FlatList } from "react-native";
 import { colors } from "@/theme/colors";
 import { InspectionItem } from "./InspectionItem";
 import { InspectionToolWithStableId } from "@/api/market";
@@ -20,27 +20,27 @@ export function InspectionCategorySection({
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-          <Text style={styles.title}>{title}</Text>
+        <Text style={styles.title}>{title}</Text>
       </View>
       <View style={styles.toolsContainer}>
         <FlatList
-                data={items}
-                keyExtractor={(item) => item.stableId}
-                renderItem={({ item }) => (
-                  <InspectionItem selected={item.stableId === selectedItemId} item={item} onPress={() => onSelect(item.stableId)}/>
-                )}
-                contentContainerStyle={styles.listContent}
-                showsVerticalScrollIndicator={false}
-                refreshing={refreshing}
-                onRefresh={() => {}}
-                ListEmptyComponent={
-                  <View style={styles.emptyContainer}>
-                    <Text style={styles.emptyText}>
-                      Нет доступных инструментов
-                    </Text>
-                  </View>
-                }
-              />
+          data={items}
+          keyExtractor={(item) => item.stableId}
+          renderItem={({ item }) => (
+            <InspectionItem selected={item.stableId === selectedItemId} item={item} onPress={() => onSelect(item.stableId)} />
+          )}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          refreshing={refreshing}
+          onRefresh={() => { }}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>
+                Нет доступных инструментов
+              </Text>
+            </View>
+          }
+        />
       </View>
 
     </View>
@@ -81,8 +81,8 @@ const styles = StyleSheet.create({
   },
 
   emptyContainer: {
-   flex: 1,
-   justifyContent: 'center'
+    flex: 1,
+    justifyContent: 'center'
   },
 
   emptyText: {

@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, Image } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { colors } from "@/theme/colors";
-import { listingDialogueQuery, chatWithSeller, MarketListing, negotiateListing, purchaseListing, preInspectListing, InspectionActionId, inspectionToolsQuery, CategoryId } from "@/api/market";
+import { listingDialogueQuery, chatWithSeller, MarketListing, negotiateListing, purchaseListing, preInspectListing, InspectionActionId, inspectionToolsQuery, CategoryId, RevealedDefect } from "@/api/market";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Dialog } from "@/components/dialog/Dialog";
 import { NegotiateAction } from "@/components/dialog/NegotiateAction";
@@ -14,6 +14,7 @@ import { NegotiatePriceSelectorDialog } from "@/components/dialog/NegotiatePrice
 import { InspectDialog } from "@/features/inspection/InspectDialog";
 import { npcAvatars } from "@/assets/images/npc-avatars/npcAvatars";
 import { SuccessPurchaseDialog } from "@/components/dialog/SuccessPurchaseDialog";
+import { RevealedDefectsDialog } from "@/features/inspection/RevealedDefectsDialog";
 
 const initMessage: IDialogMessage = {
   id: "1",
@@ -47,7 +48,12 @@ export default function MarketInspectionScreen() {
   const [isInspectModalVisible, setInspectModalVisible] = useState<boolean>(false);
   const [isSuccessPurchaseVisible, setSuccessPurchaseVisible] = useState<boolean>(false);
   const [currentPrice, setCurrentPrice] = useState<number>(listing?.asking_price || 0);
+  const [isRevealedDefectsDialogVisible, setRevealedDefectsDialogVisible] = useState<boolean>(false);
+
+  const [allDefects, setAllDefects] = useState<RevealedDefect[]>([]);
+  const [lastDefects, setLastDefects] = useState<RevealedDefect[]>([]);
   const minPrice = Math.ceil((listing?.asking_price || 0) * 0.7);
+  
 
   useEffect(() => {
     if (!id) return;
@@ -63,11 +69,15 @@ export default function MarketInspectionScreen() {
     mutationFn: () => chatWithSeller(id),
     onSuccess: (data) => {
       addMessage(data.dialogue, "npc");
+      setLastDefects(data.revealed);
+      setAllDefects(allDefects => [...allDefects, ...data.revealed]);
+      if(data.revealed.length > 0) {
+        setRevealedDefectsDialogVisible(true);
+      }
     },
     onError: (error: ApiError) => {
       if (error instanceof ApiError && error.status === 409) {
         addMessage('Я уже все сказал.', "npc");
-        setChatDisabled(true);
       } else {
         setChatDisabled(false);
         addMessage("что-то я завтыкал. Давай-ка еще раз", "npc");
@@ -87,6 +97,9 @@ export default function MarketInspectionScreen() {
         setCurrentPrice(data.finalPrice);
       } else if (data.outcome === 'rejected') {
         setPreInspectDisabled(true);
+        setPurchaseDisabled(true);
+        setPreInspectDisabled(true);
+        setChatDisabled(true);
       }
       addMessage(data.message, "npc");
     },
@@ -110,6 +123,8 @@ export default function MarketInspectionScreen() {
         error.body.error === "No free garage slot"
       ) {
         addMessage('Совсем забыл! У меня нет свободных мест в гараже', 'player');
+      } else {
+        setPurchaseDisabled(false);
       }
     }
   });
@@ -124,7 +139,10 @@ export default function MarketInspectionScreen() {
       categoryId: CategoryId;
     }) => preInspectListing(id, actionId, categoryId),
 
-    onSuccess: () => {
+    onSuccess: (data) => {
+      setLastDefects(data.revealed);
+      setAllDefects(allDefects => [...allDefects, ...data.revealed]);
+      setRevealedDefectsDialogVisible(true);
       setPreInspectDisabled(false);
     },
 
@@ -267,6 +285,7 @@ export default function MarketInspectionScreen() {
       <NegotiatePriceSelectorDialog visible={isPriceModalVisible} onClose={() => { setPriceModalVisible(false) }} onConfirm={onConfirmProposedPrice} initialPrice={currentPrice} minPrice={minPrice} />
       <InspectDialog listingId={id} visible={isInspectModalVisible} onClose={() => { setInspectModalVisible(false) }} onPreInspect={onPreInspect} />
       <SuccessPurchaseDialog car={listing} visible={isSuccessPurchaseVisible} finalPrice={currentPrice} onClose={onSuccessPurchaseDialogClose} onConfirm={onSuccessPurchaseDialogConfirm}/>
+      <RevealedDefectsDialog visible={isRevealedDefectsDialogVisible} onClose={() => {setRevealedDefectsDialogVisible(false)}} defects={lastDefects}/>
     </View>
   );
 }

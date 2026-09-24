@@ -111,7 +111,7 @@ export async function resolveMarketNegotiation(playerId, context) {
   // ── Base acceptance probability ───────────────────────────────────────────
   // Starts lower than sale negotiation — the market seller has the product,
   // they're less desperate than an NPC buyer.
-  let prob = 0.30;
+  let prob = 0.22;
 
   // Reputation modifiers (GMS §5.1)
   prob += PURCHASE_REP_MODS[repTier] ?? 0;
@@ -165,9 +165,11 @@ export async function resolveMarketNegotiation(playerId, context) {
   const maxAcceptableDelta = _original * 0.30;
   const deltaFraction = maxAcceptableDelta > 0 ? delta / maxAcceptableDelta : 1;
 
-  // Penalty: up to 0.25 for very aggressive offers (slightly harsher than sale)
-  const deltaPenalty = deltaFraction * 0.25;
-  const adjustedProb = clamp(prob - deltaPenalty, NEGOTIATION_SUCCESS_FLOOR, NEGOTIATION_SUCCESS_CAP);
+  // Multiplicative crush: at max discount (deltaFraction=1) prob is scaled to ~30% of its value;
+  // at deltaFraction=0 (tiny offer) the multiplier is 1.0 (no penalty).
+  // This ensures skills/rep can't inflate the adjusted probability at aggressive discounts.
+  const deltaMultiplier = 1 - deltaFraction * 0.70;
+  const adjustedProb = clamp(prob * deltaMultiplier, NEGOTIATION_SUCCESS_FLOOR, NEGOTIATION_SUCCESS_CAP);
 
   const r = Math.random();
 

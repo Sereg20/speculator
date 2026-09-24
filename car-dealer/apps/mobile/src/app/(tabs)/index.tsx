@@ -12,6 +12,7 @@ export default function GarageScreen() {
     error,
   } = useQuery(carsQuery());
 
+
   if(isLoading) {
     return <View><Text>Loading</Text></View>;
   }

@@ -26,29 +26,30 @@ export function CarSlot({ car }: CarCardProps) {
         <Text style={styles.status}>В ГАРАЖЕ</Text>
       </View>
 
-      <View style={{marginHorizontal: 16}}>
-        <View style={styles.info}>
-          <View style={styles.infoBlock}>
-            <Text style={styles.infoItemLabel}>Год Выпуска:</Text>
-            <Text style={styles.infoItemValue}>{car.year}</Text>
-          </View>
-          <View style={styles.infoBlock}>
-            <Text style={styles.infoItemLabel}>Пробег:</Text>
-            <Text style={styles.infoItemValue}>{car.mileage}</Text>
-          </View>
-          <View style={styles.infoBlock}>
-            <Text style={styles.infoItemLabel}>Цена покупки:</Text>
-            <Text style={styles.infoItemValue}>{car.purchase_price} BUN</Text>
-          </View>
+      <View style={styles.info}>
+        <View style={styles.infoBlock}>
+          <Text style={styles.infoItemLabel}>Год Выпуска:</Text>
+          <Text style={styles.infoItemValue}>{car.year}</Text>
         </View>
-        <View style={styles.actions}>
-          <Pressable style={styles.sellBtn}>
-            <Text style={styles.btnText}>ПРОДАТЬ</Text>  
-          </Pressable>
-          <Pressable style={styles.repairBtn}>
-            <Text style={styles.btnText}>РЕМОНТ</Text>  
-          </Pressable>
+        <View style={styles.infoBlock}>
+          <Text style={styles.infoItemLabel}>Пробег:</Text>
+          <Text style={styles.infoItemValue}>{car.mileage}</Text>
         </View>
+        <View style={styles.infoBlock}>
+          <Text style={styles.infoItemLabel}>Цена покупки:</Text>
+          <Text style={styles.infoItemValue}>{car.purchase_price} BUN</Text>
+        </View>
+      </View>
+      <View style={styles.defectsList}>
+          <Text style={styles.defectsFallbackText}>Неисправностей нет</Text>
+      </View>
+      <View style={styles.actions}>
+        <Pressable style={styles.sellBtn}>
+          <Text style={styles.btnText}>ПРОДАТЬ</Text>  
+        </Pressable>
+        <Pressable style={styles.repairBtn}>
+          <Text style={styles.btnText}>РЕМОНТ</Text>  
+        </Pressable>
       </View>
     </View>
   );
@@ -65,8 +66,6 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     boxShadow: "0px 0px 16px #49E2FF",
     overflow: 'hidden',
-    justifyContent: 'space-between',
-    paddingBottom: 20
   },
   
   carSlotBackground: {
@@ -101,15 +100,17 @@ const styles = StyleSheet.create({
   },
 
   info: {
-    marginBottom: 20,
-    paddingTop: 4,
+    marginTop: 12,
+    paddingVertical: 4,
     borderTopWidth: 2,
+    borderBottomWidth: 2,
     borderColor: '#3c5a4d',
-    position: 'relative'
+    position: 'relative',
+    marginHorizontal: 16
   },
 
   infoBlock: {
-    marginTop: 4,
+    marginTop: 2,
     flexDirection: 'row',
     justifyContent: 'space-between'
   },
@@ -123,7 +124,24 @@ const styles = StyleSheet.create({
     color: colors.textMain,
   },
 
+  defectsList: {
+    marginHorizontal: 16,
+    paddingVertical: 4,
+    height: 70,
+    borderBottomWidth: 2,
+    borderColor: '#3c5a4d',
+    marginBottom: 12,
+    justifyContent: 'center'
+  },
+
+  defectsFallbackText: {
+    color: colors.textMain,
+    fontSize: 16,
+    textAlign: 'center'
+  },
+
   actions: {
+    marginHorizontal: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
   },

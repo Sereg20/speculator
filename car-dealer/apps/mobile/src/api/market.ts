@@ -108,21 +108,15 @@ export const listingDialogueQuery = (id: string) =>
 /**
  * POST /market/listings/:id/chat
  */
-export type DefectHint = {
-  defectType: string;
-  category: string;
-  severity: string;
-};
-
 export type ChatResult = {
   dialogue: string;
-  hints: DefectHint[];  // empty array = seller revealed nothing
+  revealed: RevealedDefect[];  // empty array = seller revealed nothing
 };
 
 type ChatResponse = {
   data: ChatResult;
   error: unknown | null;
-  meta: { hintsRevealed: number };
+  meta: { newlyRevealedCount: number };
 };
 
 export const chatWithSeller = async (
@@ -282,17 +276,22 @@ export type CategoryId =
   | "electrical"
   | "interior";
 
-type RevealedDefect = {
+  export type DefectSeverity =
+  | "major"
+  | "minor";
+
+export type RevealedDefect = {
   id: string;
   defect_type: string;
-  category: string;
-  severity: string;
+  category: CategoryId;
+  severity: DefectSeverity;
   detection_tier: number;
   proper_repair_cost: number | null;
   quick_fix_cost: number | null;
   repair_time_minutes: number;
-  resale_impact: number;
+  resale_impact: string;
   is_odometer_fraud: boolean;
+  label: string;
 };
 
 export type PreInspectResult = {
@@ -308,13 +307,13 @@ type PreInspectResponse = {
 export const preInspectListing = async (
   id: string,
   actionId: InspectionActionId,
-  categoryId: CategoryId
+  category: CategoryId
 ): Promise<PreInspectResult> => {
   const response = await apiClient<PreInspectResponse>(
     `/market/listings/${id}/pre-inspect`,
     {
       method: "POST",
-      body: JSON.stringify({ actionId, categoryId }),
+      body: JSON.stringify({ actionId, category }),
     }
   );
 

@@ -8,6 +8,7 @@
 
 import { startRepair, checkCompletion } from '../services/repairQueue.js';
 import { consumeEnergy, refundEnergy } from '../services/energyService.js';
+import { labelDefect } from '../services/defectEngine.js';
 import { sql } from '../db/client.js';
 import { requireAuth } from '../middleware/auth.js';
 
@@ -98,11 +99,12 @@ async function listRepairs(request, reply) {
     ORDER BY rj.started_at DESC
   `;
 
-  const active = jobs.filter(j => !j.completed);
-  const completed = jobs.filter(j => j.completed);
+  const labelledJobs = labelDefect(jobs);
+  const active = labelledJobs.filter(j => !j.completed);
+  const completed = labelledJobs.filter(j => j.completed);
 
   return reply.send({
-    data: { jobs, active, completed },
+    data: { jobs: labelledJobs, active, completed },
     error: null,
     meta: {
       total: jobs.length,

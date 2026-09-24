@@ -31,7 +31,7 @@ CREATE TYPE buyer_archetype AS ENUM (
 
 CREATE TYPE repair_type AS ENUM ('proper', 'quick_fix');
 
-CREATE TYPE defect_severity AS ENUM ('minor', 'moderate', 'major');
+CREATE TYPE defect_severity AS ENUM ('minor', 'major');
 
 CREATE TYPE skill_type AS ENUM ('inspection', 'negotiation', 'repair');
 

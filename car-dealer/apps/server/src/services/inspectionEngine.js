@@ -19,6 +19,7 @@
  */
 
 import { sql } from '../db/client.js';
+import { labelDefect } from './defectEngine.js';
 
 // ─── Inspection action definitions ───────────────────────────────────────────
 // requires: null = always available
@@ -353,7 +354,7 @@ async function executeInspectionAction(carId, playerId, actionId, client, baseMu
   }
 
   // Strip internal field before returning
-  const safeRevealed = newlyRevealed.map(({ qf_discovery_base: _qf, ...rest }) => rest);
+  const safeRevealed = labelDefect(newlyRevealed.map(({ qf_discovery_base: _qf, ...rest }) => rest));
 
   return {
     revealed:     safeRevealed,

@@ -11,6 +11,7 @@
 import { sql } from '../db/client.js';
 import { requireAuth } from '../middleware/auth.js';
 import { INGAME_DAY_REAL_MINUTES } from '../config.js';
+import { labelDefect } from '../services/defectEngine.js';
 
 /**
  * GET /cars/:carId
@@ -63,7 +64,7 @@ async function getCar(request, reply) {
         // Don't expose quality_tier (reveals listing deal quality to client)
         quality_tier: undefined,
       },
-      revealedDefects,
+      revealedDefects: labelDefect(revealedDefects),
       activeRepair: activeRepair || null,
     },
     error: null,
@@ -144,7 +145,7 @@ async function getDefects(request, reply) {
   `;
 
   return reply.send({
-    data: { defects },
+    data: { defects: labelDefect(defects) },
     error: null,
     meta: { count: defects.length },
   });
