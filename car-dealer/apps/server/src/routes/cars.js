@@ -79,13 +79,20 @@ async function getCar(request, reply) {
  * GET /cars
  * Returns all cars owned by the player (excluding market listings and sold).
  * Includes `days_held` (in-game days since purchase) for the client calendar.
+ *
+ * Query params:
+ *   ?include=defects,repairs,listing  — comma-separated list of relations to embed.
+ *   Supported values: defects, repairs, listing
+ *   Example: GET /cars?include=defects,repairs,listing
  */
 async function getMyCars(request, reply) {
   const playerId = request.playerId;
+  const includeParam = request.query.include || '';
+  const include = new Set(includeParam.split(',').map(s => s.trim()).filter(Boolean));
 
   const cars = await sql`
     SELECT id, make, model, year, mileage, color,
-           condition_tier, purchase_price, asking_price,
+           condition_tier, market_value, purchase_price, asking_price,
            seller_archetype, is_turbo, state, created_at, updated_at
     FROM cars
     WHERE player_id = ${playerId}
@@ -93,16 +100,69 @@ async function getMyCars(request, reply) {
     ORDER BY created_at DESC
   `;
 
-  // Compute days_held per car (in-game days since the car was purchased)
   const INGAME_DAY_MS = INGAME_DAY_REAL_MINUTES * 60 * 1000;
   const now = Date.now();
-  const carsWithDaysHeld = cars.map(car => ({
-    ...car,
-    days_held: Math.floor((now - new Date(car.created_at).getTime()) / INGAME_DAY_MS),
-  }));
+  const carIds = cars.map(c => c.id);
+
+  // Fetch all defects for all cars in one query, group in JS
+  let defectsByCarId = {};
+  if (include.has('defects') && carIds.length > 0) {
+    const allDefects = await sql`
+      SELECT id, car_id, defect_type, category, severity, detection_tier,
+             is_quick_fixed, proper_repair_cost, quick_fix_cost,
+             repair_time_minutes, resale_impact, is_odometer_fraud
+      FROM defects
+      WHERE car_id = ANY(${carIds})
+        AND is_revealed_to_player = true
+      ORDER BY severity DESC, detection_tier ASC
+    `;
+    for (const d of labelDefect(allDefects)) {
+      (defectsByCarId[d.car_id] ??= []).push(d);
+    }
+  }
+
+  // Fetch active repair jobs for all cars in one query, group in JS
+  let repairsByCarId = {};
+  if (include.has('repairs') && carIds.length > 0) {
+    const allRepairs = await sql`
+      SELECT id, car_id, repair_type, started_at, completes_at, defect_id
+      FROM repair_jobs
+      WHERE car_id = ANY(${carIds})
+        AND completed = false
+      ORDER BY started_at ASC
+    `;
+    for (const r of allRepairs) {
+      repairsByCarId[r.car_id] ??= r; // keep first (earliest) per car
+    }
+  }
+
+  // Fetch active listings for all cars in one query, group in JS
+  let listingByCarId = {};
+  if (include.has('listing') && carIds.length > 0) {
+    const allListings = await sql`
+      SELECT id, car_id, asking_price, listed_at, expires_at
+      FROM listings
+      WHERE car_id = ANY(${carIds})
+        AND status = 'active'
+    `;
+    for (const l of allListings) {
+      listingByCarId[l.car_id] = { id: l.id, asking_price: l.asking_price, listed_at: l.listed_at, expires_at: l.expires_at };
+    }
+  }
+
+  const carsOut = cars.map(car => {
+    const out = {
+      ...car,
+      days_held: Math.floor((now - new Date(car.created_at).getTime()) / INGAME_DAY_MS),
+    };
+    if (include.has('defects'))  out.revealedDefects = defectsByCarId[car.id] ?? [];
+    if (include.has('repairs'))  out.activeRepair    = repairsByCarId[car.id] ?? null;
+    if (include.has('listing'))  out.activeListing   = listingByCarId[car.id] ?? null;
+    return out;
+  });
 
   return reply.send({
-    data: { cars: carsWithDaysHeld },
+    data: { cars: carsOut },
     error: null,
     meta: { total: cars.length },
   });

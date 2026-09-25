@@ -1,12 +1,33 @@
-import { View, Text, StyleSheet, Image, Pressable } from "react-native";
+import { View, Text, StyleSheet, Image, Pressable, FlatList } from "react-native";
 import { colors } from "@/theme/colors";
 import { Car } from "@/api/cars";
+import { DefectItemIcon } from "./DefectItemIcon";
 
 interface CarCardProps {
   car: Car;
+  onSell: (carId: string, marketValue: number, purchasePrice: number) => void
+  onCancelListing: (listingId: string) => void
 }
 
-export function CarSlot({ car }: CarCardProps) {
+export function CarSlot({ car, onSell, onCancelListing }: CarCardProps) {
+  const activeDefects =  car.revealedDefects ? car.revealedDefects.filter(defect => !defect.is_quick_fixed) : [];
+  const carState = getStateText(car.state);
+
+  function getStateText(state: string) {
+    switch (state) {
+      case "listed_for_sale":
+        return "НА ПРОДАЖЕ"
+      default:
+        return "В ГАРАЖЕ"
+    }
+  }
+
+  function onCancelListingPress() {
+    console.log(car)
+    if (!car.activeListing?.id) return;
+
+    return onCancelListing(car.activeListing?.id);
+  }
 
   return (
     <View style={styles.carSlot}>
@@ -23,7 +44,7 @@ export function CarSlot({ car }: CarCardProps) {
         />
       
         <Text style={styles.title}>{car.make} {car.model}</Text>
-        <Text style={styles.status}>В ГАРАЖЕ</Text>
+        <Text style={styles.status}>{carState}</Text>
       </View>
 
       <View style={styles.info}>
@@ -41,15 +62,44 @@ export function CarSlot({ car }: CarCardProps) {
         </View>
       </View>
       <View style={styles.defectsList}>
-          <Text style={styles.defectsFallbackText}>Неисправностей нет</Text>
+          <FlatList
+            data={activeDefects}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <DefectItemIcon defect={item}/>
+            )}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            refreshing={false}
+            onRefresh={() => { }}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Text style={styles.defectsFallbackText}>
+                  Не обнаружено!
+                </Text>
+              </View>
+            }
+          />
       </View>
       <View style={styles.actions}>
-        <Pressable style={styles.sellBtn}>
-          <Text style={styles.btnText}>ПРОДАТЬ</Text>  
-        </Pressable>
-        <Pressable style={styles.repairBtn}>
-          <Text style={styles.btnText}>РЕМОНТ</Text>  
-        </Pressable>
+        {car.state === "purchased" &&
+          <Pressable onPress={() => {onSell(car.id, car.market_value, car.purchase_price)}} disabled={activeDefects.length > 0} style={[styles.sellBtn,
+            activeDefects.length > 0
+              ? styles.btnDisabled
+              : {} ]}>
+            <Text style={styles.btnText}>ПРОДАТЬ</Text>  
+          </Pressable>
+        }
+        {car.state === "purchased" &&
+          <Pressable style={styles.repairBtn}>
+            <Text style={styles.btnText}>РЕМОНТ</Text>  
+          </Pressable>
+        }
+        {car.state === "listed_for_sale" &&
+          <Pressable onPress={onCancelListingPress} style={styles.cancelListingBtn}>
+            <Text style={styles.btnText}>СНЯТЬ С ПРОДАЖИ</Text>  
+          </Pressable>
+        }
       </View>
     </View>
   );
@@ -131,13 +181,25 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderColor: '#3c5a4d',
     marginBottom: 12,
-    justifyContent: 'center'
+  },
+
+  emptyContainer: {
+    flex: 1,
+    height: 70,
+    justifyContent: 'center',
+    alignItems: 'center'
   },
 
   defectsFallbackText: {
     color: colors.textMain,
     fontSize: 16,
     textAlign: 'center'
+  },
+
+  listContent: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
 
   actions: {
@@ -162,9 +224,21 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
 
+  cancelListingBtn: {
+    backgroundColor: colors.redButtonColor,
+    width: '100%',
+    paddingVertical: 6,
+    borderRadius: 6,
+    alignItems: 'center'
+  },
+
   btnText: {
     color: colors.textMain,
     fontWeight: 'bold'
+  },
+
+  btnDisabled: {
+    opacity: 0.7
   }
 
 });

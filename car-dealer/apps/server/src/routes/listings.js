@@ -94,7 +94,7 @@ async function createListing(request, reply) {
     listing = await sql.begin(async tx => {
       // Verify ownership and state
       const [car] = await tx`
-        SELECT id, state, make, model, year, purchase_price FROM cars
+        SELECT id, state, make, model, year, purchase_price, market_value FROM cars
         WHERE id = ${carId} AND player_id = ${playerId} AND state = 'purchased'
         FOR UPDATE
       `;
@@ -105,12 +105,12 @@ async function createListing(request, reply) {
         );
       }
 
-      // Hard cap: asking price cannot exceed 150% of what was paid (GMS §4.1)
-      if (car.purchase_price > 0) {
-        const maxAllowed = Math.round(car.purchase_price * 1.5);
+      // Hard cap: asking price cannot exceed 150% of market value (GMS §4.1)
+      if (car.market_value > 0) {
+        const maxAllowed = Math.round(car.market_value * 1.5);
         if (askingPrice > maxAllowed) {
           throw Object.assign(
-            new Error(`Asking price cannot exceed 150% of your purchase price (max ${maxAllowed} BYN)`),
+            new Error(`Asking price cannot exceed 150% of market value (max ${maxAllowed} BYN)`),
             { statusCode: 400 },
           );
         }
