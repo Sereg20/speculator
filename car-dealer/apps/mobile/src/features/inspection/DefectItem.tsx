@@ -1,6 +1,6 @@
-import {  Image, Pressable, StyleSheet,  Text, View, type GestureResponderEvent } from "react-native";
+import {  Image, StyleSheet,  Text, View, type GestureResponderEvent } from "react-native";
 import { colors } from "@/theme/colors";
-import { InspectionTool, RevealedDefect } from "@/api/market";
+import { RevealedDefect } from "@/api/market";
 import { ListItem } from "@/components/list-item/ListItem";
 import { defectIcons } from "@/assets/images/icons/defects/defectIcon";
 

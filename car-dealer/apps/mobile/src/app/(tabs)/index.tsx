@@ -169,8 +169,10 @@ export default function GarageScreen() {
         }
       </View>
 
-      {isSellingPriceSelectorDialogVisible && (
+      {isSellingPriceSelectorDialogVisible && selectedCar && (
         <SellingPriceSelectorDialog
+          marketValue={selectedCar?.market_value}
+          purchasePrice={selectedCar.purchase_price}
           initialPrice={initialSellingPrice}
           minPrice={minSellingPrice}
           maxPrice={maxSellingPrice}
@@ -180,7 +182,7 @@ export default function GarageScreen() {
       )}
       {isActiveDefectsDialogVisible && (
         <ActiveDefectsDialog
-          defects={selectedCar?.revealedDefects || []}
+          defects={selectedCar?.revealedDefects?.filter(defect => !defect.is_quick_fixed) || []}
           carMake={selectedCar?.make || ''}
           carModel={selectedCar?.model || ''}
           onClose={onActiveDefectsDialogClose}

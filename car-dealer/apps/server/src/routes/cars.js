@@ -38,13 +38,18 @@ async function getCar(request, reply) {
 
   // Fetch only revealed defects
   const revealedDefects = await sql`
-    SELECT id, defect_type, category, severity, detection_tier,
-           is_quick_fixed, proper_repair_cost, quick_fix_cost,
-           repair_time_minutes, resale_impact, is_odometer_fraud
-    FROM defects
-    WHERE car_id = ${carId}
-      AND is_revealed_to_player = true
-    ORDER BY severity DESC, detection_tier ASC
+    SELECT d.id, d.defect_type, d.category, d.severity, d.detection_tier,
+           d.is_quick_fixed, d.proper_repair_cost, d.quick_fix_cost,
+           d.repair_time_minutes                                    AS proper_repair_time_minutes,
+           GREATEST(5, ROUND(d.repair_time_minutes / 3.0))::int    AS quick_fix_time_minutes,
+           d.resale_impact, d.is_odometer_fraud,
+           (rj.id IS NOT NULL) AS is_repairing
+    FROM defects d
+    LEFT JOIN repair_jobs rj
+      ON rj.defect_id = d.id AND rj.completed = false AND rj.qf_failed = false
+    WHERE d.car_id = ${carId}
+      AND d.is_revealed_to_player = true
+    ORDER BY d.severity DESC, d.detection_tier ASC
   `;
 
   // Fetch active repair job (if any)
@@ -108,13 +113,18 @@ async function getMyCars(request, reply) {
   let defectsByCarId = {};
   if (include.has('defects') && carIds.length > 0) {
     const allDefects = await sql`
-      SELECT id, car_id, defect_type, category, severity, detection_tier,
-             is_quick_fixed, proper_repair_cost, quick_fix_cost,
-             repair_time_minutes, resale_impact, is_odometer_fraud
-      FROM defects
-      WHERE car_id = ANY(${carIds})
-        AND is_revealed_to_player = true
-      ORDER BY severity DESC, detection_tier ASC
+      SELECT d.id, d.car_id, d.defect_type, d.category, d.severity, d.detection_tier,
+             d.is_quick_fixed, d.proper_repair_cost, d.quick_fix_cost,
+             d.repair_time_minutes                                    AS proper_repair_time_minutes,
+             GREATEST(5, ROUND(d.repair_time_minutes / 3.0))::int    AS quick_fix_time_minutes,
+             d.resale_impact, d.is_odometer_fraud,
+             (rj.id IS NOT NULL) AS is_repairing
+      FROM defects d
+      LEFT JOIN repair_jobs rj
+        ON rj.defect_id = d.id AND rj.completed = false AND rj.qf_failed = false
+      WHERE d.car_id = ANY(${carIds})
+        AND d.is_revealed_to_player = true
+      ORDER BY d.severity DESC, d.detection_tier ASC
     `;
     for (const d of labelDefect(allDefects)) {
       (defectsByCarId[d.car_id] ??= []).push(d);
@@ -195,13 +205,18 @@ async function getDefects(request, reply) {
   }
 
   const defects = await sql`
-    SELECT id, defect_type, category, severity, detection_tier,
-           is_quick_fixed, proper_repair_cost, quick_fix_cost,
-           repair_time_minutes, resale_impact, is_odometer_fraud
-    FROM defects
-    WHERE car_id = ${carId}
-      AND is_revealed_to_player = true
-    ORDER BY severity DESC, detection_tier ASC
+    SELECT d.id, d.defect_type, d.category, d.severity, d.detection_tier,
+           d.is_quick_fixed, d.proper_repair_cost, d.quick_fix_cost,
+           d.repair_time_minutes                                    AS proper_repair_time_minutes,
+           GREATEST(5, ROUND(d.repair_time_minutes / 3.0))::int    AS quick_fix_time_minutes,
+           d.resale_impact, d.is_odometer_fraud,
+           (rj.id IS NOT NULL) AS is_repairing
+    FROM defects d
+    LEFT JOIN repair_jobs rj
+      ON rj.defect_id = d.id AND rj.completed = false AND rj.qf_failed = false
+    WHERE d.car_id = ${carId}
+      AND d.is_revealed_to_player = true
+    ORDER BY d.severity DESC, d.detection_tier ASC
   `;
 
   return reply.send({

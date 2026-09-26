@@ -114,6 +114,13 @@ export const ENERGY_COST_LIST_CAR     = 1;
 export const ENERGY_COST_RESPOND_BUYER = 1;
 export const ENERGY_COST_NEGOTIATE    = 2;
 
+// Skip-repair energy cost constants (GMS §8.3)
+// Base energy = ceil(totalRepairMinutes / SKIP_ENERGY_MINUTES_PER_POINT), capped at SKIP_ENERGY_MAX.
+// Actual cost = ceil(remaining / total × base), min 1.
+// Examples: 5 min job → base 1 (trivial skip); 60 min → base 5; 180 min → base 15 (challenging).
+export const SKIP_ENERGY_MINUTES_PER_POINT = 12;  // 1 energy point per 12 min of repair time
+export const SKIP_ENERGY_MAX               = 15;  // cap so even 180-min jobs are skippable
+
 // XP awards per action (GMS §1.2)
 export const XP_CAR_PURCHASED        = 15;
 export const XP_INSPECTION_BASIC     = 10;

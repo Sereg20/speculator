@@ -9,7 +9,6 @@ import {
 import { ActiveDefect } from "@/api/cars";
 import { GameModalWithoutHeader } from "@/components/modal/GameModalWithoutHeader";
 import { colors } from "@/theme/colors";
-import { DefectToBeRepairedItem } from "./DefectToBeRepairedItem";
 import { useState } from "react";
 import { RepairType } from "@/api/repair";
 import { ListItem } from "@/components/list-item/ListItem";
@@ -49,18 +48,20 @@ export function RepairDialog({
         <View style={styles.repairTypesContainer}>
           <ListItem onPress={() => setRepairType("proper")} style={repairType === "proper" && styles.selectedRepair}>
             <View style={styles.priceContainer}>
-              <Text style={styles.priceInfo}>Качественный Ремонт:  </Text>
+              <Text style={styles.priceInfo}>Качественный Ремонт:   </Text>
               <FontAwesome5 name="bitcoin" size={16} color={colors.textGold} />
               <Text style={styles.price}> {defect.proper_repair_cost} BYN</Text>
             </View>
+            <Text style={styles.time}>(Время ремонта: {defect.proper_repair_time_minutes} минут)</Text>
           </ListItem>
 
           <ListItem onPress={() => {setRepairType("quick_fix")}} style={repairType === "quick_fix" && styles.selectedRepair}>
             <View style={styles.priceContainer}>
-              <Text style={styles.priceInfo}>Ремонт на скорую руку:  </Text>
+              <Text style={styles.priceInfo}>Ремонт на скорую руку:   </Text>
               <FontAwesome5 name="bitcoin" size={16} color={colors.textGold} />
               <Text style={styles.price}> {defect.quick_fix_cost} BYN</Text>
             </View>
+            <Text style={styles.time}>(Время ремонта: {defect.quick_fix_time_minutes} минут)</Text>
           </ListItem>
         </View>
         
@@ -110,4 +111,10 @@ const styles = StyleSheet.create({
     color: colors.textMain,
     fontWeight: 'bold'
   },
+
+  time: {
+    fontSize: 12,
+    color: colors.textGray,
+    marginTop: 2
+  }
 });

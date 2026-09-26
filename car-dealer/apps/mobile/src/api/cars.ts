@@ -12,7 +12,8 @@ export type ActiveDefect = {
   is_quick_fixed: boolean;
   proper_repair_cost: number;
   quick_fix_cost: number;
-  repair_time_minutes: number;
+  quick_fix_time_minutes: number;
+  proper_repair_time_minutes: number;
   resale_impact: string;
   is_odometer_fraud: boolean;
   label: string;

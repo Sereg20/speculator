@@ -16,7 +16,6 @@
 import { sql } from '../db/client.js';
 import { transitionCar } from './carStateMachine.js';
 import { awardXP } from './xpService.js';
-import { INGAME_DAY_REAL_MINUTES } from '../config.js';
 
 // ─── Repair skill → defect type capability map ───────────────────────────────
 // Which defect_type IDs each repair skill unlocks for PROPER repair.
@@ -53,6 +52,11 @@ const PROPER_REPAIR_SKILLS = {
   wiring_harness:      ['wiring_harness_damage'],
   subframe_chassis:    ['damaged_subframe'],
   turbo_induction:     ['turbo_wear'],
+
+  // Quick-fix skill tree (improve QF success chance, not proper-repair capability)
+  quick_fix_basics:    [],
+  quick_fix_pro:       [],
+  quick_fix_master:    [],
 };
 
 // Defects that have NO quick-fix option (GMS §6 "Not available" rows)
@@ -78,6 +82,8 @@ const SKILL_REPAIR_TIER = {
   electrical_diag: 2, structural_rust: 2,
   engine_overhaul: 3, auto_gearbox: 3, full_respray: 3,
   wiring_harness: 3, subframe_chassis: 3, turbo_induction: 3,
+  // QF skill tiers (used for unlock level gating only — not proper repair time)
+  quick_fix_basics: 1, quick_fix_pro: 2, quick_fix_master: 3,
 };
 
 // ─── Tool cost discount ───────────────────────────────────────────────────────
@@ -110,28 +116,31 @@ async function computeToolCostDiscount(defectCategory, ownedEquipIds, client) {
   return Math.min(discount, TOOL_COST_DISCOUNT_CAP);
 }
 
-// Base repair times in in-game days (GMS §8.2)
-const BASE_DAYS_PROPER = { minor: 0.5, major: 3, severe: 4 };
-const BASE_DAYS_QUICK  = { minor: 0,   major: 1, severe: 1.5 };
+// ─── Quick-fix success skill bonuses ─────────────────────────────────────────
+// Additive bonus to qf_success_base. Cap: 1.0 (100%).
+const QF_SKILL_BONUS = {
+  quick_fix_basics: 0.10,
+  quick_fix_pro:    0.15,
+  quick_fix_master: 0.25,
+};
 
-// Defect severity overrides: some defects are "significant" (2 days base)
-const SIGNIFICANT_DEFECTS = new Set([
-  'clutch_wear', 'faulty_ac_compressor', 'gearbox_bearing_wear',
-  'oil_leak_major', 'worn_timing_belt',
-]);
-
-function getBaseDays(defect, repairType) {
-  let severity = defect.severity;
-  // "Significant" is not a DB enum value; it maps to 2 days base time
-  const isSignificant = SIGNIFICANT_DEFECTS.has(defect.defect_type);
-
-  if (repairType === 'proper') {
-    if (isSignificant) return 2;
-    return BASE_DAYS_PROPER[severity] ?? 1;
-  } else {
-    if (isSignificant) return 0.5;
-    return BASE_DAYS_QUICK[severity] ?? 0;
+/**
+ * Resolve the effective quick-fix success probability for a defect.
+ * Reads qf_success_base from the defect row; applies owned QF skill bonuses.
+ * Returns a value in [0, 1]. Returns null if defect has no QF option.
+ *
+ * @param {{ qf_success_base: number|null }} defect - defect row (must include qf_success_base)
+ * @param {string[]} ownedSkillIds
+ * @returns {number|null}
+ */
+function resolveQFSuccessChance(defect, ownedSkillIds) {
+  if (defect.qf_success_base == null) return null;
+  let chance = defect.qf_success_base;
+  for (const skillId of ownedSkillIds) {
+    const bonus = QF_SKILL_BONUS[skillId];
+    if (bonus) chance += bonus;
   }
+  return Math.min(chance, 1.0);
 }
 
 /**
@@ -190,7 +199,7 @@ export async function startRepair(carId, defectId, repairType, playerId) {
     // Fetch the defect — must be revealed
     const [defect] = await tx`
       SELECT id, defect_type, category, severity, proper_repair_cost, quick_fix_cost,
-             repair_time_minutes, is_odometer_fraud
+             repair_time_minutes, qf_success_base, is_odometer_fraud
       FROM defects
       WHERE id = ${defectId} AND car_id = ${carId}
         AND is_revealed_to_player = true AND is_quick_fixed = false
@@ -217,13 +226,15 @@ export async function startRepair(carId, defectId, repairType, playerId) {
 
     // Proper repair: skills reduce time but do not block the repair.
     // skillTier = null means no matching skill owned — repair proceeds at base time (1.0× multiplier).
+    // Always fetch owned skills — needed for QF success chance on quick_fix too.
+    const ownedSkills = await tx`
+      SELECT skill_id FROM player_skills WHERE player_id = ${playerId}
+    `;
+    const ownedSkillIds = ownedSkills.map(r => r.skill_id);
+
     let skillTier = null;
     let ownedEquipIds = [];
     if (repairType === 'proper') {
-      const ownedSkills = await tx`
-        SELECT skill_id FROM player_skills WHERE player_id = ${playerId}
-      `;
-      const ownedSkillIds = ownedSkills.map(r => r.skill_id);
       skillTier = resolveBestRepairSkillTier(defect.defect_type, ownedSkillIds);
       // null skillTier is allowed — falls back to 1.0× time multiplier
 
@@ -249,18 +260,24 @@ export async function startRepair(carId, defectId, repairType, playerId) {
       throw Object.assign(new Error('Insufficient funds'), { statusCode: 400 });
     }
 
-    // Compute repair duration
-    const baseDays = getBaseDays(defect, repairType);
-    const multiplier = repairType === 'proper'
-      ? (SKILL_TIER_MULTIPLIER[skillTier] ?? 1.0)
-      : 1.0;
-    // Round up to nearest 0.5 days, then convert to real milliseconds
-    const rawDays = baseDays * multiplier;
-    const roundedDays = Math.ceil(rawDays * 2) / 2;  // nearest 0.5
-    const durationMs = roundedDays * INGAME_DAY_REAL_MINUTES * 60 * 1000;
+    // Compute repair duration from per-defect repairMinutes stored on the defect row.
+    // Quick fix = proper ÷ 3, minimum 5 min. Proper repair is further reduced by skill tier multiplier.
+    const properMinutes = defect.repair_time_minutes ?? 60;
+    let durationMinutes;
+    if (repairType === 'quick_fix') {
+      durationMinutes = Math.max(5, Math.round(properMinutes / 3));
+    } else {
+      const multiplier = SKILL_TIER_MULTIPLIER[skillTier] ?? 1.0;
+      durationMinutes = Math.round(properMinutes * multiplier);
+    }
+    const durationMs = durationMinutes * 60 * 1000;
     const completesAt = new Date(Date.now() + durationMs);
-    // Immediate repairs (0 days) complete right away
-    const isImmediate = roundedDays === 0;
+    const isImmediate = durationMinutes === 0;
+
+    // Resolve quick-fix success chance (shown to player before they commit)
+    const quickFixSuccessChance = repairType === 'quick_fix'
+      ? resolveQFSuccessChance(defect, ownedSkillIds)
+      : null;
 
     // Deduct cash
     await tx`
@@ -291,10 +308,13 @@ export async function startRepair(carId, defectId, repairType, playerId) {
       RETURNING id, car_id, defect_id, repair_type, started_at, completes_at, completed, cost_charged
     `;
 
-    // Attach discount metadata for the route response (not stored in DB)
+    // Attach metadata for the route response (not stored in DB)
     job.toolDiscountApplied = toolDiscount > 0
       ? { fraction: toolDiscount, savedByn: baseCost - cost }
       : null;
+    if (quickFixSuccessChance !== null) {
+      job.quickFixSuccessChance = quickFixSuccessChance;
+    }
 
     // If immediate (0-duration), complete inline
     if (isImmediate) {
@@ -335,8 +355,8 @@ export async function checkCompletion(repairJobId) {
   if (job.completed) return { completed: true, job };
   if (new Date(job.completes_at) > new Date()) return { completed: false, job };
 
-  await completeRepairJob(job);
-  return { completed: true, job };
+  const { qfFailed } = await completeRepairJob(job);
+  return { completed: true, qfFailed, job };
 }
 
 /**
@@ -344,9 +364,16 @@ export async function checkCompletion(repairJobId) {
  * Called by checkCompletion and the background cron job.
  * Safe to call multiple times — the UPDATE WHERE completed=false is idempotent.
  *
- * @param {object} job - repair_jobs row
+ * For quick_fix jobs: rolls against qf_success_base (+ player skill bonuses).
+ * On failure: sets qf_failed=true on the repair_jobs row; defect remains unfixed.
+ * Caller (route/background job) should notify the player when qf_failed is set.
+ *
+ * @param {object} job - repair_jobs row (must include repair_type, defect_id, car_id)
+ * @returns {Promise<{ qfFailed: boolean }>}
  */
 export async function completeRepairJob(job) {
+  let qfFailed = false;
+
   await sql.begin(async tx => {
     // Atomic guard: only process if still incomplete
     const result = await tx`
@@ -356,21 +383,56 @@ export async function completeRepairJob(job) {
     `;
     if (result.length === 0) return;  // already completed by another process
 
-    // Mark defect repaired
-    await tx`
-      UPDATE defects
-      SET is_quick_fixed = ${job.repair_type === 'quick_fix'}
-      WHERE id = ${job.defect_id}
-    `;
+    if (job.repair_type === 'quick_fix') {
+      // Roll QF success using qf_success_base stored on the defect row + player skills
+      const [defectRow] = await tx`
+        SELECT d.qf_success_base, p.id AS player_id
+        FROM defects d
+        JOIN cars c ON c.id = d.car_id
+        JOIN players p ON p.id = c.player_id
+        WHERE d.id = ${job.defect_id}
+      `;
 
-    // Transition car back to purchased (ready for next action)
-    // Use raw UPDATE here instead of transitionCar to avoid double-lock issues in tx
+      let successChance = 1.0;
+      if (defectRow?.qf_success_base != null) {
+        const ownedSkills = await tx`
+          SELECT skill_id FROM player_skills WHERE player_id = ${defectRow.player_id}
+        `;
+        const ownedSkillIds = ownedSkills.map(r => r.skill_id);
+        successChance = resolveQFSuccessChance({ qf_success_base: defectRow.qf_success_base }, ownedSkillIds);
+      }
+
+      const success = Math.random() < successChance;
+      if (!success) {
+        // Quick fix did not hold — mark failure, leave defect unfixed
+        qfFailed = true;
+        await tx`
+          UPDATE repair_jobs SET qf_failed = true WHERE id = ${job.id}
+        `;
+        // Defect is NOT updated — stays unfixed so player can retry or do proper repair
+      } else {
+        // Quick fix held — mark defect as quick-fixed
+        await tx`
+          UPDATE defects SET is_quick_fixed = true WHERE id = ${job.defect_id}
+        `;
+      }
+    } else {
+      // Proper repair: always succeeds — mark defect repaired
+      await tx`
+        UPDATE defects
+        SET is_quick_fixed = false
+        WHERE id = ${job.defect_id}
+      `;
+    }
+
+    // Transition car back to purchased (ready for next action) regardless of QF outcome
     await tx`
       UPDATE cars SET state = 'purchased', updated_at = NOW()
       WHERE id = ${job.car_id} AND state = 'in_repair'
     `;
 
     // Award XP: 25 XP per 500 BYN spent, max 50 (GMS §1.2)
+    // QF failure still gives partial XP (10) — player tried
     const [fullJob] = await tx`
       SELECT cost_charged FROM repair_jobs WHERE id = ${job.id}
     `;
@@ -380,8 +442,6 @@ export async function completeRepairJob(job) {
     // Fetch player_id via car
     const [car] = await tx`SELECT player_id FROM cars WHERE id = ${job.car_id}`;
     if (car?.player_id) {
-      // awardXP opens its own transaction; call after this tx completes
-      // Store for post-transaction call
       job._xpToAward = xp;
       job._playerId = car.player_id;
     }
@@ -391,4 +451,6 @@ export async function completeRepairJob(job) {
   if (job._playerId && job._xpToAward) {
     await awardXP(job._playerId, job._xpToAward, 'repair_complete').catch(() => {});
   }
+
+  return { qfFailed };
 }

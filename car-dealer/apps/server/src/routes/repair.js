@@ -6,11 +6,15 @@
  * POST /cars/:carId/repairs/:jobId/cancel — cancel a pending job (partial refund)
  */
 
-import { startRepair, checkCompletion } from '../services/repairQueue.js';
-import { consumeEnergy, refundEnergy } from '../services/energyService.js';
+import { startRepair, checkCompletion, completeRepairJob } from '../services/repairQueue.js';
+import { consumeEnergy, refundEnergy, getEnergy } from '../services/energyService.js';
 import { labelDefect } from '../services/defectEngine.js';
 import { sql } from '../db/client.js';
 import { requireAuth } from '../middleware/auth.js';
+import {
+  SKIP_ENERGY_MINUTES_PER_POINT,
+  SKIP_ENERGY_MAX,
+} from '../config.js';
 
 // Energy cost per GMS §1.3
 const ENERGY_COST_REPAIR = 3;
@@ -51,13 +55,17 @@ async function startRepairRoute(request, reply) {
   }
 
   const isImmediate = job.completed;
+  const meta = {
+    immediate: isImmediate,
+    completesAt: job.completes_at,
+  };
+  if (job.quickFixSuccessChance != null) {
+    meta.quickFixSuccessChance = job.quickFixSuccessChance;
+  }
   return reply.code(201).send({
     data: { job },
     error: null,
-    meta: {
-      immediate: isImmediate,
-      completesAt: job.completes_at,
-    },
+    meta,
   });
 }
 
@@ -91,7 +99,7 @@ async function listRepairs(request, reply) {
 
   const jobs = await sql`
     SELECT rj.id, rj.defect_id, rj.repair_type, rj.started_at, rj.completes_at,
-           rj.completed, rj.cost_charged,
+           rj.completed, rj.cost_charged, rj.qf_failed,
            d.defect_type, d.category, d.severity
     FROM repair_jobs rj
     JOIN defects d ON d.id = rj.defect_id
@@ -191,10 +199,113 @@ async function cancelRepair(request, reply) {
   });
 }
 
+/**
+ * Compute skip energy cost for a repair job.
+ * Base = ceil(totalMinutes / SKIP_ENERGY_MINUTES_PER_POINT), capped at SKIP_ENERGY_MAX.
+ * Actual cost = ceil(remainingFraction × base), minimum 1.
+ *
+ * @param {Date|string} startedAt
+ * @param {Date|string} completesAt
+ * @returns {{ cost: number, remainingMinutes: number, totalMinutes: number }}
+ */
+function calcSkipEnergyCost(startedAt, completesAt) {
+  const now = Date.now();
+  const start = new Date(startedAt).getTime();
+  const end = new Date(completesAt).getTime();
+  const totalMs = end - start;
+  const remainingMs = Math.max(0, end - now);
+
+  const totalMinutes = totalMs / 60000;
+  const remainingMinutes = remainingMs / 60000;
+
+  const base = Math.min(
+    Math.ceil(totalMinutes / SKIP_ENERGY_MINUTES_PER_POINT),
+    SKIP_ENERGY_MAX,
+  );
+  const fraction = totalMs > 0 ? remainingMs / totalMs : 0;
+  const cost = Math.max(1, Math.ceil(fraction * base));
+
+  return { cost, remainingMinutes, totalMinutes };
+}
+
+/**
+ * POST /cars/:carId/repairs/:jobId/skip
+ * Immediately completes an active repair job in exchange for energy.
+ * Energy cost scales with time remaining: full cost at job start, minimum 1 at end.
+ * No money charged — energy only.
+ */
+async function skipRepair(request, reply) {
+  const { carId, jobId } = request.params;
+  const playerId = request.playerId;
+
+  // Verify car ownership
+  const [car] = await sql`
+    SELECT id FROM cars WHERE id = ${carId} AND player_id = ${playerId}
+  `;
+  if (!car) {
+    return reply.code(404).send({ data: null, error: 'Car not found or not owned', meta: null });
+  }
+
+  // Fetch the active job
+  const [job] = await sql`
+    SELECT id, car_id, defect_id, repair_type, started_at, completes_at, completed, qf_failed
+    FROM repair_jobs
+    WHERE id = ${jobId} AND car_id = ${carId}
+  `;
+  if (!job) {
+    return reply.code(404).send({ data: null, error: 'Repair job not found', meta: null });
+  }
+  if (job.completed) {
+    return reply.code(409).send({ data: null, error: 'Repair job already completed', meta: null });
+  }
+  if (job.qf_failed) {
+    return reply.code(409).send({ data: null, error: 'Quick fix already failed — start a new repair', meta: null });
+  }
+
+  const { cost, remainingMinutes } = calcSkipEnergyCost(job.started_at, job.completes_at);
+
+  // Check and consume energy
+  const { current: energyBefore } = await getEnergy(playerId);
+  if (energyBefore < cost) {
+    return reply.code(400).send({
+      data: null,
+      error: `Not enough energy. Need ${cost}, have ${energyBefore}.`,
+      meta: { cost, energyBefore },
+    });
+  }
+
+  const consumed = await consumeEnergy(playerId, cost);
+  if (!consumed) {
+    return reply.code(400).send({
+      data: null,
+      error: `Not enough energy. Need ${cost}.`,
+      meta: { cost },
+    });
+  }
+
+  // Force-complete the job by setting completes_at to now so completeRepairJob's timer check passes
+  await sql`
+    UPDATE repair_jobs SET completes_at = NOW() WHERE id = ${jobId}
+  `;
+  job.completes_at = new Date();
+
+  const { qfFailed } = await completeRepairJob(job);
+
+  return reply.send({
+    data: { skipped: true, qfFailed },
+    error: null,
+    meta: {
+      energyCost: cost,
+      remainingMinutesSaved: Math.round(remainingMinutes),
+    },
+  });
+}
+
 export default async function repairRoutes(fastify) {
   const auth = { preHandler: requireAuth };
 
   fastify.post('/cars/:carId/repairs',                  auth, startRepairRoute);
   fastify.get('/cars/:carId/repairs',                   auth, listRepairs);
+  fastify.post('/cars/:carId/repairs/:jobId/skip',      auth, skipRepair);
   fastify.post('/cars/:carId/repairs/:jobId/cancel',    auth, cancelRepair);
 }

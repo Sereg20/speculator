@@ -17,6 +17,8 @@ import { sql } from '../db/client.js';
 
 const DEFECT_DEFS = [
   // ── Body ──────────────────────────────────────────────────────────────────
+  // repairMinutes: real minutes for PROPER repair. Quick fix = repairMinutes / 3, min 5.
+  // qfSuccessBase: base probability (0–1) that a quick fix actually holds.
   {
     id: 'surface_rust',
     category: 'body',
@@ -27,6 +29,8 @@ const DEFECT_DEFS = [
     quickFix:     [40,  80],
     qfDiscovery:  0.45,
     resaleImpact: -0.12,
+    repairMinutes: 60,
+    qfSuccessBase: 0.70,
   },
   {
     id: 'structural_rust',
@@ -38,6 +42,8 @@ const DEFECT_DEFS = [
     quickFix:     [120, 280],
     qfDiscovery:  0.60,
     resaleImpact: -0.30,
+    repairMinutes: 120,
+    qfSuccessBase: 0.55,
   },
   {
     id: 'dent_minor',
@@ -49,6 +55,8 @@ const DEFECT_DEFS = [
     quickFix:     [20,   50],
     qfDiscovery:  0.25,
     resaleImpact: -0.06,
+    repairMinutes: 45,
+    qfSuccessBase: 0.85,
   },
   {
     id: 'dent_major',
@@ -60,6 +68,8 @@ const DEFECT_DEFS = [
     quickFix:     [60,  150],
     qfDiscovery:  0.35,
     resaleImpact: -0.18,
+    repairMinutes: 90,
+    qfSuccessBase: 0.70,
   },
   {
     id: 'cracked_windscreen',
@@ -71,6 +81,8 @@ const DEFECT_DEFS = [
     quickFix:     [25,   70],
     qfDiscovery:  0.70,
     resaleImpact: -0.15,
+    repairMinutes: 45,
+    qfSuccessBase: 0.85,
   },
   {
     id: 'cracked_glass',
@@ -82,6 +94,8 @@ const DEFECT_DEFS = [
     quickFix:     [20,   50],
     qfDiscovery:  0.65,
     resaleImpact: -0.10,
+    repairMinutes: 30,
+    qfSuccessBase: 0.85,
   },
   {
     id: 'paint_damage',
@@ -93,6 +107,8 @@ const DEFECT_DEFS = [
     quickFix:     [50,  120],
     qfDiscovery:  0.30,
     resaleImpact: -0.08,
+    repairMinutes: 40,
+    qfSuccessBase: 0.85,
   },
   {
     id: 'accident_history',
@@ -104,6 +120,8 @@ const DEFECT_DEFS = [
     quickFix:     null,         // not available
     qfDiscovery:  null,
     resaleImpact: -0.35,
+    repairMinutes: 180,
+    qfSuccessBase: null,
   },
   {
     id: 'fender_dented',
@@ -115,6 +133,8 @@ const DEFECT_DEFS = [
     quickFix:     [30,   70],
     qfDiscovery:  0.20,
     resaleImpact: -0.07,
+    repairMinutes: 30,
+    qfSuccessBase: 0.85,
   },
   {
     id: 'bumper_scratched',
@@ -126,6 +146,8 @@ const DEFECT_DEFS = [
     quickFix:     [20,   55],
     qfDiscovery:  0.20,
     resaleImpact: -0.05,
+    repairMinutes: 20,
+    qfSuccessBase: 0.85,
   },
   {
     id: 'door_rear_right_scratched',
@@ -137,6 +159,8 @@ const DEFECT_DEFS = [
     quickFix:     [25,   60],
     qfDiscovery:  0.18,
     resaleImpact: -0.05,
+    repairMinutes: 25,
+    qfSuccessBase: 0.85,
   },
   {
     id: 'door_rear_left_scratched',
@@ -148,6 +172,8 @@ const DEFECT_DEFS = [
     quickFix:     [25,   60],
     qfDiscovery:  0.18,
     resaleImpact: -0.05,
+    repairMinutes: 25,
+    qfSuccessBase: 0.85,
   },
   {
     id: 'door_front_right_scratched',
@@ -159,6 +185,8 @@ const DEFECT_DEFS = [
     quickFix:     [25,   60],
     qfDiscovery:  0.18,
     resaleImpact: -0.05,
+    repairMinutes: 25,
+    qfSuccessBase: 0.85,
   },
   {
     id: 'door_front_left_scratched',
@@ -170,6 +198,8 @@ const DEFECT_DEFS = [
     quickFix:     [25,   60],
     qfDiscovery:  0.18,
     resaleImpact: -0.05,
+    repairMinutes: 25,
+    qfSuccessBase: 0.85,
   },
 
   // ── Engine ───────────────────────────────────────────────────────────────
@@ -183,6 +213,8 @@ const DEFECT_DEFS = [
     quickFix:     [30,   70],
     qfDiscovery:  0.50,
     resaleImpact: -0.10,
+    repairMinutes: 45,
+    qfSuccessBase: 0.70,
   },
   {
     id: 'oil_leak_major',
@@ -194,6 +226,8 @@ const DEFECT_DEFS = [
     quickFix:     [80,  180],
     qfDiscovery:  0.55,
     resaleImpact: -0.20,
+    repairMinutes: 90,
+    qfSuccessBase: 0.60,
   },
   {
     id: 'worn_timing_belt',
@@ -205,6 +239,8 @@ const DEFECT_DEFS = [
     quickFix:     null,
     qfDiscovery:  null,
     resaleImpact: -0.22,
+    repairMinutes: 120,
+    qfSuccessBase: null,
   },
   {
     id: 'overheating',
@@ -216,6 +252,8 @@ const DEFECT_DEFS = [
     quickFix:     [40,  120],
     qfDiscovery:  0.60,
     resaleImpact: -0.18,
+    repairMinutes: 60,
+    qfSuccessBase: 0.60,
   },
   {
     id: 'starting_issues',
@@ -227,6 +265,8 @@ const DEFECT_DEFS = [
     quickFix:     [35,   90],
     qfDiscovery:  0.40,
     resaleImpact: -0.12,
+    repairMinutes: 30,
+    qfSuccessBase: 0.70,
   },
   {
     id: 'low_compression',
@@ -238,6 +278,8 @@ const DEFECT_DEFS = [
     quickFix:     [180,  400],
     qfDiscovery:  0.75,
     resaleImpact: -0.40,
+    repairMinutes: 180,
+    qfSuccessBase: 0.55,
   },
   {
     id: 'turbo_wear',
@@ -249,6 +291,8 @@ const DEFECT_DEFS = [
     quickFix:     [150, 350],
     qfDiscovery:  0.65,
     resaleImpact: -0.30,
+    repairMinutes: 120,
+    qfSuccessBase: 0.55,
   },
   {
     id: 'engine_cold_idle',
@@ -260,6 +304,8 @@ const DEFECT_DEFS = [
     quickFix:     [25,   65],
     qfDiscovery:  0.35,
     resaleImpact: -0.08,
+    repairMinutes: 20,
+    qfSuccessBase: 0.70,
   },
   {
     id: 'engine_knocking',
@@ -271,6 +317,8 @@ const DEFECT_DEFS = [
     quickFix:     [120, 300],
     qfDiscovery:  0.60,
     resaleImpact: -0.32,
+    repairMinutes: 90,
+    qfSuccessBase: 0.60,
   },
   {
     id: 'engine_misfire',
@@ -282,6 +330,8 @@ const DEFECT_DEFS = [
     quickFix:     [80,  200],
     qfDiscovery:  0.55,
     resaleImpact: -0.25,
+    repairMinutes: 60,
+    qfSuccessBase: 0.60,
   },
   {
     id: 'blue_smoke_exhaust',
@@ -293,6 +343,8 @@ const DEFECT_DEFS = [
     quickFix:     [100, 250],
     qfDiscovery:  0.65,
     resaleImpact: -0.28,
+    repairMinutes: 90,
+    qfSuccessBase: 0.60,
   },
   {
     id: 'soot_exhaust',
@@ -304,6 +356,8 @@ const DEFECT_DEFS = [
     quickFix:     [30,   80],
     qfDiscovery:  0.40,
     resaleImpact: -0.10,
+    repairMinutes: 15,
+    qfSuccessBase: 0.85,
   },
 
   // ── Transmission ─────────────────────────────────────────────────────────
@@ -317,6 +371,8 @@ const DEFECT_DEFS = [
     quickFix:     [120,  280],
     qfDiscovery:  0.55,
     resaleImpact: -0.25,
+    repairMinutes: 90,
+    qfSuccessBase: 0.60,
   },
   {
     id: 'slipping_gears_manual',
@@ -328,6 +384,8 @@ const DEFECT_DEFS = [
     quickFix:     [80,  180],
     qfDiscovery:  0.50,
     resaleImpact: -0.20,
+    repairMinutes: 90,
+    qfSuccessBase: 0.60,
   },
   {
     id: 'transmission_fluid_leak',
@@ -339,6 +397,8 @@ const DEFECT_DEFS = [
     quickFix:     [30,   70],
     qfDiscovery:  0.45,
     resaleImpact: -0.10,
+    repairMinutes: 20,
+    qfSuccessBase: 0.70,
   },
   {
     id: 'clutch_wear',
@@ -350,6 +410,8 @@ const DEFECT_DEFS = [
     quickFix:     null,
     qfDiscovery:  null,
     resaleImpact: -0.20,
+    repairMinutes: 120,
+    qfSuccessBase: null,
   },
   {
     id: 'gearbox_bearing_wear',
@@ -361,6 +423,8 @@ const DEFECT_DEFS = [
     quickFix:     [120,  300],
     qfDiscovery:  0.60,
     resaleImpact: -0.28,
+    repairMinutes: 120,
+    qfSuccessBase: 0.55,
   },
 
   // ── Suspension ───────────────────────────────────────────────────────────
@@ -374,6 +438,8 @@ const DEFECT_DEFS = [
     quickFix:     [40,  100],
     qfDiscovery:  0.35,
     resaleImpact: -0.10,
+    repairMinutes: 45,
+    qfSuccessBase: 0.70,
   },
   {
     id: 'loose_ball_joints',
@@ -385,6 +451,8 @@ const DEFECT_DEFS = [
     quickFix:     [30,   80],
     qfDiscovery:  0.50,
     resaleImpact: -0.14,
+    repairMinutes: 60,
+    qfSuccessBase: 0.60,
   },
   {
     id: 'alignment_issues',
@@ -396,6 +464,8 @@ const DEFECT_DEFS = [
     quickFix:     [15,   40],
     qfDiscovery:  0.20,
     resaleImpact: -0.05,
+    repairMinutes: 20,
+    qfSuccessBase: 0.85,
   },
   {
     id: 'worn_bushings',
@@ -407,6 +477,8 @@ const DEFECT_DEFS = [
     quickFix:     [50,  120],
     qfDiscovery:  0.45,
     resaleImpact: -0.12,
+    repairMinutes: 60,
+    qfSuccessBase: 0.70,
   },
   {
     id: 'damaged_subframe',
@@ -418,6 +490,8 @@ const DEFECT_DEFS = [
     quickFix:     null,
     qfDiscovery:  null,
     resaleImpact: -0.35,
+    repairMinutes: 180,
+    qfSuccessBase: null,
   },
 
   // ── Interior ─────────────────────────────────────────────────────────────
@@ -431,6 +505,8 @@ const DEFECT_DEFS = [
     quickFix:     [35,   90],
     qfDiscovery:  0.25,
     resaleImpact: -0.08,
+    repairMinutes: 45,
+    qfSuccessBase: 0.85,
   },
   {
     id: 'broken_electronics',
@@ -442,6 +518,8 @@ const DEFECT_DEFS = [
     quickFix:     [25,   70],
     qfDiscovery:  0.35,
     resaleImpact: -0.10,
+    repairMinutes: 30,
+    qfSuccessBase: 0.70,
   },
   {
     id: 'faulty_ac_compressor',
@@ -453,6 +531,8 @@ const DEFECT_DEFS = [
     quickFix:     [70,  180],
     qfDiscovery:  0.55,
     resaleImpact: -0.15,
+    repairMinutes: 60,
+    qfSuccessBase: 0.55,
   },
   {
     id: 'ac_regas',
@@ -464,6 +544,8 @@ const DEFECT_DEFS = [
     quickFix:     [20,   55],
     qfDiscovery:  0.40,
     resaleImpact: -0.08,
+    repairMinutes: 15,
+    qfSuccessBase: 0.85,
   },
   {
     id: 'odometer_rollback',
@@ -475,6 +557,8 @@ const DEFECT_DEFS = [
     quickFix:     null,
     qfDiscovery:  null,
     resaleImpact: -0.50,
+    repairMinutes: null,
+    qfSuccessBase: null,
     isOdometerFraud: true,
   },
   {
@@ -487,6 +571,8 @@ const DEFECT_DEFS = [
     quickFix:     [110,  280],
     qfDiscovery:  0.65,
     resaleImpact: -0.30,
+    repairMinutes: 90,
+    qfSuccessBase: 0.55,
   },
 
   // ── Electrical ───────────────────────────────────────────────────────────
@@ -500,6 +586,8 @@ const DEFECT_DEFS = [
     quickFix:     [15,   40],
     qfDiscovery:  0.15,
     resaleImpact: -0.05,
+    repairMinutes: 5,
+    qfSuccessBase: 0.85,
   },
   {
     id: 'faulty_alternator',
@@ -511,6 +599,8 @@ const DEFECT_DEFS = [
     quickFix:     [45,  110],
     qfDiscovery:  0.50,
     resaleImpact: -0.12,
+    repairMinutes: 45,
+    qfSuccessBase: 0.55,
   },
   {
     id: 'abs_esp_fault',
@@ -522,6 +612,8 @@ const DEFECT_DEFS = [
     quickFix:     [30,   80],
     qfDiscovery:  0.45,
     resaleImpact: -0.12,
+    repairMinutes: 30,
+    qfSuccessBase: 0.70,
   },
   {
     id: 'wiring_harness_damage',
@@ -533,6 +625,8 @@ const DEFECT_DEFS = [
     quickFix:     [90,   220],
     qfDiscovery:  0.55,
     resaleImpact: -0.20,
+    repairMinutes: 90,
+    qfSuccessBase: 0.55,
   },
   {
     id: 'airbag_fault',
@@ -544,6 +638,8 @@ const DEFECT_DEFS = [
     quickFix:     [35,  100],
     qfDiscovery:  0.60,
     resaleImpact: -0.18,
+    repairMinutes: 45,
+    qfSuccessBase: 0.55,
   },
 ];
 
@@ -658,19 +754,6 @@ function rollCost([min, max], multiplier = 1.0) {
   return Math.round(randInt(min, max) * multiplier);
 }
 
-/**
- * Roll repair time in fractional in-game days based on severity.
- * Mapped to GMS §8.2 "Proper Repair" base times.
- */
-function repairTimeMinutes(severity, quickFix) {
-  // Base times in in-game days; 1 in-game day = 120 real minutes
-  const INGAME_DAY = 120;
-  const baseDays = {
-    minor:    quickFix ? 0     : 0.5,
-    major:    quickFix ? 1     : 3,
-  };
-  return Math.ceil((baseDays[severity] || 1) * INGAME_DAY);
-}
 
 /**
  * Roll the full defect set for a car.
@@ -745,7 +828,8 @@ export async function rollDefects(carId, conditionTier, qualityTier, opts = {}) 
     quick_fix_cost: def.quickFix ? rollCost(def.quickFix, multiplier) : null,
     qf_discovery_base: def.qfDiscovery ?? null,
     resale_impact: def.resaleImpact,
-    repair_time_minutes: repairTimeMinutes(def.severity, false),
+    repair_time_minutes: def.repairMinutes ?? null,
+    qf_success_base: def.qfSuccessBase ?? null,
     is_odometer_fraud: def.isOdometerFraud ?? false,
   }));
 
