@@ -38,7 +38,7 @@ export default function MarketScreen() {
   return (
     <View style={styles.container}>
       <Image
-        source={require("@/../assets/images/backgrounds/background_market.png")}
+        source={require("@/../assets/images/backgrounds/background_market.webp")}
         style={styles.marketImg}
         resizeMode="cover"
       />

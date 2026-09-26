@@ -88,11 +88,11 @@ function inquiryProbability(askingPrice, marketValue, daysListed, reputationScor
   const ratio = marketValue > 0 ? askingPrice / marketValue : 1.0;
 
   let base;
-  if (ratio < 0.90)      base = 0.95;
-  else if (ratio <= 1.00) base = 0.70;
-  else if (ratio <= 1.10) base = 0.50;
-  else if (ratio <= 1.20) base = 0.25;
-  else                    base = 0.08;
+  if (ratio < 0.90)       base = 0.85;  // 5-min ticks  → median wait ~6 min
+  else if (ratio <= 1.00) base = 0.65;  // 10-min ticks → median wait ~15 min
+  else if (ratio <= 1.10) base = 0.50;  // 20-min ticks → median wait ~40 min
+  else if (ratio <= 1.20) base = 0.30;  // 45-min ticks → median wait ~2.5 hrs
+  else                    base = 0.18;  // 90-min ticks → median wait ~8 hrs
 
   // Day modifiers (GMS §9.1 table)
   let prob;

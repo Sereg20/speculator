@@ -576,10 +576,7 @@ Without the relevant skill, the player can only quick-fix that defect type.
 | Defect Severity | Proper Repair (base days) | Quick Fix (base days) |
 |----------------|--------------------------|----------------------|
 | Minor (e.g., alignment, battery) | 0.5 | 0 (immediate) |
-| Moderate (e.g., minor oil leak, worn shocks) | 1 | 0 (immediate) |
-| Significant (e.g., clutch, A/C compressor) | 2 | 0.5 |
-| Major (e.g., structural rust, gearbox) | 3 | 1 |
-| Severe (e.g., low compression, subframe) | 4 | 1.5 |
+| Major (e.g., oil leaks, worn shocks, structural rust, gearbox) | 1–3 | 0–1 |
 
 **Skill time multipliers** (applied to proper repair base time, round up to nearest 0.5 days):
 - Tier 0 skills (Watch a Tutorial, etc.): 1.0×
@@ -625,15 +622,21 @@ Floor: 5%   Ceiling: 95%
 
 ### 9.1 Asking Price vs Market Value
 
-| Asking Price (% of Market Value) | Day 1 Inquiry Prob | Day 2–3 Prob | Day 4+ Prob |
-|----------------------------------|-------------------|--------------|-------------|
-| < 90% | 95% | 90% | 85% |
-| 90–100% | 70% | 60% | 50% |
-| 100–110% | 50% | 40% | 30% |
-| 110–120% | 25% | 18% | 12% |
-| > 120% | 8% | 5% | 3% |
+Inquiry generation is driven by two parameters per listing: the **check interval** (how often the server attempts to generate an inquiry) and the **per-attempt probability** (whether the attempt actually fires).
 
-Listing above 120% of market value: near-zero organic demand. Below 85%: likely sale within 1 in-game day.
+| Asking Price (% of Market Value) | Check Interval (real time) | Per-attempt Probability | Median Wait |
+|----------------------------------|----------------------------|------------------------|-------------|
+| < 90% (underpriced) | 5 min | 85% | ~6 min |
+| 90–100% (fair) | 10 min | 65% | ~15 min |
+| 100–110% (slight premium) | 20 min | 50% | ~40 min |
+| 110–120% (overpriced) | 45 min | 30% | ~2.5 hrs |
+| > 120% (very overpriced) | 90 min | 18% | ~8 hrs |
+
+*Median wait* = expected real time until the first inquiry fires for a new listing.
+
+The server checks each active listing once per minute; the interval above gates how recently a listing was last checked before attempting a new roll. Age-based decay (see `daysListed` multipliers in code) still applies — older listings generate inquiries less frequently within these bands.
+
+Listing above 120% of market value: near-zero organic demand. Below 90%: expect first inquiry within minutes.
 
 **Market value estimate display accuracy:**
 
@@ -703,8 +706,7 @@ Floor: 5%
 | Defect Severity | Buyer Behavior |
 |----------------|----------------|
 | Minor (Tier-1) | Requests 50–80% of proper repair cost as price reduction; 20% walk-away |
-| Moderate (Tier-2) | Requests 70–100% of proper repair cost as price reduction; 40% walk-away |
-| Major/Severe (Tier-3) | Requests 100–130% of proper repair cost; 65% walk-away |
+| Major (Tier-2/3) | Requests 80–130% of proper repair cost as price reduction; 40–65% walk-away |
 
 Walk-away is the probability the buyer withdraws if the price reduction demand is countered. Accepting the reduction completes the sale with reputation impact per Section 1.4.
 
@@ -728,7 +730,7 @@ Walk-away is the probability the buyer withdraws if the price reduction demand i
 | Starting level | 1 |
 | Starting garage | Tier 1 (1 slot, free) |
 | First rent charge | Day 8 (first week rent-free) |
-| Tutorial car | Pre-selected Fair Deal, 1,500 BYN, 1 moderate defect, guided through full loop |
+| Tutorial car | Pre-selected Fair Deal, 1,500 BYN, 1 minor defect, guided through full loop |
 
 ### 10.2 Target Profit Margins
 
@@ -948,7 +950,7 @@ All values suitable for extraction into a typed constants file (e.g., `balance-c
 | `NEGOTIATION_BASE_SUCCESS` | 25% | 5.1 |
 | `NEGOTIATION_SUCCESS_CAP` | 85% | 5.1 |
 | `NEGOTIATION_SUCCESS_FLOOR` | 5% | 5.1 |
-| `BUYER_BASE_INQUIRY_CHANCE_DAY1` | 70% (at market price) | 9.1 |
+| `BUYER_BASE_INQUIRY_CHANCE_FAIR_PRICE` | 65% (at market price, per attempt) | 9.1 |
 | `BUYER_INSPECTION_BASE_CHANCE` | 30% | 9.3 |
 | `QUICK_FIX_VALUE_RESTORATION` | 40% | 8.4 |
 | `PROPER_REPAIR_VALUE_RESTORATION` | 100% | 8.4 |

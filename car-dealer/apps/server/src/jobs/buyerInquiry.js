@@ -20,38 +20,34 @@
 import cron from 'node-cron';
 import { sql } from '../db/client.js';
 import { generateBuyerInquiry } from '../services/buyerGenerator.js';
-import { INGAME_DAY_REAL_MINUTES } from '../config.js';
 
-const INGAME_DAY_REAL_MS = INGAME_DAY_REAL_MINUTES * 60 * 1000;
+/**
+ * Minimum real-time interval between inquiry attempts per listing.
+ * Derived from asking price / market value ratio.
+ * Lower ratio (underpriced) → shorter interval → inquiries arrive faster.
+ */
+function minCheckIntervalMinutes(ratio) {
+  if (ratio < 0.90) return 5;    // underpriced  → every 5 min
+  if (ratio <= 1.00) return 10;  // fair price   → every 10 min
+  if (ratio <= 1.10) return 20;  // slight over  → every 20 min
+  if (ratio <= 1.20) return 45;  // overpriced   → every 45 min
+  return 90;                     // very over    → every 90 min
+}
 
 export function startBuyerInquiryJob(log) {
-  // Run every minute; actual logic is gated by whether the in-game day has elapsed
-  // since the listing's last inquiry check.
+  // Run every minute; each listing is gated by its own price-ratio-based interval.
   cron.schedule('* * * * *', async () => {
     let listings;
     try {
-      // Find active listings that haven't been checked in the last in-game day
-      // We use listed_at and a last_inquiry_check_at column approach:
-      // Since we don't have last_inquiry_check_at, we check if any inquiries were
-      // generated in the past INGAME_DAY_REAL_MS window. If not, generate for this day.
-      //
-      // Simple approach: run once per INGAME_DAY_REAL_MS globally (keyed to
-      // player's last_day_ticked_at being updated this cycle).
-      // We piggyback on the holdingCost job's in_game_day advancement.
       listings = await sql`
-        SELECT l.id, l.player_id, p.in_game_day
+        SELECT l.id, l.player_id, l.asking_price, l.listed_at,
+               COALESCE(c.market_value, l.asking_price) AS market_value,
+               (SELECT MAX(bi.generated_at) FROM buyer_inquiries bi WHERE bi.listing_id = l.id) AS last_generated_at
         FROM listings l
+        JOIN cars c ON c.id = l.car_id
         JOIN players p ON p.id = l.player_id
         WHERE l.status = 'active'
           AND l.expires_at > NOW()
-          AND NOT EXISTS (
-            -- Skip if an inquiry was already generated in this real-time window
-            SELECT 1 FROM buyer_inquiries bi
-            WHERE bi.listing_id = l.id
-              AND bi.generated_at > NOW() - (${INGAME_DAY_REAL_MINUTES} || ' minutes')::interval
-          )
-          -- Only run if at least one in-game day has elapsed since listing creation or last check
-          AND l.listed_at < NOW() - (${INGAME_DAY_REAL_MINUTES} || ' minutes')::interval
       `;
     } catch (err) {
       log.error({ err }, '[buyerInquiry] Failed to query active listings');
@@ -60,13 +56,20 @@ export function startBuyerInquiryJob(log) {
 
     if (listings.length === 0) return;
 
-    log.info({ count: listings.length }, '[buyerInquiry] Processing active listings');
-
+    const now = Date.now();
     for (const listing of listings) {
       try {
+        const ratio = listing.market_value > 0 ? listing.asking_price / listing.market_value : 1.0;
+        const intervalMs = minCheckIntervalMinutes(ratio) * 60 * 1000;
+        // Use last inquiry time if available; otherwise use listing creation time
+        const referenceAt = listing.last_generated_at
+          ? new Date(listing.last_generated_at).getTime()
+          : new Date(listing.listed_at).getTime();
+        if (now - referenceAt < intervalMs) continue;
+
         const count = await generateBuyerInquiry(listing.id, log);
         if (count > 0) {
-          log.info({ listingId: listing.id, count }, '[buyerInquiry] Generated inquiries');
+          log.info({ listingId: listing.id, count, ratio: ratio.toFixed(2) }, '[buyerInquiry] Generated inquiry');
         }
       } catch (err) {
         log.error({ err, listingId: listing.id }, '[buyerInquiry] Failed to process listing');
@@ -74,5 +77,5 @@ export function startBuyerInquiryJob(log) {
     }
   });
 
-  log.info('[buyerInquiry] Scheduled (every minute, runs per-listing when in-game day elapses)');
+  log.info('[buyerInquiry] Scheduled (every minute, price-ratio gated per listing)');
 }

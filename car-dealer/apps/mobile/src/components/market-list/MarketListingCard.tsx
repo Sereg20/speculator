@@ -20,7 +20,7 @@ export function MarketListingCard({
   return (
     <View style={styles.container}>
       <ImageBackground
-        source={require("@/../assets/images/backgrounds/background_listing_item.png")}
+        source={require("@/../assets/images/backgrounds/background_listing_item.webp")}
         style={styles.backgroundListItem}
         imageStyle={styles.backgroundListImage}
         resizeMode="cover"

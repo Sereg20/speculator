@@ -1,15 +1,16 @@
 import { View, Text, StyleSheet, Image, Pressable, FlatList } from "react-native";
 import { colors } from "@/theme/colors";
-import { Car } from "@/api/cars";
+import { ActiveDefect, Car } from "@/api/cars";
 import { DefectItemIcon } from "./DefectItemIcon";
 
 interface CarCardProps {
   car: Car;
-  onSell: (carId: string, marketValue: number, purchasePrice: number) => void
-  onCancelListing: (listingId: string) => void
+  onSell: (selectedCar: Car) => void;
+  onCancelListing: (listingId: string) => void;
+  onRepair: (selectedCar: Car) => void;
 }
 
-export function CarSlot({ car, onSell, onCancelListing }: CarCardProps) {
+export function CarSlot({ car, onSell, onCancelListing, onRepair }: CarCardProps) {
   const activeDefects =  car.revealedDefects ? car.revealedDefects.filter(defect => !defect.is_quick_fixed) : [];
   const carState = getStateText(car.state);
 
@@ -17,6 +18,8 @@ export function CarSlot({ car, onSell, onCancelListing }: CarCardProps) {
     switch (state) {
       case "listed_for_sale":
         return "НА ПРОДАЖЕ"
+      case "in_repair":
+        return "В РЕМОНТЕ"
       default:
         return "В ГАРАЖЕ"
     }
@@ -27,6 +30,10 @@ export function CarSlot({ car, onSell, onCancelListing }: CarCardProps) {
     if (!car.activeListing?.id) return;
 
     return onCancelListing(car.activeListing?.id);
+  }
+
+  function onRepairPress() {
+    onRepair(car);
   }
 
   return (
@@ -83,7 +90,7 @@ export function CarSlot({ car, onSell, onCancelListing }: CarCardProps) {
       </View>
       <View style={styles.actions}>
         {car.state === "purchased" &&
-          <Pressable onPress={() => {onSell(car.id, car.market_value, car.purchase_price)}} disabled={activeDefects.length > 0} style={[styles.sellBtn,
+          <Pressable onPress={() => {onSell(car)}} disabled={activeDefects.length > 0} style={[styles.sellBtn,
             activeDefects.length > 0
               ? styles.btnDisabled
               : {} ]}>
@@ -91,13 +98,18 @@ export function CarSlot({ car, onSell, onCancelListing }: CarCardProps) {
           </Pressable>
         }
         {car.state === "purchased" &&
-          <Pressable style={styles.repairBtn}>
+          <Pressable onPress={() => {onRepair(car)}} style={styles.repairBtn}>
             <Text style={styles.btnText}>РЕМОНТ</Text>  
           </Pressable>
         }
         {car.state === "listed_for_sale" &&
           <Pressable onPress={onCancelListingPress} style={styles.cancelListingBtn}>
             <Text style={styles.btnText}>СНЯТЬ С ПРОДАЖИ</Text>  
+          </Pressable>
+        }
+        {car.state === "in_repair" &&
+          <Pressable onPress={onCancelListingPress} style={styles.cancelRepairBtn}>
+            <Text style={styles.btnText}>ЗАВЕРШИТЬ РЕМОНТ</Text>  
           </Pressable>
         }
       </View>
@@ -181,6 +193,15 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderColor: '#3c5a4d',
     marginBottom: 12,
+    justifyContent: 'center'
+  },
+
+
+  listContent: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    alignItems: 'center',
   },
 
   emptyContainer: {
@@ -194,12 +215,6 @@ const styles = StyleSheet.create({
     color: colors.textMain,
     fontSize: 16,
     textAlign: 'center'
-  },
-
-  listContent: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
   },
 
   actions: {
@@ -226,6 +241,14 @@ const styles = StyleSheet.create({
 
   cancelListingBtn: {
     backgroundColor: colors.redButtonColor,
+    width: '100%',
+    paddingVertical: 6,
+    borderRadius: 6,
+    alignItems: 'center'
+  },
+
+  cancelRepairBtn: {
+    backgroundColor: colors.orangeButtonColor,
     width: '100%',
     paddingVertical: 6,
     borderRadius: 6,

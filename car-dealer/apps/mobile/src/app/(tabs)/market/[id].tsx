@@ -114,6 +114,9 @@ export default function MarketInspectionScreen() {
   const purchaseMutation = useMutation({
     mutationFn: () => purchaseListing(id),
     onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["cars"],
+      });
       setSuccessPurchaseVisible(true);
     },
     onError: (error) => {

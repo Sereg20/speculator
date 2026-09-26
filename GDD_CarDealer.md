@@ -117,7 +117,7 @@ Repair costs are paid upfront from the player's cash balance.
 4. If a quick-fix defect is discovered, the deal may fall through or require a price reduction.
 5. Successful sale adds money and XP; failed inspection damages Reputation.
 
-**Buyer demand decay:** The longer a car sits listed, the fewer daily inquiries it receives. Price it right and sell fast.
+**Buyer demand speed:** Inquiry arrival speed depends directly on how the car is priced relative to market value. An underpriced car attracts a buyer within minutes; an overpriced car may wait hours between inquiry attempts. The player is incentivized to price correctly and sell promptly.
 
 ---
 
@@ -168,7 +168,7 @@ The game runs on an **in-game day cycle**. Key actions advance time:
 
 **Listing expiry:** Car listings on the market are available for a limited window (e.g., 3–7 in-game days). If the player delays, the car is gone.
 
-**Buyer demand decay:** Once a car is listed for sale, daily inquiry rate peaks early and declines if the car sits. The player is incentivized to price correctly and sell promptly.
+**Buyer demand speed:** Once a car is listed for sale, inquiry speed depends on how it's priced relative to market value — underpriced cars attract buyers within minutes, overpriced cars may sit for hours between attempts. Demand also decays the longer a car remains unsold. The player is incentivized to price correctly and sell promptly.
 
 **In-game calendar:** The player can see the current day and track upcoming expenses (see 13.2). This creates natural planning tension — do you buy another car now, or wait until after you sell the one you're holding?
 
