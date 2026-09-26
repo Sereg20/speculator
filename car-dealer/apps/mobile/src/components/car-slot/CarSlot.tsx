@@ -89,7 +89,7 @@ export function CarSlot({ car, onSell, onCancelListing, onRepair }: CarCardProps
           />
       </View>
       <View style={styles.actions}>
-        {car.state === "purchased" &&
+        {(car.state === "purchased" || car.state === "in_repair") &&
           <Pressable onPress={() => {onSell(car)}} disabled={activeDefects.length > 0} style={[styles.sellBtn,
             activeDefects.length > 0
               ? styles.btnDisabled
@@ -97,7 +97,7 @@ export function CarSlot({ car, onSell, onCancelListing, onRepair }: CarCardProps
             <Text style={styles.btnText}>ПРОДАТЬ</Text>  
           </Pressable>
         }
-        {car.state === "purchased" &&
+        {(car.state === "purchased" || car.state === "in_repair") &&
           <Pressable onPress={() => {onRepair(car)}} style={styles.repairBtn}>
             <Text style={styles.btnText}>РЕМОНТ</Text>  
           </Pressable>
@@ -105,11 +105,6 @@ export function CarSlot({ car, onSell, onCancelListing, onRepair }: CarCardProps
         {car.state === "listed_for_sale" &&
           <Pressable onPress={onCancelListingPress} style={styles.cancelListingBtn}>
             <Text style={styles.btnText}>СНЯТЬ С ПРОДАЖИ</Text>  
-          </Pressable>
-        }
-        {car.state === "in_repair" &&
-          <Pressable onPress={onCancelListingPress} style={styles.cancelRepairBtn}>
-            <Text style={styles.btnText}>ЗАВЕРШИТЬ РЕМОНТ</Text>  
           </Pressable>
         }
       </View>

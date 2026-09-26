@@ -3,13 +3,16 @@ import { View, Text, StyleSheet, ImageBackground } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { ActiveDefect, Car, carsQuery } from "@/api/cars";
 import { SellingPriceSelectorDialog } from "@/features/selling/SellingPriceSelectorDialog";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createListing, deleteListing } from "@/api/listings";
 import { CarSlotEmpty } from "@/components/car-slot/CarSlotEmpty";
 import { RepairDialog } from "@/features/repair/RepairDialog";
 import { ActiveDefectsDialog } from "@/features/repair/ActiveDefects";
 import { RepairType, repairCar } from "@/api/repair";
+import { router } from "expo-router";
+import { playerQuery } from "@/api/player";
+import { GarageSlots } from "@/components/garage/GarageSlots";
 
 const garageBackground = require("@/../assets/images/backgrounds/background_garage1.png");
 
@@ -24,7 +27,18 @@ export default function GarageScreen() {
   const [selectedDefect, setSelectedDefect] = useState<ActiveDefect | null>(null);
 
   const queryClient = useQueryClient();
+  const { data: player } = useQuery(playerQuery());
   const { data: cars = [], isLoading, error } = useQuery(carsQuery());
+
+  const garageSlots = useMemo(() => {
+    const slots = player?.garage_slots ?? 0;
+
+    return Array.from({ length: slots }, (_, index) => ({
+      id: `garage-slot-${index}`,
+      car: cars[index] ?? null,
+    }));
+  }, [player?.garage_slots, cars]);
+
 
   // listings request
   const createListingMutation = useMutation({
@@ -72,7 +86,7 @@ export default function GarageScreen() {
 
       setSelectedDefect(null);
     },
-    onError:  () => {
+    onError: () => {
 
     }
   });
@@ -153,6 +167,12 @@ export default function GarageScreen() {
     deleteListingMutation.mutate(listingId);
   }
 
+  function onMarket() {
+    router.push({
+      pathname: "/market"
+    });
+  }
+
   return (
     <ImageBackground
       source={garageBackground}
@@ -161,12 +181,13 @@ export default function GarageScreen() {
       resizeMode="cover"
     >
       <View style={styles.content}>
-        {cars.length > 0 ?
-          cars?.map((car) => (
-            <CarSlot key={car.id} car={car} onSell={onCarSell} onCancelListing={onCancelListing} onRepair={onRepair} />
-          )) :
-          <CarSlotEmpty onMarket={() => { }} />
-        }
+        <GarageSlots
+          slots={garageSlots}
+          onSell={onCarSell}
+          onCancelListing={onCancelListing}
+          onRepair={onRepair}
+          onMarket={onMarket}
+        />
       </View>
 
       {isSellingPriceSelectorDialogVisible && selectedCar && (
@@ -183,6 +204,7 @@ export default function GarageScreen() {
       {isActiveDefectsDialogVisible && (
         <ActiveDefectsDialog
           defects={selectedCar?.revealedDefects?.filter(defect => !defect.is_quick_fixed) || []}
+          activeRepairs={selectedCar?.activeRepair || []}
           carMake={selectedCar?.make || ''}
           carModel={selectedCar?.model || ''}
           onClose={onActiveDefectsDialogClose}
@@ -212,6 +234,8 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 20,
+    flexDirection: 'row',
+    gap: 20,
     justifyContent: 'center',
     alignItems: 'center'
   },

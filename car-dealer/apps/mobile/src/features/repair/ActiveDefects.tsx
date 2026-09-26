@@ -6,14 +6,16 @@ import {
   View,
 } from "react-native";
 
-import { ActiveDefect } from "@/api/cars";
+import { ActiveDefect, ActiveRepair } from "@/api/cars";
 import { GameModalWithoutHeader } from "@/components/modal/GameModalWithoutHeader";
 import { colors } from "@/theme/colors";
 import { DefectToBeRepairedItem } from "./DefectToBeRepairedItem";
+import { useMemo } from "react";
 
 
 interface ActiveDefectsDialogProps {
   defects: ActiveDefect[],
+  activeRepairs: ActiveRepair[],
   carMake: string,
   carModel: string,
   onClose: () => void,
@@ -21,8 +23,15 @@ interface ActiveDefectsDialogProps {
 }
 
 export function ActiveDefectsDialog({
-  onClose, defects, carMake, carModel, onDefectPress
+  onClose, defects, activeRepairs, carMake, carModel, onDefectPress
 }: ActiveDefectsDialogProps) {
+
+  // const repairsByDefectId = useMemo(() => {
+  //   return new Map(
+  //     activeRepairs.map((repair) => [repair.defect_id, repair])
+  //   );
+  // }, [activeRepairs]); 
+  const repairsByDefectId = activeRepairs;
 
   return (
     <GameModalWithoutHeader
@@ -39,7 +48,7 @@ export function ActiveDefectsDialog({
           data={defects}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <DefectToBeRepairedItem defect={item} onPress={onDefectPress}/>
+            <DefectToBeRepairedItem defect={item} activeRepair={repairsByDefectId} onPress={onDefectPress}/>
           )}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}

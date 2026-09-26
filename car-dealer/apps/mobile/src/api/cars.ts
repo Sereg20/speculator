@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { apiClient } from "./client";
 import { CategoryId, DefectSeverity } from "./market";
+import { RepairType } from "./repair";
 
 export type ActiveDefect = {
   id: string;
@@ -17,6 +18,16 @@ export type ActiveDefect = {
   resale_impact: string;
   is_odometer_fraud: boolean;
   label: string;
+  is_repairing: boolean;
+}
+
+export type ActiveRepair = {
+  car_id: string;
+  completes_at: string;
+  defect_id: string;
+  id: string;
+  repair_type: RepairType;
+  started_at: string;
 }
 
 type ActiveListing = {
@@ -44,7 +55,7 @@ export type Car = {
   image: string;
   level: number;
   revealedDefects?: ActiveDefect[];
-  activeRepair?: [],
+  activeRepair?: ActiveRepair[],
   activeListing?: ActiveListing
 };
 

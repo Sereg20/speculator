@@ -3,7 +3,6 @@ import {
   StyleSheet,
   Text,
 } from "react-native";
-import { GameModal } from "../modal/GameModal";
 import { MarketListing } from "@/api/market";
 import { GameModalWithoutHeader } from "../modal/GameModalWithoutHeader";
 import { colors } from "@/theme/colors";
@@ -37,7 +36,7 @@ export function SuccessPurchaseDialog({
     >
       <View style={styles.container}>
         <Text style={styles.title}>УСПЕШНАЯ ПОКУПКА!</Text>
-        <Text style={styles.carInfo}>{car?.make} {car?.model} ({car?.year})</Text>
+        <Text style={styles.subtitle}>{car?.make} {car?.model} ({car?.year})</Text>
 
         <View style={styles.dealDetails}>
           <ListItem>
@@ -79,14 +78,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  carInfo: {
+  subtitle: {
     fontSize: 18,
     textAlign: 'center',
     color: colors.textMain
   },
 
   dealDetails: {
-    marginVertical: 10,
+    marginTop: 16,
+    marginBottom: 10,
     gap: 8
   },
 
