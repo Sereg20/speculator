@@ -2,6 +2,7 @@ import { View, StyleSheet, Text } from "react-native";
 import { Tabs } from "expo-router";
 import Ionicons from '@expo/vector-icons/Ionicons';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useQuery } from "@tanstack/react-query";
 import { playerQuery } from "@/api/player";
@@ -25,7 +26,7 @@ export default function TabsLayout() {
           screenOptions={{
             headerShown: false,
             tabBarShowLabel: false,
-            tabBarActiveTintColor: '#2775C3',
+            tabBarActiveTintColor: colors.blueButtonColor,
             tabBarInactiveTintColor: '#ffffff',
             tabBarStyle: {
               backgroundColor: colors.mainBackground,
@@ -68,7 +69,7 @@ export default function TabsLayout() {
             name="equipments"
             options={{
               tabBarIcon: ({ color, focused }) => (
-                <Ionicons name="stats-chart" color={color} size={28} />
+                <FontAwesome5 name="toolbox" size={28} color={color} />
               ),
             }}
           />

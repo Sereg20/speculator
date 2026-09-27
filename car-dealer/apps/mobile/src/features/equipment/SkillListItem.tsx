@@ -3,18 +3,19 @@ import { StyleSheet, Text, View } from "react-native";
 import type { PlayerSkill } from "@/api/player";
 import { ListItem } from "@/components/list-item/ListItem";
 import { colors } from "@/theme/colors";
+import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
+
 
 interface SkillListItemProps {
-  skill: PlayerSkill;
+  skill: PlayerSkill,
+  onPress: (skill: PlayerSkill) => void
 }
 
 export function SkillListItem({
-  skill,
+  skill, onPress
 }: SkillListItemProps) {
   return (
-    <ListItem
-      disabled={skill.owned}
-    >
+    <ListItem onPress={() => {onPress(skill)}} disabled={skill.owned}>
       <View style={styles.container}>
         <View style={styles.info}>
           <View style={styles.header}>
@@ -22,9 +23,13 @@ export function SkillListItem({
               {skill.name}
             </Text>
 
-            {skill.owned && (
+            {skill.owned ? (
               <Text style={styles.owned}>
                 ИЗУЧЕНО
+              </Text>
+            ) : (
+              <Text style={styles.requirement}>
+                Ур: {skill.level_required}
               </Text>
             )}
           </View>
@@ -35,13 +40,8 @@ export function SkillListItem({
 
           {!skill.owned && (
             <View style={styles.footer}>
-              <Text style={styles.requirement}>
-                Уровень: {skill.level_required}
-              </Text>
-
-              <Text style={styles.price}>
-                {skill.byn_price} BYN
-              </Text>
+              <FontAwesome5 name="bitcoin" size={16} color={colors.textGold} />
+              <Text style={styles.price}> {skill.byn_price} BYN</Text>
             </View>
           )}
         </View>
@@ -53,6 +53,7 @@ export function SkillListItem({
 const styles = StyleSheet.create({
   container: {
     width: "100%",
+    minHeight: 100
   },
 
   info: {
@@ -87,7 +88,7 @@ const styles = StyleSheet.create({
 
   footer: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
     alignItems: "center",
     marginTop: 4,
   },

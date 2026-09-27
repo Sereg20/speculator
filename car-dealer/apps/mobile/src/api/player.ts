@@ -100,3 +100,43 @@ export const playerEquipmentQuery = () =>
     queryKey: ["player", "equipment"],
     queryFn: getPlayerEquipment,
   });
+
+export type PurchaseSkillResponse = {
+  data: PlayerSkill;
+  error: string | null;
+  meta: unknown;
+};
+
+export async function purchaseSkill(
+  skillId: string
+): Promise<PlayerSkill> {
+  const response = await apiClient<PurchaseSkillResponse>(
+    `/player/skills/${skillId}/purchase`,
+    {
+      method: "POST",
+      body: JSON.stringify({})
+    }
+  );
+
+  return response.data;
+}
+
+export type PurchaseEquipmentResponse = {
+  data: PlayerEquipment;
+  error: string | null;
+  meta: unknown;
+};
+
+export async function purchaseEquipment(
+  equipmentId: string
+): Promise<PlayerEquipment> {
+  const response = await apiClient<PurchaseEquipmentResponse>(
+    `/player/equipment/${equipmentId}/purchase`,
+    {
+      method: "POST",
+      body: JSON.stringify({})
+    }
+  );
+
+  return response.data;
+}

@@ -13,12 +13,14 @@ interface SkillsListProps {
   skills: PlayerSkill[];
   isLoading: boolean;
   error: Error | null;
+  onSkillPress: (selectedSkill: PlayerSkill) => void;
 }
 
 export function SkillsList({
   skills,
   isLoading,
   error,
+  onSkillPress,
 }: SkillsListProps) {
   if (isLoading) {
     return (
@@ -43,7 +45,7 @@ export function SkillsList({
       data={skills}
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => (
-        <SkillListItem skill={item} />
+        <SkillListItem skill={item} onPress={onSkillPress}/>
       )}
       contentContainerStyle={styles.list}
       showsVerticalScrollIndicator={false}

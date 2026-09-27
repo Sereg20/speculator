@@ -13,12 +13,14 @@ interface EquipmentListProps {
   equipment: PlayerEquipment[];
   isLoading: boolean;
   error: Error | null;
+  onEquipmentPress: (selectedEquipment: PlayerEquipment) => void;
 }
 
 export function EquipmentList({
   equipment,
   isLoading,
   error,
+  onEquipmentPress,
 }: EquipmentListProps) {
   if (isLoading) {
     return (
@@ -43,7 +45,7 @@ export function EquipmentList({
       data={equipment}
       keyExtractor={(item) => item.id}
       renderItem={({ item }) => (
-        <EquipmentListItem equipment={item} />
+        <EquipmentListItem equipment={item} onPress={onEquipmentPress}/>
       )}
       contentContainerStyle={styles.list}
       showsVerticalScrollIndicator={false}
