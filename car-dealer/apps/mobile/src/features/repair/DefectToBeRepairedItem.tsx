@@ -46,7 +46,7 @@ export function DefectToBeRepairedItem({
             <View>
               <CountdownTimer
                 style={styles.time}
-                endsAt={"2026-09-26T14:57:34.832Z"}
+                endsAt={activeRepair.completes_at}
                 onComplete={() => {
 
                 }}

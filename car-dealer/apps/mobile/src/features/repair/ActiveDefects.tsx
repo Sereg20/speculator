@@ -26,12 +26,11 @@ export function ActiveDefectsDialog({
   onClose, defects, activeRepairs, carMake, carModel, onDefectPress
 }: ActiveDefectsDialogProps) {
 
-  // const repairsByDefectId = useMemo(() => {
-  //   return new Map(
-  //     activeRepairs.map((repair) => [repair.defect_id, repair])
-  //   );
-  // }, [activeRepairs]); 
-  const repairsByDefectId = activeRepairs;
+  const repairsByDefectId = useMemo(() => {
+    return new Map(
+      activeRepairs.map((repair) => [repair.defect_id, repair])
+    );
+  }, [activeRepairs]); 
 
   return (
     <GameModalWithoutHeader
@@ -48,7 +47,7 @@ export function ActiveDefectsDialog({
           data={defects}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <DefectToBeRepairedItem defect={item} activeRepair={repairsByDefectId} onPress={onDefectPress}/>
+            <DefectToBeRepairedItem defect={item} activeRepair={repairsByDefectId.get(item.id)} onPress={onDefectPress}/>
           )}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
@@ -91,10 +90,13 @@ const styles = StyleSheet.create({
   },
 
   emptyContainer: {
-
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center'
   },
 
   emptyText: {
-
+    color: colors.textMain,
+    fontSize: 16
   }
 });

@@ -55,7 +55,7 @@ export type Car = {
   image: string;
   level: number;
   revealedDefects?: ActiveDefect[];
-  activeRepair?: ActiveRepair[],
+  activeRepairs?: ActiveRepair[],
   activeListing?: ActiveListing
 };
 

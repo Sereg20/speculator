@@ -184,14 +184,14 @@ export async function startRepair(carId, defectId, repairType, playerId) {
     `;
     if (!car) throw Object.assign(new Error('Car not found or not owned'), { statusCode: 404 });
 
-    // Only one active repair at a time per car
+    // Only one active repair per defect (not per car — parallel defect repairs are allowed)
     const [activeJob] = await tx`
       SELECT id FROM repair_jobs
-      WHERE car_id = ${carId} AND completed = false
+      WHERE defect_id = ${defectId} AND completed = false AND qf_failed = false
     `;
     if (activeJob) {
       throw Object.assign(
-        new Error('Car already has an active repair job. Wait for it to complete or cancel it.'),
+        new Error('This defect already has an active repair job.'),
         { statusCode: 409 },
       );
     }
@@ -331,8 +331,10 @@ export async function startRepair(carId, defectId, repairType, playerId) {
       return { ...job, completed: true, toolDiscountApplied: job.toolDiscountApplied };
     }
 
-    // Transition car to in_repair (non-immediate)
-    await transitionCar(carId, 'in_repair', { sqlClient: tx });
+    // Transition car to in_repair if not already (multiple concurrent repairs allowed)
+    if (car.state === 'purchased') {
+      await transitionCar(carId, 'in_repair', { sqlClient: tx });
+    }
 
     return job;
   });
@@ -425,11 +427,18 @@ export async function completeRepairJob(job) {
       `;
     }
 
-    // Transition car back to purchased (ready for next action) regardless of QF outcome
-    await tx`
-      UPDATE cars SET state = 'purchased', updated_at = NOW()
-      WHERE id = ${job.car_id} AND state = 'in_repair'
+    // Revert car to purchased only when all repair jobs for this car are done
+    const [remainingJob] = await tx`
+      SELECT id FROM repair_jobs
+      WHERE car_id = ${job.car_id} AND completed = false AND id != ${job.id}
+      LIMIT 1
     `;
+    if (!remainingJob) {
+      await tx`
+        UPDATE cars SET state = 'purchased', updated_at = NOW()
+        WHERE id = ${job.car_id} AND state = 'in_repair'
+      `;
+    }
 
     // Award XP: 25 XP per 500 BYN spent, max 50 (GMS §1.2)
     // QF failure still gives partial XP (10) — player tried

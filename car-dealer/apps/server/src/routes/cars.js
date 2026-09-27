@@ -52,14 +52,13 @@ async function getCar(request, reply) {
     ORDER BY d.severity DESC, d.detection_tier ASC
   `;
 
-  // Fetch active repair job (if any)
-  const [activeRepair] = await sql`
-    SELECT id, repair_type, started_at, completes_at, defect_id
+  // Fetch all active repair jobs for this car
+  const activeRepairs = await sql`
+    SELECT id, repair_type, started_at, completes_at, defect_id, qf_failed
     FROM repair_jobs
     WHERE car_id = ${carId}
       AND completed = false
     ORDER BY started_at ASC
-    LIMIT 1
   `;
 
   return reply.send({
@@ -70,12 +69,12 @@ async function getCar(request, reply) {
         quality_tier: undefined,
       },
       revealedDefects: labelDefect(revealedDefects),
-      activeRepair: activeRepair || null,
+      activeRepairs,
     },
     error: null,
     meta: {
       revealedDefectCount: revealedDefects.length,
-      hasActiveRepair: !!activeRepair,
+      activeRepairCount: activeRepairs.length,
     },
   });
 }
@@ -135,14 +134,14 @@ async function getMyCars(request, reply) {
   let repairsByCarId = {};
   if (include.has('repairs') && carIds.length > 0) {
     const allRepairs = await sql`
-      SELECT id, car_id, repair_type, started_at, completes_at, defect_id
+      SELECT id, car_id, repair_type, started_at, completes_at, defect_id, qf_failed
       FROM repair_jobs
       WHERE car_id = ANY(${carIds})
         AND completed = false
       ORDER BY started_at ASC
     `;
     for (const r of allRepairs) {
-      repairsByCarId[r.car_id] ??= r; // keep first (earliest) per car
+      (repairsByCarId[r.car_id] ??= []).push(r);
     }
   }
 
@@ -166,7 +165,7 @@ async function getMyCars(request, reply) {
       days_held: Math.floor((now - new Date(car.created_at).getTime()) / INGAME_DAY_MS),
     };
     if (include.has('defects'))  out.revealedDefects = defectsByCarId[car.id] ?? [];
-    if (include.has('repairs'))  out.activeRepair    = repairsByCarId[car.id] ?? null;
+    if (include.has('repairs'))  out.activeRepairs   = repairsByCarId[car.id] ?? [];
     if (include.has('listing'))  out.activeListing   = listingByCarId[car.id] ?? null;
     return out;
   });

@@ -33,3 +33,70 @@ export const playerQuery = () =>
     queryFn: getPlayer,
     staleTime: 30_000,
   });
+
+export type PlayerSkill = {
+  id: string;
+  name: string;
+  description: string;
+  level_required: number;
+  byn_price: number;
+  skill_type: string;
+  tier: number;
+  prerequisites: string[];
+  owned: boolean;
+};
+
+type PlayerSkillsResponse = {
+  data: {
+    skills: PlayerSkill[];
+  };
+  error: string | null;
+  meta: unknown;
+};
+
+export async function getPlayerSkills(): Promise<PlayerSkill[]> {
+  const response = await apiClient<PlayerSkillsResponse>("/player/skills");
+
+  return response.data.skills;
+}
+
+export const playerSkillsQuery = () =>
+  queryOptions({
+    queryKey: ["player", "skills"],
+    queryFn: getPlayerSkills,
+  });
+
+
+export type PlayerEquipment = {
+  id: string;
+  name: string;
+  purchase_price: number;
+  level_required: number;
+  monthly_upkeep: number;
+  detection_tier: number;
+  detection_bonus: string;
+  defect_categories_targeted: string[];
+  owned: boolean;
+};
+
+type PlayerEquipmentResponse = {
+  data: {
+    equipment: PlayerEquipment[];
+  };
+  error: string | null;
+  meta: unknown;
+};
+
+export async function getPlayerEquipment(): Promise<PlayerEquipment[]> {
+  const response = await apiClient<PlayerEquipmentResponse>(
+    "/player/equipment"
+  );
+
+  return response.data.equipment;
+}
+
+export const playerEquipmentQuery = () =>
+  queryOptions({
+    queryKey: ["player", "equipment"],
+    queryFn: getPlayerEquipment,
+  });

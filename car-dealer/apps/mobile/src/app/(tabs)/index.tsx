@@ -13,6 +13,7 @@ import { RepairType, repairCar } from "@/api/repair";
 import { router } from "expo-router";
 import { playerQuery } from "@/api/player";
 import { GarageSlots } from "@/components/garage/GarageSlots";
+import { SkipActiveRepairDialog } from "@/features/repair/SkipActiveRepairDialog";
 
 const garageBackground = require("@/../assets/images/backgrounds/background_garage1.png");
 
@@ -20,6 +21,7 @@ export default function GarageScreen() {
   const [isSellingPriceSelectorDialogVisible, setSellingPriceSelectorDialogVisible] = useState<boolean>(false);
   const [isActiveDefectsDialogVisible, setActiveDefectsDialogVisible] = useState<boolean>(false);
   const [isRepairDialogVisible, setRepairDialogVisible] = useState<boolean>(false);
+  const [isSkipActiveRepairDialogVisible, setSkipActiveRepairDialogVisible] = useState<boolean>(false);
   const [minSellingPrice, setMinSellingPrice] = useState<number | null>(null);
   const [maxSellingPrice, setMaxSellingPrice] = useState<number | null>(null);
   const [initialSellingPrice, setInitialSellingPrice] = useState<number | null>(null);
@@ -84,7 +86,6 @@ export default function GarageScreen() {
       setRepairDialogVisible(false);
       setSelectedDefect(null);
 
-      setSelectedDefect(null);
     },
     onError: () => {
 
@@ -141,7 +142,11 @@ export default function GarageScreen() {
 
   function onDefectSelect(defect: ActiveDefect) {
     setSelectedDefect(defect);
-    setRepairDialogVisible(true)
+    if (defect.is_repairing) {
+      setSkipActiveRepairDialogVisible(true);
+    } else {
+      setRepairDialogVisible(true);
+    }
   }
   // ---------------------
 
@@ -165,6 +170,10 @@ export default function GarageScreen() {
 
   function onCancelListing(listingId: string) {
     deleteListingMutation.mutate(listingId);
+  }
+
+  function onSkipRepairConfirm() {
+
   }
 
   function onMarket() {
@@ -204,7 +213,7 @@ export default function GarageScreen() {
       {isActiveDefectsDialogVisible && (
         <ActiveDefectsDialog
           defects={selectedCar?.revealedDefects?.filter(defect => !defect.is_quick_fixed) || []}
-          activeRepairs={selectedCar?.activeRepair || []}
+          activeRepairs={selectedCar?.activeRepairs || []}
           carMake={selectedCar?.make || ''}
           carModel={selectedCar?.model || ''}
           onClose={onActiveDefectsDialogClose}
@@ -215,6 +224,11 @@ export default function GarageScreen() {
           defect={selectedDefect}
           onClose={onRepairDialogClose}
           onConfirm={onRepairConfirm} />
+      )}
+      {isSkipActiveRepairDialogVisible && (
+        <SkipActiveRepairDialog 
+          onClose={() => {setSkipActiveRepairDialogVisible(false)}}
+          onConfirm={onSkipRepairConfirm}/>
       )}
     </ImageBackground>
   );
