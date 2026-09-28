@@ -18,7 +18,7 @@ export function CarSlotEmpty({ onMarket }: CarSlotEmptyProps) {
           </View>
         </View>
         <Image
-          source={require("@/../assets/images/backgrounds/background_garage1.png")}
+          source={require("@/../assets/images/backgrounds/garage/background_garage1.png")}
           style={styles.carSlotBackground}
           resizeMode="cover"
         />

@@ -1,4 +1,3 @@
-import { CarSlot } from "@/components/car-slot/CarSlot";
 import { View, Text, StyleSheet, ImageBackground } from "react-native";
 import { useQuery } from "@tanstack/react-query";
 import { ActiveDefect, Car, carsQuery } from "@/api/cars";
@@ -6,7 +5,6 @@ import { SellingPriceSelectorDialog } from "@/features/selling/SellingPriceSelec
 import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createListing, deleteListing } from "@/api/listings";
-import { CarSlotEmpty } from "@/components/car-slot/CarSlotEmpty";
 import { RepairDialog } from "@/features/repair/RepairDialog";
 import { ActiveDefectsDialog } from "@/features/repair/ActiveDefects";
 import { RepairType, repairCar } from "@/api/repair";
@@ -14,13 +12,16 @@ import { router } from "expo-router";
 import { playerQuery } from "@/api/player";
 import { GarageSlots } from "@/components/garage/GarageSlots";
 import { SkipActiveRepairDialog } from "@/features/repair/SkipActiveRepairDialog";
+import { getGarageBackground } from "@/assets/images/backgrounds/garage/garageBackground";
+import { InspectDialog } from "@/features/inspection/InspectDialog";
+import { updatePlayerState } from "@/api/playerState";
 
-const garageBackground = require("@/../assets/images/backgrounds/background_garage1.png");
 
 export default function GarageScreen() {
   const [isSellingPriceSelectorDialogVisible, setSellingPriceSelectorDialogVisible] = useState<boolean>(false);
   const [isActiveDefectsDialogVisible, setActiveDefectsDialogVisible] = useState<boolean>(false);
   const [isRepairDialogVisible, setRepairDialogVisible] = useState<boolean>(false);
+  const [isInspectDialogVisible, setInspectDialogVisible] = useState<boolean>(false);
   const [isSkipActiveRepairDialogVisible, setSkipActiveRepairDialogVisible] = useState<boolean>(false);
   const [minSellingPrice, setMinSellingPrice] = useState<number | null>(null);
   const [maxSellingPrice, setMaxSellingPrice] = useState<number | null>(null);
@@ -31,6 +32,7 @@ export default function GarageScreen() {
   const queryClient = useQueryClient();
   const { data: player } = useQuery(playerQuery());
   const { data: cars = [], isLoading, error } = useQuery(carsQuery());
+  const background = getGarageBackground(player?.garage_slots || 1);
 
   const garageSlots = useMemo(() => {
     const slots = player?.garage_slots ?? 0;
@@ -46,7 +48,12 @@ export default function GarageScreen() {
   const createListingMutation = useMutation({
     mutationFn: createListing,
 
-    onSuccess: () => {
+    onSuccess: (result) => {
+      updatePlayerState(
+        queryClient,
+        result.meta.playerState
+      );
+
       queryClient.invalidateQueries({
         queryKey: ["cars"],
       });
@@ -79,7 +86,12 @@ export default function GarageScreen() {
       defectId: string;
       repairType: RepairType;
     }) => repairCar(carId, { defectId, repairType }),
-    onSuccess: () => {
+    onSuccess: (result) => {
+      updatePlayerState(
+        queryClient,
+        result.meta.playerState
+      );
+
       queryClient.invalidateQueries({
         queryKey: ["cars"],
       });
@@ -167,6 +179,22 @@ export default function GarageScreen() {
   }
   // -----------------
 
+  // inspect dialog
+  function onInspect(selectedCar: Car) {
+    setInspectDialogVisible(true);
+    setSelectedCar(selectedCar);
+  }
+
+  function onInspectConfirm() {
+
+  }
+
+  function onInspectDialogClose() {
+    setInspectDialogVisible(false);
+    setSelectedCar(null);
+  }
+  // -----------------
+
 
   function onCancelListing(listingId: string) {
     deleteListingMutation.mutate(listingId);
@@ -184,7 +212,7 @@ export default function GarageScreen() {
 
   return (
     <ImageBackground
-      source={garageBackground}
+      source={background}
       style={styles.background}
       imageStyle={styles.backgroundImage}
       resizeMode="cover"
@@ -196,7 +224,9 @@ export default function GarageScreen() {
           onCancelListing={onCancelListing}
           onRepair={onRepair}
           onMarket={onMarket}
+          onInspect={onInspect}
         />
+
       </View>
 
       {isSellingPriceSelectorDialogVisible && selectedCar && (
@@ -229,6 +259,9 @@ export default function GarageScreen() {
         <SkipActiveRepairDialog 
           onClose={() => {setSkipActiveRepairDialogVisible(false)}}
           onConfirm={onSkipRepairConfirm}/>
+      )}
+      {isInspectDialogVisible && (
+        <InspectDialog listingId="" visible={isInspectDialogVisible} onClose={onInspectDialogClose} onPreInspect={onInspectConfirm}/>
       )}
     </ImageBackground>
   );

@@ -21,6 +21,7 @@ import {
 } from "@/api/player";
 import { PurchaseSkillConfirmDialog } from "@/features/equipment/PurchaseSkillConfirmDialog";
 import { PurchaseEquipmentConfirmDialog } from "@/features/equipment/PurchaseEquipmentConfirmDialog";
+import { updatePlayerState } from "@/api/playerState";
 
 type EquipmentTab = "skills" | "equipment";
 
@@ -51,13 +52,13 @@ export default function EquipmentScreen() {
   const purchaseSkillMutation = useMutation({
     mutationFn: purchaseSkill,
 
-    onSuccess: () => {
+    onSuccess: (result) => {
+      updatePlayerState(
+        queryClient,
+        result.meta.playerState
+      );
       queryClient.invalidateQueries({
         queryKey: ["player", "skills"],
-      });
-
-      queryClient.invalidateQueries({
-        queryKey: ["player", "me"],
       });
 
       setPurchaseSkillConfirmDialogVisible(false);
@@ -73,13 +74,13 @@ export default function EquipmentScreen() {
   const purchaseEquipmentMutation = useMutation({
     mutationFn: purchaseEquipment,
 
-    onSuccess: () => {
+    onSuccess: (result) => {
+      updatePlayerState(
+        queryClient,
+        result.meta.playerState
+      );
       queryClient.invalidateQueries({
         queryKey: ["player", "equipment"],
-      });
-
-      queryClient.invalidateQueries({
-        queryKey: ["player", "me"],
       });
 
       setPurchaseEquipmentConfirmDialogVisible(false);

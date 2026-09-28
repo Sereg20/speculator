@@ -7,7 +7,7 @@
  */
 
 import { startRepair, checkCompletion, completeRepairJob } from '../services/repairQueue.js';
-import { consumeEnergy, refundEnergy, getEnergy } from '../services/energyService.js';
+import { consumeEnergy, refundEnergy, getEnergy, getPlayerState } from '../services/energyService.js';
 import { labelDefect } from '../services/defectEngine.js';
 import { sql } from '../db/client.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -58,6 +58,7 @@ async function startRepairRoute(request, reply) {
   const meta = {
     immediate: isImmediate,
     completesAt: job.completes_at,
+    playerState: await getPlayerState(playerId),
   };
   if (job.quickFixSuccessChance != null) {
     meta.quickFixSuccessChance = job.quickFixSuccessChance;
@@ -297,6 +298,7 @@ async function skipRepair(request, reply) {
     meta: {
       energyCost: cost,
       remainingMinutesSaved: Math.round(remainingMinutes),
+      playerState: await getPlayerState(playerId),
     },
   });
 }

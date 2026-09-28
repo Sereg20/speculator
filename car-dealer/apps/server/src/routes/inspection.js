@@ -12,7 +12,7 @@
  */
 
 import { runInspection, inspectionXP, INSPECTION_ACTIONS, resolveAvailableActions } from '../services/inspectionEngine.js';
-import { consumeEnergy, refundEnergy } from '../services/energyService.js';
+import { consumeEnergy, refundEnergy, getPlayerState } from '../services/energyService.js';
 import { awardXP } from '../services/xpService.js';
 import { sql } from '../db/client.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -91,6 +91,7 @@ async function inspect(request, reply) {
       newlyRevealedCount: result.revealed.length,
       energySpent: energyCost,
       xpAwarded: xpAmount,
+      playerState: await getPlayerState(playerId),
     },
   });
 }

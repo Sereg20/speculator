@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import { ApiMeta } from "./player";
 
 export type SaleListing = {
   id: string;
@@ -9,7 +10,7 @@ export type SaleListing = {
 type CreateListingResponse = {
   data: SaleListing;
   error: string | null;
-  meta: unknown;
+  meta: ApiMeta;
 };
 
 type CreateListingPayload = {
@@ -19,13 +20,13 @@ type CreateListingPayload = {
 
 export async function createListing(
   payload: CreateListingPayload
-): Promise<SaleListing> {
+): Promise<CreateListingResponse> {
   const response = await apiClient<CreateListingResponse>("/listings", {
     method: "POST",
     body: JSON.stringify(payload),
   });
 
-  return response.data;
+  return response;
 }
 
 type DeleteListingResponse = {

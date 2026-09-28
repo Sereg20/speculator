@@ -10,7 +10,7 @@
 import { getOrRefreshListings, generateListings } from '../services/listingGenerator.js';
 import { generateDialogue } from '../services/aiProxy.js';
 import { transitionCar } from '../services/carStateMachine.js';
-import { consumeEnergy, refundEnergy } from '../services/energyService.js';
+import { consumeEnergy, refundEnergy, getPlayerState } from '../services/energyService.js';
 import { awardXP } from '../services/xpService.js';
 import { resolveMarketNegotiation } from '../services/negotiationEngine.js';
 import { runPrePurchaseInspection, INSPECTION_ACTIONS, inspectionXP, resolveAvailableActions } from '../services/inspectionEngine.js';
@@ -216,21 +216,13 @@ async function purchaseCar(request, reply) {
   // Award XP (outside transaction — non-critical)
   await awardXP(playerId, 15, 'car_purchase');
 
-  // Fetch updated player for response
-  const [updatedPlayer] = await sql`
-    SELECT cash, xp, level, energy_current, reputation_score
-    FROM players WHERE id = ${playerId}
-  `;
-
   return reply.code(201).send({
     data: {
       car: { id: car.id, make: car.make, model: car.model, year: car.year },
     },
     error: null,
     meta: {
-      cashAfter: updatedPlayer.cash,
-      xpAfter: updatedPlayer.xp,
-      levelAfter: updatedPlayer.level,
+      playerState: await getPlayerState(playerId),
     },
   });
 }
@@ -393,7 +385,11 @@ async function negotiatePurchase(request, reply) {
     return reply.send({
       data: { outcome: 'accepted', finalPrice: result.finalPrice, message },
       error: null,
-      meta: { originalPrice, discount: Math.round((1 - result.finalPrice / originalPrice) * 100) },
+      meta: {
+        originalPrice,
+        discount: Math.round((1 - result.finalPrice / originalPrice) * 100),
+        playerState: await getPlayerState(playerId),
+      },
     });
   }
 
@@ -415,7 +411,11 @@ async function negotiatePurchase(request, reply) {
     return reply.send({
       data: { outcome: 'counter', sellerCounterPrice: result.finalPrice, message },
       error: null,
-      meta: { originalPrice, currentPrice: result.finalPrice },
+      meta: {
+        originalPrice,
+        currentPrice: result.finalPrice,
+        playerState: await getPlayerState(playerId),
+      },
     });
   }
 
@@ -435,7 +435,11 @@ async function negotiatePurchase(request, reply) {
   return reply.send({
     data: { outcome: 'rejected', message },
     error: null,
-    meta: { originalPrice, currentPrice },
+    meta: {
+      originalPrice,
+      currentPrice,
+      playerState: await getPlayerState(playerId),
+    },
   });
 }
 
@@ -582,7 +586,10 @@ async function chatWithSeller(request, reply) {
   return reply.send({
     data: { dialogue, revealed: hintPayload },
     error: null,
-    meta: { newlyRevealedCount: hints.length },
+    meta: {
+      newlyRevealedCount: hints.length,
+      playerState: await getPlayerState(playerId),
+    },
   });
 }
 
@@ -674,6 +681,7 @@ async function prePurchaseInspect(request, reply) {
       newlyRevealedCount: result.revealed.length,
       energySpent: energyCost,
       xpAwarded: xpAmount,
+      playerState: await getPlayerState(playerId),
     },
   });
 }

@@ -8,16 +8,17 @@ interface CarCardProps {
   onSell: (selectedCar: Car) => void;
   onCancelListing: (listingId: string) => void;
   onRepair: (selectedCar: Car) => void;
+  onInspect: (selectedCar: Car) => void;
 }
 
-export function CarSlot({ car, onSell, onCancelListing, onRepair }: CarCardProps) {
-  const activeDefects =  car.revealedDefects ? car.revealedDefects.filter(defect => !defect.is_quick_fixed) : [];
+export function CarSlot({ car, onSell, onCancelListing, onRepair, onInspect }: CarCardProps) {
+  const activeDefects = car.revealedDefects ? car.revealedDefects.filter(defect => !defect.is_quick_fixed) : [];
   const carState = getStateText(car.state);
 
   function getStateText(state: string) {
     switch (state) {
       case "listed_for_sale":
-        return "НА ПРОДАЖЕ"
+        return `НА ПРОДАЖЕ (${car.activeListing?.asking_price} BYN)`
       case "in_repair":
         return "В РЕМОНТЕ"
       default:
@@ -32,24 +33,20 @@ export function CarSlot({ car, onSell, onCancelListing, onRepair }: CarCardProps
     return onCancelListing(car.activeListing?.id);
   }
 
-  function onRepairPress() {
-    onRepair(car);
-  }
-
   return (
     <View style={styles.carSlot}>
-      <View style={{height: '50%'}}>
+      <View style={{ height: '50%' }}>
         <View>
           <View style={styles.carSlotIndex}>
-            <Text style={{color: colors.textMain}}>1</Text>
+            <Text style={{ color: colors.textMain }}>1</Text>
           </View>
         </View>
         <Image
-          source={require("@/../assets/images/backgrounds/background_garage1.png")}
+          source={require("@/../assets/images/backgrounds/garage/background_garage1.png")}
           style={styles.carSlotBackground}
           resizeMode="cover"
         />
-      
+
         <Text style={styles.title}>{car.make} {car.model}</Text>
         <Text style={styles.status}>{carState}</Text>
       </View>
@@ -69,44 +66,51 @@ export function CarSlot({ car, onSell, onCancelListing, onRepair }: CarCardProps
         </View>
       </View>
       <View style={styles.defectsList}>
-          <FlatList
-            data={activeDefects}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <DefectItemIcon defect={item}/>
-            )}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-            refreshing={false}
-            onRefresh={() => { }}
-            ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Text style={styles.defectsFallbackText}>
-                  Не обнаружено!
-                </Text>
-              </View>
-            }
-          />
+        <FlatList
+          data={activeDefects}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <DefectItemIcon defect={item} />
+          )}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          refreshing={false}
+          onRefresh={() => { }}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.defectsFallbackText}>
+                Не обнаружено!
+              </Text>
+            </View>
+          }
+        />
       </View>
       <View style={styles.actions}>
-        {(car.state === "purchased" || car.state === "in_repair") &&
-          <Pressable onPress={() => {onSell(car)}} disabled={activeDefects.length > 0} style={[styles.sellBtn,
-            activeDefects.length > 0
-              ? styles.btnDisabled
-              : {} ]}>
-            <Text style={styles.btnText}>ПРОДАТЬ</Text>  
-          </Pressable>
-        }
-        {(car.state === "purchased" || car.state === "in_repair") &&
-          <Pressable onPress={() => {onRepair(car)}} style={styles.repairBtn}>
-            <Text style={styles.btnText}>РЕМОНТ</Text>  
-          </Pressable>
-        }
-        {car.state === "listed_for_sale" &&
-          <Pressable onPress={onCancelListingPress} style={styles.cancelListingBtn}>
-            <Text style={styles.btnText}>СНЯТЬ С ПРОДАЖИ</Text>  
-          </Pressable>
-        }
+        {(car.state === "purchased" || car.state === "in_repair") && (
+          <View style={styles.repairActions}>
+            <Pressable onPress={() => { onSell(car) }} disabled={activeDefects.length > 0} style={[styles.sellBtn,
+              activeDefects.length > 0
+                ? styles.btnDisabled
+                : {}]}>
+              <Text style={styles.btnText}>ПРОДАТЬ</Text>
+            </Pressable>
+            <Pressable onPress={() => { onRepair(car) }} style={styles.repairBtn}>
+              <Text style={styles.btnText}>РЕМОНТ</Text>
+            </Pressable>
+          </View>
+        )}
+        <View>
+          {(car.state === "purchased" || car.state === "in_repair") &&
+            <Pressable onPress={() => { onInspect(car) }} style={styles.inspectBtn}>
+              <Text style={styles.btnText}>ДИАГНОСТИКА</Text>
+            </Pressable>
+          }
+          {car.state === "listed_for_sale" &&
+            <Pressable onPress={onCancelListingPress} style={styles.cancelListingBtn}>
+              <Text style={styles.btnText}>СНЯТЬ С ПРОДАЖИ</Text>
+            </Pressable>
+          }
+        </View>        
       </View>
     </View>
   );
@@ -124,7 +128,7 @@ const styles = StyleSheet.create({
     boxShadow: "0px 0px 16px #49E2FF",
     overflow: 'hidden',
   },
-  
+
   carSlotBackground: {
     flex: 1,
     width: "100%",
@@ -184,7 +188,7 @@ const styles = StyleSheet.create({
   defectsList: {
     marginHorizontal: 16,
     paddingVertical: 4,
-    height: 70,
+    height: 40,
     borderBottomWidth: 2,
     borderColor: '#3c5a4d',
     marginBottom: 12,
@@ -201,7 +205,7 @@ const styles = StyleSheet.create({
 
   emptyContainer: {
     flex: 1,
-    height: 70,
+    height: 40,
     justifyContent: 'center',
     alignItems: 'center'
   },
@@ -214,21 +218,33 @@ const styles = StyleSheet.create({
 
   actions: {
     marginHorizontal: 16,
+    gap: 8
+  },
+
+  repairActions: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-between'
+  },
+
+  inspectBtn: {
+    backgroundColor: colors.blueButtonColor,
+    width: '100%',
+    paddingVertical: 6,
+    borderRadius: 6,
+    alignItems: 'center'
   },
 
   sellBtn: {
-    backgroundColor: colors.orangeButtonColor,
-    width: '45%',
+    backgroundColor: colors.greenButton,
+    width: '47%',
     paddingVertical: 6,
     borderRadius: 6,
     alignItems: 'center'
   },
 
   repairBtn: {
-    backgroundColor: colors.blueButtonColor,
-    width: '45%',
+    backgroundColor: colors.orangeButtonColor,
+    width: '47%',
     paddingVertical: 8,
     borderRadius: 6,
     alignItems: 'center'

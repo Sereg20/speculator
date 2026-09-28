@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { apiClient } from "./client";
+import { ApiMeta } from "./player";
 
 /**
  * Car available for purchase on the market.
@@ -116,12 +117,12 @@ export type ChatResult = {
 type ChatResponse = {
   data: ChatResult;
   error: unknown | null;
-  meta: { newlyRevealedCount: number };
+  meta: ApiMeta
 };
 
 export const chatWithSeller = async (
   id: string
-): Promise<ChatResult> => {
+): Promise<ChatResponse> => {
   const response = await apiClient<ChatResponse>(
     `/market/listings/${id}/chat`,
     {
@@ -130,7 +131,7 @@ export const chatWithSeller = async (
     }
   );
 
-  return response.data;
+  return response;
 };
 
 /**
@@ -146,13 +147,13 @@ export type NegotiateResult = {
 type NegotiateResponse = {
   data: NegotiateResult;
   error: unknown | null;
-  meta: Record<string, unknown>;
+  meta: ApiMeta;
 };
 
 export const negotiateListing = async (
   id: string,
   proposedPrice: number
-): Promise<NegotiateResult> => {
+): Promise<NegotiateResponse> => {
   const response = await apiClient<NegotiateResponse>(
     `/market/listings/${id}/negotiate`,
     {
@@ -163,7 +164,7 @@ export const negotiateListing = async (
     }
   );
 
-  return response.data;
+  return response;
 };
 
 /**
@@ -177,12 +178,12 @@ export type PurchaseResult = {
 type PurchaseResponse = {
   data: PurchaseResult;
   error: unknown | null;
-  meta: Record<string, unknown>;
+  meta: ApiMeta;
 };
 
 export const purchaseListing = async (
   id: string
-): Promise<PurchaseResult> => {
+): Promise<PurchaseResponse> => {
   const response = await apiClient<PurchaseResponse>(
     `/market/listings/${id}/purchase`,
     {
@@ -191,7 +192,7 @@ export const purchaseListing = async (
     }
   );
 
-  return response.data;
+  return response;
 };
 
 
@@ -301,14 +302,14 @@ export type PreInspectResult = {
 type PreInspectResponse = {
   data: PreInspectResult;
   error: unknown | null;
-  meta: { actionId: string; newlyRevealedCount: number; energySpent: number; xpAwarded: number };
+  meta: ApiMeta
 };
 
 export const preInspectListing = async (
   id: string,
   actionId: InspectionActionId,
   category: CategoryId
-): Promise<PreInspectResult> => {
+): Promise<PreInspectResponse> => {
   const response = await apiClient<PreInspectResponse>(
     `/market/listings/${id}/pre-inspect`,
     {
@@ -317,5 +318,5 @@ export const preInspectListing = async (
     }
   );
 
-  return response.data;
+  return response;
 };

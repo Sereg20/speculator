@@ -17,7 +17,7 @@
 import { sql } from '../db/client.js';
 import { requireAuth } from '../middleware/auth.js';
 import { transitionCar } from '../services/carStateMachine.js';
-import { consumeEnergy, refundEnergy } from '../services/energyService.js';
+import { consumeEnergy, refundEnergy, getPlayerState } from '../services/energyService.js';
 import { awardXP } from '../services/xpService.js';
 import { generateDialogue } from '../services/aiProxy.js';
 import { resolveSaleNegotiation } from '../services/negotiationEngine.js';
@@ -176,7 +176,10 @@ async function createListing(request, reply) {
   return reply.code(201).send({
     data: { listing },
     error: null,
-    meta: { expiresAt: listing.expires_at },
+    meta: {
+      expiresAt: listing.expires_at,
+      playerState: await getPlayerState(playerId),
+    },
   });
 }
 
@@ -420,7 +423,7 @@ async function respondToInquiry(request, reply) {
     return reply.code(err.statusCode || 500).send({ data: null, error: err.message, meta: null });
   }
 
-  return reply.send({ data: result, error: null, meta: null });
+  return reply.send({ data: result, error: null, meta: { playerState: await getPlayerState(playerId) } });
 }
 
 /**

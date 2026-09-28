@@ -15,6 +15,7 @@ import { InspectDialog } from "@/features/inspection/InspectDialog";
 import { npcAvatars } from "@/assets/images/npc-avatars/npcAvatars";
 import { SuccessPurchaseDialog } from "@/components/dialog/SuccessPurchaseDialog";
 import { RevealedDefectsDialog } from "@/features/inspection/RevealedDefectsDialog";
+import { updatePlayerState } from "@/api/playerState";
 
 const initMessage: IDialogMessage = {
   id: "1",
@@ -67,11 +68,15 @@ export default function MarketInspectionScreen() {
   // /chat request
   const chatMutation = useMutation({
     mutationFn: () => chatWithSeller(id),
-    onSuccess: (data) => {
-      addMessage(data.dialogue, "npc");
-      setLastDefects(data.revealed);
-      setAllDefects(allDefects => [...allDefects, ...data.revealed]);
-      if(data.revealed.length > 0) {
+    onSuccess: (result) => {
+      updatePlayerState(
+        queryClient,
+        result.meta.playerState
+      );
+      addMessage(result.data.dialogue, "npc");
+      setLastDefects(result.data.revealed);
+      setAllDefects(allDefects => [...allDefects, ...result.data.revealed]);
+      if(result.data.revealed.length > 0) {
         setRevealedDefectsDialogVisible(true);
       }
     },
@@ -89,19 +94,23 @@ export default function MarketInspectionScreen() {
   const negotiateMutation = useMutation({
     mutationFn: (proposedPrice: number) => negotiateListing(id, proposedPrice),
 
-    onSuccess: (data) => {
-      if (data.outcome === 'counter' && data.sellerCounterPrice) {
-        setCurrentPrice(data.sellerCounterPrice);
+    onSuccess: (result) => {
+      updatePlayerState(
+        queryClient,
+        result.meta.playerState
+      );
+      if (result.data.outcome === 'counter' && result.data.sellerCounterPrice) {
+        setCurrentPrice(result.data.sellerCounterPrice);
         setNegotiateDisabled(false);
-      } else if (data.outcome === 'accepted' && data.finalPrice) {
-        setCurrentPrice(data.finalPrice);
-      } else if (data.outcome === 'rejected') {
+      } else if (result.data.outcome === 'accepted' && result.data.finalPrice) {
+        setCurrentPrice(result.data.finalPrice);
+      } else if (result.data.outcome === 'rejected') {
         setPreInspectDisabled(true);
         setPurchaseDisabled(true);
         setPreInspectDisabled(true);
         setChatDisabled(true);
       }
-      addMessage(data.message, "npc");
+      addMessage(result.data.message, "npc");
     },
 
     onError: (error) => {
@@ -113,7 +122,11 @@ export default function MarketInspectionScreen() {
   // /purchase request
   const purchaseMutation = useMutation({
     mutationFn: () => purchaseListing(id),
-    onSuccess: () => {
+    onSuccess: (result) => {
+      updatePlayerState(
+        queryClient,
+        result.meta.playerState
+      );
       queryClient.invalidateQueries({
         queryKey: ["cars"],
       });
@@ -142,9 +155,13 @@ export default function MarketInspectionScreen() {
       categoryId: CategoryId;
     }) => preInspectListing(id, actionId, categoryId),
 
-    onSuccess: (data) => {
-      setLastDefects(data.revealed);
-      setAllDefects(allDefects => [...allDefects, ...data.revealed]);
+    onSuccess: (result) => {
+      updatePlayerState(
+        queryClient,
+        result.meta.playerState
+      );
+      setLastDefects(result.data.revealed);
+      setAllDefects(allDefects => [...allDefects, ...result.data.revealed]);
       setRevealedDefectsDialogVisible(true);
       setPreInspectDisabled(false);
     },

@@ -15,11 +15,26 @@ export type Player = {
   xp_to_next_level: number;
 };
 
+export type PlayerState = {
+  cash: number;
+  xp: number;
+  level: number;
+  energy_current: number;
+  energy_max: number;
+};
+
+export type ApiMeta = {
+  playerState?: PlayerState;
+  [key: string]: unknown;
+};
+
 type PlayerResponse = {
   data: Player;
   error: string | null;
-  meta: unknown;
+  meta: ApiMeta;
 };
+
+
 
 export async function getPlayer(): Promise<Player> {
   const response = await apiClient<PlayerResponse>("/player/me");
@@ -104,12 +119,12 @@ export const playerEquipmentQuery = () =>
 export type PurchaseSkillResponse = {
   data: PlayerSkill;
   error: string | null;
-  meta: unknown;
+  meta: ApiMeta;
 };
 
 export async function purchaseSkill(
   skillId: string
-): Promise<PlayerSkill> {
+): Promise<PurchaseSkillResponse> {
   const response = await apiClient<PurchaseSkillResponse>(
     `/player/skills/${skillId}/purchase`,
     {
@@ -118,18 +133,18 @@ export async function purchaseSkill(
     }
   );
 
-  return response.data;
+  return response;
 }
 
 export type PurchaseEquipmentResponse = {
   data: PlayerEquipment;
   error: string | null;
-  meta: unknown;
+  meta: ApiMeta;
 };
 
 export async function purchaseEquipment(
   equipmentId: string
-): Promise<PlayerEquipment> {
+): Promise<PurchaseEquipmentResponse> {
   const response = await apiClient<PurchaseEquipmentResponse>(
     `/player/equipment/${equipmentId}/purchase`,
     {
@@ -138,5 +153,5 @@ export async function purchaseEquipment(
     }
   );
 
-  return response.data;
+  return response;
 }

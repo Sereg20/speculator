@@ -14,6 +14,7 @@ interface GarageSlotsProps {
   onCancelListing: (listingId: string) => void;
   onRepair: (selectedCar: Car) => void;
   onMarket: () => void;
+  onInspect: (selectedCar: Car) => void;
 }
 
 export function GarageSlots({
@@ -22,6 +23,7 @@ export function GarageSlots({
   onCancelListing,
   onRepair,
   onMarket,
+  onInspect
 }: GarageSlotsProps) {
   const { width } = useWindowDimensions();
 
@@ -53,6 +55,7 @@ export function GarageSlots({
               onSell={onSell}
               onCancelListing={onCancelListing}
               onRepair={onRepair}
+              onInspect={onInspect}
             />
           ) : (
             <CarSlotEmpty onMarket={onMarket} />

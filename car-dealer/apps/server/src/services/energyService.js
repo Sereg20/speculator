@@ -71,12 +71,31 @@ export async function refundEnergy(playerId, amount) {
 }
 
 /**
- * Atomically consume energy. Returns false if insufficient energy.
+ * Get a compact player state snapshot for embedding in mutation responses.
+ * Applies lazy energy regen first so values are always current.
+ * Returns only the fields the UI needs to sync — nothing sensitive.
  *
  * @param {string} playerId
- * @param {number} amount
- * @returns {Promise<boolean>}
+ * @returns {Promise<{ cash: number, xp: number, level: number, energy_current: number, energy_max: number }>}
  */
+export async function getPlayerState(playerId) {
+  // getEnergy applies regen and returns current/max
+  const { current: energy_current, max: energy_max } = await getEnergy(playerId);
+
+  const [player] = await sql`
+    SELECT cash, xp, level FROM players WHERE id = ${playerId}
+  `;
+  if (!player) throw Object.assign(new Error('Player not found'), { statusCode: 404 });
+
+  return {
+    cash: player.cash,
+    xp: player.xp,
+    level: player.level,
+    energy_current,
+    energy_max,
+  };
+}
+
 export async function consumeEnergy(playerId, amount) {
   // First sync regen
   await getEnergy(playerId);

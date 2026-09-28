@@ -1,4 +1,5 @@
 import { apiClient } from "./client";
+import { ApiMeta } from "./player";
 
 export type RepairType = "proper" | "quick_fix";
 
@@ -10,13 +11,13 @@ export type RepairPayload = {
 type RepairResponse = {
   data: unknown;
   error: string | null;
-  meta: unknown;
+  meta: ApiMeta;
 };
 
 export async function repairCar(
   carId: string,
   payload: RepairPayload
-): Promise<RepairResponse["data"]> {
+): Promise<RepairResponse> {
   const response = await apiClient<RepairResponse>(
     `/cars/${carId}/repairs`,
     {
@@ -25,5 +26,5 @@ export async function repairCar(
     }
   );
 
-  return response.data;
+  return response;
 }
