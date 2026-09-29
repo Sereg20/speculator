@@ -13,6 +13,7 @@ export type Player = {
   in_game_day: number;
   reputation_tier: string;
   xp_to_next_level: number;
+  energy_max: number;
 };
 
 export type PlayerState = {

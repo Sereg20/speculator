@@ -1,6 +1,6 @@
 import { sql } from '../db/client.js';
 import { requireAuth } from '../middleware/auth.js';
-import { getEnergy } from '../services/energyService.js';
+import { getEnergy, getPlayerState } from '../services/energyService.js';
 import { REPUTATION_TIERS, LEVEL_XP_THRESHOLDS } from '../config.js';
 
 function reputationTier(score) {
@@ -44,6 +44,7 @@ async function getMe(request, reply) {
     data: {
       ...player,
       energy_current: energyCurrent,
+      energy_max: energyMax,
       reputation_tier: reputationTier(player.reputation_score),
       xp_to_next_level: xpToNextLevel(player.xp, player.level),
     },
@@ -204,12 +205,10 @@ async function purchaseSkill(request, reply) {
     `;
   });
 
-  const [updatedPlayer] = await sql`SELECT cash FROM players WHERE id = ${playerId}`;
-
   return reply.code(201).send({
     data: { skillId, name: skill.name },
     error: null,
-    meta: { cashAfter: updatedPlayer.cash },
+    meta: { playerState: await getPlayerState(playerId) },
   });
 }
 
@@ -297,12 +296,10 @@ async function purchaseEquipment(request, reply) {
     `;
   });
 
-  const [updatedPlayer] = await sql`SELECT cash FROM players WHERE id = ${playerId}`;
-
   return reply.code(201).send({
     data: { equipmentId, name: equip.name },
     error: null,
-    meta: { cashAfter: updatedPlayer.cash },
+    meta: { playerState: await getPlayerState(playerId) },
   });
 }
 
@@ -357,14 +354,12 @@ async function upgradeGarage(request, reply) {
     }
   });
 
-  const [updatedPlayer] = await sql`
-    SELECT cash, garage_slots FROM players WHERE id = ${playerId}
-  `;
+  const [updatedPlayer] = await sql`SELECT garage_slots FROM players WHERE id = ${playerId}`;
 
   return reply.send({
     data: { garageSlots: updatedPlayer.garage_slots },
     error: null,
-    meta: { cashAfter: updatedPlayer.cash },
+    meta: { playerState: await getPlayerState(playerId) },
   });
 }
 

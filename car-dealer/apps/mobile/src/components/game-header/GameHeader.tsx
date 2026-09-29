@@ -55,7 +55,7 @@ export function GameHeader() {
         <View>
 
           <Text style={styles.value}>
-            ⚡ {player?.energy_current}/100
+            {player?.energy_current}/{player?.energy_max}
           </Text>
         </View>
       </View>

@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="BYN gold coin">
+  <defs>
+    <!-- Change these variables to recolor the whole coin -->
+    <style>
+      :root {
+        --coin-base: #F2B90B;
+        --coin-light: #FFE36A;
+        --coin-dark: #A96D00;
+        --coin-deep: #704300;
+        --relief: #C48700;
+      }
+      .base { fill: var(--coin-base); }
+      .light { fill: var(--coin-light); }
+      .dark { fill: var(--coin-dark); }
+      .deep { fill: var(--coin-deep); }
+      .relief { fill: var(--relief); }
+    </style>
+
+    <radialGradient id="face" cx="35%" cy="28%" r="78%">
+      <stop offset="0" stop-color="var(--coin-light)"/>
+      <stop offset=".48" stop-color="var(--coin-base)"/>
+      <stop offset="1" stop-color="var(--coin-dark)"/>
+    </radialGradient>
+
+    <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="var(--coin-light)"/>
+      <stop offset=".24" stop-color="var(--coin-base)"/>
+      <stop offset=".55" stop-color="var(--coin-dark)"/>
+      <stop offset=".78" stop-color="var(--coin-base)"/>
+      <stop offset="1" stop-color="var(--coin-light)"/>
+    </linearGradient>
+
+    <linearGradient id="letter" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="var(--coin-dark)"/>
+      <stop offset=".48" stop-color="var(--coin-deep)"/>
+      <stop offset="1" stop-color="var(--coin-dark)"/>
+    </linearGradient>
+
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="4"/>
+    </filter>
+  </defs>
+
+  <!-- Soft shadow -->
+  <circle cx="256" cy="262" r="226" fill="#000" opacity=".18" filter="url(#shadow)"/>
+
+  <!-- Outer coin -->
+  <circle cx="256" cy="256" r="232" fill="url(#rim)" stroke="var(--coin-dark)" stroke-width="3"/>
+  <circle cx="256" cy="256" r="218" fill="none" stroke="var(--coin-light)" stroke-width="4" opacity=".9"/>
+  <circle cx="256" cy="256" r="207" fill="url(#face)" stroke="var(--coin-deep)" stroke-width="5"/>
+  <circle cx="256" cy="256" r="194" fill="none" stroke="var(--coin-dark)" stroke-width="3"/>
+  <circle cx="256" cy="256" r="190" fill="none" stroke="var(--coin-light)" stroke-width="2" opacity=".65"/>
+
+  <!-- Decorative arcs -->
+  <g fill="none" stroke="var(--coin-deep)" stroke-width="5" stroke-linecap="round">
+    <path d="M115 172 A157 157 0 0 1 177 113"/>
+    <path d="M335 113 A157 157 0 0 1 397 172"/>
+    <path d="M115 340 A157 157 0 0 0 177 399"/>
+    <path d="M335 399 A157 157 0 0 0 397 340"/>
+  </g>
+
+  <!-- Top ornament -->
+  <g transform="translate(256 118)" class="deep">
+    <path d="M0-35 L13-22 L13-4 L31-18 L44-5 L26 13 L44 13 L31 26 L13 12 L13 34 L0 47 L-13 34 L-13 12 L-31 26 L-44 13 L-26 13 L-44-5 L-31-18 L-13-4 L-13-22 Z"/>
+    <path d="M0-47 L10-37 L0-27 L-10-37 Z" class="relief"/>
+    <path d="M0 47 L10 37 L0 27 L-10 37 Z" class="relief"/>
+  </g>
+
+  <!-- Bottom ornament -->
+  <g transform="translate(256 394) scale(1 -1)" class="deep">
+    <path d="M0-35 L13-22 L13-4 L31-18 L44-5 L26 13 L44 13 L31 26 L13 12 L13 34 L0 47 L-13 34 L-13 12 L-31 26 L-44 13 L-26 13 L-44-5 L-31-18 L-13-4 L-13-22 Z"/>
+    <path d="M0-47 L10-37 L0-27 L-10-37 Z" class="relief"/>
+    <path d="M0 47 L10 37 L0 27 L-10 37 Z" class="relief"/>
+  </g>
+
+  <!-- Small diamonds -->
+  <g class="deep">
+    <path d="M191 111 l10 10 -10 10 -10-10z"/>
+    <path d="M321 111 l10 10 -10 10 -10-10z"/>
+    <path d="M191 381 l10 10 -10 10 -10-10z"/>
+    <path d="M321 381 l10 10 -10 10 -10-10z"/>
+  </g>
+
+  <!-- BYN: raised-looking shadow -->
+  <text x="256" y="292"
+        text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="142"
+        font-weight="700"
+        letter-spacing="4"
+        fill="var(--coin-light)"
+        opacity=".8">BYN</text>
+
+  <!-- BYN face -->
+  <text x="256" y="286"
+        text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="142"
+        font-weight="700"
+        letter-spacing="4"
+        fill="url(#letter)"
+        stroke="var(--coin-dark)"
+        stroke-width="2"
+        paint-order="stroke">BYN</text>
+
+  <!-- Fine highlight on inner rim -->
+  <circle cx="256" cy="256" r="202" fill="none"
+          stroke="var(--coin-light)" stroke-width="1.5" opacity=".55"/>
+</svg>
