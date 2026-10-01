@@ -102,11 +102,12 @@ export default function MarketInspectionScreen() {
       if (result.data.outcome === 'counter' && result.data.sellerCounterPrice) {
         setCurrentPrice(result.data.sellerCounterPrice);
         setNegotiateDisabled(false);
+        setPurchaseDisabled(false);
       } else if (result.data.outcome === 'accepted' && result.data.finalPrice) {
         setCurrentPrice(result.data.finalPrice);
+        setPurchaseDisabled(false);
       } else if (result.data.outcome === 'rejected') {
         setPreInspectDisabled(true);
-        setPurchaseDisabled(true);
         setPreInspectDisabled(true);
         setChatDisabled(true);
       }
@@ -245,6 +246,7 @@ export default function MarketInspectionScreen() {
 
   function onConfirmProposedPrice(proposedPrice: number) {
     setNegotiateDisabled(true);
+    setPurchaseDisabled(true);
     negotiateMutation.mutate(proposedPrice);
     setPriceModalVisible(false);
     addMessage(`Предложение хорошее, но цена велика. Как насчет ${proposedPrice}?`, 'player');
@@ -302,7 +304,7 @@ export default function MarketInspectionScreen() {
 
       </View>
 
-      <NegotiatePriceSelectorDialog visible={isPriceModalVisible} onClose={() => { setPriceModalVisible(false) }} onConfirm={onConfirmProposedPrice} initialPrice={currentPrice} minPrice={minPrice} />
+      {isPriceModalVisible && <NegotiatePriceSelectorDialog visible={isPriceModalVisible} onClose={() => { setPriceModalVisible(false) }} onConfirm={onConfirmProposedPrice} initialPrice={currentPrice} minPrice={minPrice} />}
       <InspectDialog listingId={id} visible={isInspectModalVisible} onClose={() => { setInspectModalVisible(false) }} onPreInspect={onPreInspect} />
       <SuccessPurchaseDialog car={listing} visible={isSuccessPurchaseVisible} finalPrice={currentPrice} onClose={onSuccessPurchaseDialogClose} onConfirm={onSuccessPurchaseDialogConfirm}/>
       <RevealedDefectsDialog visible={isRevealedDefectsDialogVisible} onClose={() => {setRevealedDefectsDialogVisible(false)}} defects={lastDefects}/>

@@ -1,18 +1,24 @@
-import { listingInquiriesQuery, listingQuery } from "@/api/listings";
+import { listingInquiriesQuery, listingQuery, respondToInquiry, RespondToInquiryPayload } from "@/api/listings";
+import { updatePlayerState } from "@/api/playerState";
+import { useGame } from "@/app/context/GameContext";
 import { Dialog } from "@/components/dialog/Dialog";
 import { NegotiateAction } from "@/components/dialog/NegotiateAction";
+import { NegotiatePriceSelectorDialog } from "@/components/dialog/NegotiatePriceSelectorDialog";
 import { colors } from "@/theme/colors";
 import { DialogSpeakerType, IDialogMessage } from "@/types/dialog";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 
 export default function ListingInquiryScreen() {
+  const { showError } = useGame();
   const { listingId, inquiryId } = useLocalSearchParams<{
     listingId: string;
     inquiryId: string;
   }>();
+  const queryClient = useQueryClient();
+
 
   const { data: listing, isLoading: isListingLoading } = useQuery(listingQuery(listingId));
   const { data: inquiries = [], isLoading: isInquiriesLoading } = useQuery(listingInquiriesQuery(listingId));
@@ -27,10 +33,50 @@ export default function ListingInquiryScreen() {
     text: inquiry?.message_text || ''
   }
   const [messages, setMessages] = useState<IDialogMessage[]>([initMessage]);
-  const [negotiateDisabled, setNegotiateDisabled] = useState<boolean>(false);
+  const [negotiateDisabled, setNegotiateDisabled] = useState<boolean>(inquiry?.is_direct_buy || false);
   const [sellDisabled, setSellDisabled] = useState<boolean>(false);
   const [quitDisabled, setQuitDisabled] = useState<boolean>(false);
+  const [rejectDisabled, setRejectDisabled] = useState<boolean>(false);
+  const [isPriceModalVisible, setPriceModalVisible] = useState<boolean>(false);
 
+  const respondToInquiryMutation = useMutation({
+    mutationFn: ({
+      listingId,
+      inquiryId,
+      payload,
+    }: {
+      listingId: string;
+      inquiryId: string;
+      payload: RespondToInquiryPayload;
+    }) =>
+      respondToInquiry(listingId, inquiryId, payload),
+
+    onSuccess: (result) => {
+      updatePlayerState(queryClient, result.meta.playerState);
+      addMessage(result.data.message, 'npc');
+
+      if (result.data.outcome === 'rejected') {
+        
+      } else if (result.data.outcome === 'sold') {
+        // open success dialog
+      } else {
+        setNegotiateDisabled(false);
+        setSellDisabled(false);
+      }
+
+      queryClient.invalidateQueries({
+        queryKey: ["listings", listingId, "inquiries"],
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: ["listings", listingId],
+      });
+    },
+
+    onError: (error) => {
+      showError(error.message);
+    },
+  });
 
   if (isListingLoading || isInquiriesLoading) {
     return <Text>Loading...</Text>;
@@ -49,21 +95,46 @@ export default function ListingInquiryScreen() {
   }
 
   function onNegotiate() {
+    setPriceModalVisible(true);
+  }
 
+  function onConfirmProposedPrice(proposedPrice: number) {
+    setNegotiateDisabled(true);
+    setSellDisabled(true);
+    respondToInquiryMutation.mutate({
+      listingId,
+      inquiryId,
+      payload: {
+        action: "counter",
+        counterPrice: proposedPrice,
+      },
+    });
+    setPriceModalVisible(false);
+    addMessage(`Слишком низкая цена. Как насчет ${proposedPrice}?`, 'player');
   }
 
   function onSell() {
 
   }
 
-  function onQuit() {
-    addMessage('До встречи!', 'player');
+  function onReject() {
     setQuitDisabled(true);
-    setTimeout(() => {
-      router.replace({
-        pathname: "/"
-      });
-    }, 800);
+    setRejectDisabled(true);
+    addMessage('Не сойдемся. Всего хорошего.', 'player');
+
+    respondToInquiryMutation.mutate({
+      listingId,
+      inquiryId,
+      payload: {
+        action: "reject"
+      },
+    });
+  }
+
+  function onQuit() {
+    router.replace({
+      pathname: "/"
+    });
   }
 
 
@@ -95,13 +166,17 @@ export default function ListingInquiryScreen() {
 
         <View style={styles.globalActionsContainer}>
           <View style={styles.actionsContainer}>
-            <NegotiateAction disabled={sellDisabled} text={`ПРОДАТЬ\n(${212})`} onPress={onSell} energyCost={2} color='#429958' />
-            <NegotiateAction disabled={negotiateDisabled} text={'ТОРГ'} onPress={onNegotiate} energyCost={2} color={colors.orangeButtonColor} />
-            <NegotiateAction disabled={quitDisabled} text='ОТКАЗАТЬ' onPress={onQuit} energyCost={2} color='#C5453C' />
+            <NegotiateAction disabled={sellDisabled} text={`ПРОДАТЬ\n(${inquiry?.offered_price})`} onPress={onSell} energyCost={2} color='#429958' />
+            <NegotiateAction disabled={negotiateDisabled} text={'ТОРГ'} onPress={onNegotiate} energyCost={2} color="#307DC1" />
+            <NegotiateAction disabled={rejectDisabled} text='ОТКАЗ' onPress={onReject} energyCost={2} color={colors.orangeButtonColor} />
+            <NegotiateAction disabled={quitDisabled} text='УЙТИ' onPress={onQuit} energyCost={2} color='#C5453C' />
+          
           </View>
         </View>
 
       </View>
+
+      {isPriceModalVisible && <NegotiatePriceSelectorDialog visible={isPriceModalVisible} onClose={() => { setPriceModalVisible(false) }} onConfirm={onConfirmProposedPrice} initialPrice={listing?.asking_price || 0} maxPrice={listing?.asking_price || 0} minPrice={(inquiry?.offered_price || 0) + 1}/>}
 
     </View>
   );

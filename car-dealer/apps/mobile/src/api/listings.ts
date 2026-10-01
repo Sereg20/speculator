@@ -135,3 +135,44 @@ export const listingQuery = (listingId: string) =>
     queryFn: () => getListing(listingId),
     enabled: Boolean(listingId),
   });
+
+export type InquiryResponseAction =
+  | "accept"
+  | "reject"
+  | "counter";
+export type InquirySellerResponseAction =
+  | "sold"
+  | "rejected"
+  | "counter";
+
+export type RespondToInquiryPayload = {
+  action: InquiryResponseAction;
+  counterPrice?: number;
+};
+
+type RespondToInquiryResponse = {
+  data: {
+    inquiryId?: string;
+    listingId?: string;
+    finalPrice?: string;
+    message: string;
+    outcome: InquirySellerResponseAction;
+    nextInquiryAllowedAt: string;
+  };
+  error: string | null;
+  meta: ApiMeta;
+};
+
+export async function respondToInquiry(
+  listingId: string,
+  inquiryId: string,
+  payload: RespondToInquiryPayload
+): Promise<RespondToInquiryResponse> {
+  return apiClient<RespondToInquiryResponse>(
+    `/listings/${listingId}/inquiries/${inquiryId}/respond`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }
+  );
+}

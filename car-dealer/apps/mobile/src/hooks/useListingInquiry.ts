@@ -9,7 +9,7 @@ export function useListingInquiry(listingId: string | null) {
   });
 
   const inquiry =
-    query.data?.find((item) => item.status !== "expired") ?? null;
+    query.data?.find((item) => (item.status !== "expired" && item.status !== "rejected")) ?? null;
 
   return {
     inquiry,
