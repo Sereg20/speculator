@@ -8,6 +8,7 @@ export const colors = {
   textBlack: "#020202",
   textGold: "#F3BE52",
   textGreen: "#57CD79",
+  textRed: "#C5453C",
   textGray: "#85888A",
 
   orangeButtonColor: "#EBA13C",

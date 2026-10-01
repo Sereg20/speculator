@@ -6,6 +6,8 @@ import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useQuery } from "@tanstack/react-query";
 import { playerQuery } from "@/api/player";
+import { router } from "expo-router";
+
 
 import { GameHeader } from "../../components/game-header/GameHeader";
 import { colors } from "@/theme/colors";
@@ -17,9 +19,25 @@ export default function TabsLayout() {
     return <Text>Loading...</Text>
   }
 
+  function onLvlPress() {
+    router.push({
+      pathname: '/(tabs)/profile'
+    })
+  }
+
+  function onCashPress() {
+    router.push({
+      pathname: '/(tabs)/bank'
+    })
+  }
+
+  function onEnergyPress() {
+    // add
+  }
+
   return (
     <View style={styles.container}>
-      <GameHeader />
+      <GameHeader onCashPress={onCashPress} onEnergyPress={onEnergyPress} onLvlPress={onLvlPress}/>
 
       <View style={styles.tabs}>
         <Tabs

@@ -20,10 +20,11 @@ interface ActiveDefectsDialogProps {
   carModel: string,
   onClose: () => void,
   onDefectPress: (defect: ActiveDefect) => void,
+  onRepairComplete: () => void;
 }
 
 export function ActiveDefectsDialog({
-  onClose, defects, activeRepairs, carMake, carModel, onDefectPress
+  onClose, defects, activeRepairs, carMake, carModel, onDefectPress, onRepairComplete
 }: ActiveDefectsDialogProps) {
 
   const repairsByDefectId = useMemo(() => {
@@ -47,7 +48,7 @@ export function ActiveDefectsDialog({
           data={defects}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <DefectToBeRepairedItem defect={item} activeRepair={repairsByDefectId.get(item.id)} onPress={onDefectPress}/>
+            <DefectToBeRepairedItem defect={item} activeRepair={repairsByDefectId.get(item.id)} onPress={onDefectPress} onRepairComplete={onRepairComplete}/>
           )}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}

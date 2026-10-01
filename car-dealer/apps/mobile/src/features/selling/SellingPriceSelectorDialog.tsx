@@ -26,6 +26,8 @@ export function SellingPriceSelectorDialog({
   onClose, onConfirm, initialPrice, maxPrice, minPrice, marketValue, purchasePrice
 }: SellingPriceSelectorDialogProps) {
   const [proposedPrice, setProposedPrice] = useState<number>(initialPrice ?? 0);
+  const markup = proposedPrice - purchasePrice;
+  const markupPercent = purchasePrice > 0 ? Math.round(((proposedPrice - purchasePrice) / purchasePrice) * 100) : 0;
 
   return (
     <GameModal
@@ -42,6 +44,11 @@ export function SellingPriceSelectorDialog({
         onChange={(value) => {setProposedPrice(value)}}
       />
       <View style={styles.infoContainer}>
+          <View style={styles.markupBlock}>
+            <Text style={styles.infoLabel}>Наценка: </Text>
+            <Text style={[styles.markup, markup > 0 ? styles.markupPositive : styles.markupNegative]}>{markup} BYN ({markupPercent}%)</Text>
+          </View>
+
           <View style={styles.infoBlock}>
             <Text style={styles.infoLabel}>Рыночная цена:  </Text>
             <FontAwesome5 name="bitcoin" size={18} color={colors.textGold} />
@@ -67,6 +74,12 @@ const styles = StyleSheet.create({
     gap: 8
   },
 
+  markupBlock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12
+  },
+
   infoBlock: {
     flexDirection: 'row',
     alignItems: 'center'
@@ -76,6 +89,20 @@ const styles = StyleSheet.create({
     color: colors.textMain,
     fontSize: 16
   },
+
+  markup: {
+    fontSize: 16,
+    fontWeight: 'bold'
+  },
+
+  markupPositive: {
+    color: colors.textGreen
+  },
+
+  markupNegative: {
+    color: colors.textRed
+  },
+
 
   price: {
     color: colors.textMain,

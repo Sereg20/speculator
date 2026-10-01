@@ -8,15 +8,22 @@ import { CountdownTimer } from "@/components/timer/CountdownTimer";
 
 
 interface DefectToBeRepairedItemProps {
-  defect: ActiveDefect,
-  activeRepair?: ActiveRepair,
-  onPress: (defect: ActiveDefect) => void
+  defect: ActiveDefect;
+  activeRepair?: ActiveRepair;
+  onPress: (defect: ActiveDefect) => void;
+  onRepairComplete: () => void;
 }
 
 export function DefectToBeRepairedItem({
-  defect, onPress, activeRepair
+  defect, onPress, activeRepair, onRepairComplete
 }: DefectToBeRepairedItemProps) {
   const icon = defectIcons[defect.category][defect.severity];
+  const isRepairing = Boolean(activeRepair);
+
+  console.log("DEFECT", defect.id, {
+    is_repairing: defect.is_repairing,
+    activeRepair,
+  });
 
   return (
     <ListItem onPress={() => { onPress(defect) }}>
@@ -28,7 +35,7 @@ export function DefectToBeRepairedItem({
         />
         <View style={styles.infoContainer}>
           <Text style={styles.title}>{defect.label}</Text>
-          {!defect.is_repairing &&
+          {!isRepairing &&
             <View>
               <View style={styles.priceContainer}>
                 <Text style={styles.priceInfo}>Качественный Ремонт:  </Text>
@@ -42,14 +49,12 @@ export function DefectToBeRepairedItem({
               </View>
             </View>
           }
-          {defect.is_repairing && activeRepair &&
+          {isRepairing && activeRepair &&
             <View>
               <CountdownTimer
                 style={styles.time}
                 endsAt={activeRepair.completes_at}
-                onComplete={() => {
-
-                }}
+                onComplete={onRepairComplete}
               />
             </View>
           }

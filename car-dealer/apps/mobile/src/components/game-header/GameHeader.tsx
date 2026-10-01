@@ -1,63 +1,64 @@
 // src/components/game-header/GameHeader.tsx
 
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Pressable } from "react-native";
 import { useGame } from "../../app/context/GameContext";
 import { colors } from "@/theme/colors";
+import AntDesign from '@expo/vector-icons/AntDesign';
+import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
+import Entypo from '@expo/vector-icons/Entypo';
+import {CircularProgressBase}  from 'react-native-circular-progress-indicator';
+
 
 import { useQuery } from "@tanstack/react-query";
 import { playerQuery } from "@/api/player";
 
-export function GameHeader() {
+interface GameHeaderProps {
+  onLvlPress: () => void;
+  onCashPress: () => void;
+  onEnergyPress: () => void;
+}
+
+export function GameHeader({onLvlPress, onCashPress, onEnergyPress}: GameHeaderProps) {
   const { data: player } = useQuery(playerQuery());
-  const xpProgress = player!.xp / (player!.xp + player!.xp_to_next_level);
+  const xpProgress = player!.xp / (player!.xp + player!.xp_to_next_level) * 100;
 
   return (
     <View style={styles.container}>
       {/* Level + XP */}
-      <View style={styles.levelContainer}>
-        <Text style={styles.title}>
-          Уровень {player?.level}
-        </Text>
+      <Pressable onPress={onLvlPress}>
+        <CircularProgressBase
+          radius={20}
+          value={xpProgress}
+          activeStrokeWidth={6}
+          inActiveStrokeWidth={6}
+          activeStrokeColor={colors.textGold}
+          >
+            <Text style={styles.level}>{player?.level}</Text>
+          </CircularProgressBase>
+      </Pressable>
 
-        <View style={styles.progressBackground}>
-          <View
-            style={[
-              styles.xpProgress,
-              {
-                width: `${Math.min(
-                  xpProgress * 100,
-                  100
-                )}%`,
-              },
-            ]}
-          />
-            <Text style={styles.xp}>
-              XP {player?.xp} / {`${(player?.xp || 0) + (player?.xp_to_next_level || 0)}`}
-            </Text>
-        </View>
-      </View>
-
+      <View style={styles.statsContainer}>
       {/* Money */}
-      <View style={styles.stat}>
-        <Text style={styles.title}>Бабки</Text>
+        <Pressable style={styles.stat} onPress={onCashPress}>
+          <View style={styles.statContainer}>
+            <FontAwesome5 name="bitcoin" size={14} color={colors.textGold} />
+            <Text style={styles.value}>
+              {player?.cash.toLocaleString()}
+            </Text>
+          </View>
+          <Entypo name="plus" size={18} color={colors.textGold} />
+        </Pressable>
 
-        <View>
-          <Text style={styles.value}>
-            {player?.cash.toLocaleString()}
-          </Text>
-        </View>
-      </View>
-
-      {/* Energy */}
-      <View style={styles.stat}>
-        <Text style={styles.title}>Энергия</Text>
-
-        <View>
-
-          <Text style={styles.value}>
-            {player?.energy_current}/{player?.energy_max}
-          </Text>
-        </View>
+        {/* Energy */}
+        <Pressable style={styles.stat} onPress={onEnergyPress}>
+          <View style={styles.statContainer}>
+            <AntDesign name="thunderbolt" size={16} color={colors.textGold} />
+            <Text style={styles.value}>
+              {player?.energy_current}/{player?.energy_max}
+            </Text>
+          </View>
+          <Entypo name="plus" size={18} color={colors.textGold} />
+        </Pressable>
       </View>
     </View>
   );
@@ -68,75 +69,48 @@ const styles = StyleSheet.create({
     minHeight: 60,
     paddingHorizontal: 16,
     paddingVertical: 8,
-
     flexDirection: "row",
     alignItems: "center",
-
+    justifyContent: 'space-between',
     backgroundColor: colors.mainBackground,
 
     borderBottomWidth: 1,
     borderBottomColor: "#12211A",
   },
 
-  levelContainer: {
-    flex: 1,
-    gap: 4,
-  },
-
-
-  title: {
-    color: colors.textMain,
+  level: {
+    color: colors.textGold,
     fontSize: 15,
     fontWeight: "bold",
   },
 
-
-  progressBackground: {
-    height: 16,
-    backgroundColor: colors.darkBackground,
-    borderRadius: 4,
-    overflow: "hidden",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  xpProgress: {
-    height: "100%",
-    backgroundColor: "#3B6481",
-    borderRadius: 0,
-    position: "absolute",
-    left: 0,
-    top: 0,
-    bottom: 0,
-  },
-
-  xp: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    textAlign: "center",
-    color: colors.textMain,
-    fontSize: 12,
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: "space-between",
+    alignItems: 'center',
+    gap: 12,
   },
 
   stat: {
-    alignItems: "center",
-    width: '33%',
-  },
-
-  icon: {
-    color: "#ffffff",
-    fontSize: 18,
-  },
-
-  label: {
-    color: "#777777",
-    fontSize: 10,
+    backgroundColor: colors.darkBackground,
+    paddingHorizontal: 4,
+    borderRadius: 4,
+    flexDirection: 'row',
+    justifyContent: "space-between",
+    alignItems: 'center',
+    width: 100,
+    height: 25,
   },
 
   value: {
-    color: "#ffffff",
-    fontSize: 13,
+    color: colors.textMain,
     fontWeight: "bold",
+    fontSize: 12
   },
+
+  statContainer: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 4
+  }
 });

@@ -156,3 +156,16 @@ export async function purchaseEquipment(
 
   return response;
 }
+
+type UpgradeGarageResponse = {
+  data: unknown;
+  error: string | null;
+  meta: ApiMeta;
+};
+
+export async function upgradeGarage(): Promise<UpgradeGarageResponse> {
+  return apiClient<UpgradeGarageResponse>("/player/garage/upgrade", {
+    method: "POST",
+    body: JSON.stringify({})
+  });
+}

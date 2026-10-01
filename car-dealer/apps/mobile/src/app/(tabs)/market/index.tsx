@@ -4,6 +4,7 @@ import {
   View,
   StyleSheet,
   Image,
+  Text,
 } from "react-native";
 import { useMutation, useQuery, useQueryClient  } from "@tanstack/react-query";
 import { marketListingsQuery, refreshListings } from "@/api/market";
@@ -42,7 +43,13 @@ export default function MarketScreen() {
         style={styles.marketImg}
         resizeMode="cover"
       />
-      <MarketList listings={listings} onRefresh={() =>{refreshMutation.mutate()}}/>
+      {isLoading ? (
+        <View>
+          <Text>Loading</Text>
+        </View>
+      ) : (
+        <MarketList listings={listings} onRefresh={() =>{refreshMutation.mutate()}}/>
+      )}
     </View>
 
   );

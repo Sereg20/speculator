@@ -12,6 +12,7 @@ import { sql } from '../db/client.js';
 import { requireAuth } from '../middleware/auth.js';
 import { INGAME_DAY_REAL_MINUTES } from '../config.js';
 import { labelDefect } from '../services/defectEngine.js';
+import { checkCompletion } from '../services/repairQueue.js';
 
 /**
  * GET /cars/:carId
@@ -51,6 +52,14 @@ async function getCar(request, reply) {
       AND d.is_revealed_to_player = true
     ORDER BY d.severity DESC, d.detection_tier ASC
   `;
+
+  // Lazily complete any overdue repair jobs before returning state
+  const overdueJobs = await sql`
+    SELECT id FROM repair_jobs
+    WHERE car_id = ${carId} AND completed = false AND qf_failed = false
+      AND completes_at <= NOW()
+  `;
+  await Promise.all(overdueJobs.map(j => checkCompletion(j.id).catch(() => {})));
 
   // Fetch all active repair jobs for this car
   const activeRepairs = await sql`
@@ -107,6 +116,16 @@ async function getMyCars(request, reply) {
   const INGAME_DAY_MS = INGAME_DAY_REAL_MINUTES * 60 * 1000;
   const now = Date.now();
   const carIds = cars.map(c => c.id);
+
+  // Lazily complete overdue repair jobs before reading repair/defect state
+  if (carIds.length > 0 && (include.has('repairs') || include.has('defects'))) {
+    const overdueJobs = await sql`
+      SELECT id FROM repair_jobs
+      WHERE car_id = ANY(${carIds}) AND completed = false AND qf_failed = false
+        AND completes_at <= NOW()
+    `;
+    await Promise.all(overdueJobs.map(j => checkCompletion(j.id).catch(() => {})));
+  }
 
   // Fetch all defects for all cars in one query, group in JS
   let defectsByCarId = {};

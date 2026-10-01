@@ -32,8 +32,6 @@ export default function EquipmentScreen() {
   const [selectedSkill, setSelectedSkill] = useState<PlayerSkill | null>(null);
   const [selectedEquipment, setSelectedEquipment] = useState<PlayerEquipment | null>(null);
 
-
-
   const queryClient = useQueryClient();
 
   const {

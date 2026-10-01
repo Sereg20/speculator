@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, Image, Pressable, FlatList } from "react-native
 import { colors } from "@/theme/colors";
 import { ActiveDefect, Car } from "@/api/cars";
 import { DefectItemIcon } from "./DefectItemIcon";
+import { useListingInquiry } from "@/hooks/useListingInquiry";
 
 interface CarCardProps {
   car: Car;
@@ -14,7 +15,15 @@ interface CarCardProps {
 export function CarSlot({ car, onSell, onCancelListing, onRepair, onInspect }: CarCardProps) {
   const activeDefects = car.revealedDefects ? car.revealedDefects.filter(defect => !defect.is_quick_fixed) : [];
   const carState = getStateText(car.state);
+  let activeInquiry = null;
 
+  if (car.activeListing) {
+    const listingInquiry = useListingInquiry(
+      car.activeListing?.id
+    );
+    activeInquiry = listingInquiry.inquiry;
+  }
+  
   function getStateText(state: string) {
     switch (state) {
       case "listed_for_sale":
@@ -110,6 +119,7 @@ export function CarSlot({ car, onSell, onCancelListing, onRepair, onInspect }: C
               <Text style={styles.btnText}>СНЯТЬ С ПРОДАЖИ</Text>
             </Pressable>
           }
+          {activeInquiry && <Text>ЕСТЬ!</Text>}
         </View>        
       </View>
     </View>
