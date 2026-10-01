@@ -4,6 +4,7 @@ import { useGame } from "@/app/context/GameContext";
 import { Dialog } from "@/components/dialog/Dialog";
 import { NegotiateAction } from "@/components/dialog/NegotiateAction";
 import { NegotiatePriceSelectorDialog } from "@/components/dialog/NegotiatePriceSelectorDialog";
+import { SuccessSellDialog } from "@/components/dialog/SuccessSellDialog";
 import { colors } from "@/theme/colors";
 import { DialogSpeakerType, IDialogMessage } from "@/types/dialog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -38,6 +39,7 @@ export default function ListingInquiryScreen() {
   const [quitDisabled, setQuitDisabled] = useState<boolean>(false);
   const [rejectDisabled, setRejectDisabled] = useState<boolean>(false);
   const [isPriceModalVisible, setPriceModalVisible] = useState<boolean>(false);
+  const [isSuccessSellDialogDisplayed, setSuccessSellDialogDisplayed] = useState<boolean>(false);
 
   const respondToInquiryMutation = useMutation({
     mutationFn: ({
@@ -56,12 +58,14 @@ export default function ListingInquiryScreen() {
       addMessage(result.data.message, 'npc');
 
       if (result.data.outcome === 'rejected') {
-        
+        setQuitDisabled(false);
+        setRejectDisabled(true);
       } else if (result.data.outcome === 'sold') {
-        // open success dialog
+        setSuccessSellDialogDisplayed(true);
       } else {
         setNegotiateDisabled(false);
         setSellDisabled(false);
+        setRejectDisabled(false);
       }
 
       queryClient.invalidateQueries({
@@ -100,7 +104,9 @@ export default function ListingInquiryScreen() {
 
   function onConfirmProposedPrice(proposedPrice: number) {
     setNegotiateDisabled(true);
+    setRejectDisabled(true);
     setSellDisabled(true);
+    addMessage(`Слишком низкая цена. Как насчет ${proposedPrice}?`, 'player');
     respondToInquiryMutation.mutate({
       listingId,
       inquiryId,
@@ -110,16 +116,34 @@ export default function ListingInquiryScreen() {
       },
     });
     setPriceModalVisible(false);
-    addMessage(`Слишком низкая цена. Как насчет ${proposedPrice}?`, 'player');
+    
   }
 
   function onSell() {
+    addMessage(`По рукам! Поехали оформляться.`, 'player');
+    setSellDisabled(true);
+    setRejectDisabled(true);
+    setNegotiateDisabled(true);
+    respondToInquiryMutation.mutate({
+      listingId,
+      inquiryId,
+      payload: {
+        action: "accept",
+      },
+    });
+  }
 
+  function onSuccessSellDialogClose() {
+    router.replace({
+      pathname: "/"
+    });
   }
 
   function onReject() {
     setQuitDisabled(true);
     setRejectDisabled(true);
+    setNegotiateDisabled(true);
+    setSellDisabled(true);
     addMessage('Не сойдемся. Всего хорошего.', 'player');
 
     respondToInquiryMutation.mutate({
@@ -177,6 +201,8 @@ export default function ListingInquiryScreen() {
       </View>
 
       {isPriceModalVisible && <NegotiatePriceSelectorDialog visible={isPriceModalVisible} onClose={() => { setPriceModalVisible(false) }} onConfirm={onConfirmProposedPrice} initialPrice={listing?.asking_price || 0} maxPrice={listing?.asking_price || 0} minPrice={(inquiry?.offered_price || 0) + 1}/>}
+      {isSuccessSellDialogDisplayed && <SuccessSellDialog listing={listing} visible={isSuccessSellDialogDisplayed} finalPrice={listing?.asking_price || 0} onClose={onSuccessSellDialogClose}/>}
+        
 
     </View>
   );
