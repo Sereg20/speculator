@@ -3,6 +3,8 @@ import { colors } from "@/theme/colors";
 import { ActiveDefect, Car } from "@/api/cars";
 import { DefectItemIcon } from "./DefectItemIcon";
 import { useListingInquiry } from "@/hooks/useListingInquiry";
+import { router } from "expo-router";
+import { ActiveListing, ListingInquiry } from "@/api/listings";
 
 interface CarCardProps {
   car: Car;
@@ -15,7 +17,7 @@ interface CarCardProps {
 export function CarSlot({ car, onSell, onCancelListing, onRepair, onInspect }: CarCardProps) {
   const activeDefects = car.revealedDefects ? car.revealedDefects.filter(defect => !defect.is_quick_fixed) : [];
   const carState = getStateText(car.state);
-  let activeInquiry = null;
+  let activeInquiry: ListingInquiry | null = null;
 
   if (car.activeListing) {
     const listingInquiry = useListingInquiry(
@@ -36,10 +38,21 @@ export function CarSlot({ car, onSell, onCancelListing, onRepair, onInspect }: C
   }
 
   function onCancelListingPress() {
-    console.log(car)
     if (!car.activeListing?.id) return;
 
     return onCancelListing(car.activeListing?.id);
+  }
+
+  function onInquiryPress() {
+    if (!car.activeListing) return;
+
+    router.push({
+      pathname: "/listing/[listingId]",
+      params: {
+        listingId: car.activeListing.id,
+        inquiryId: activeInquiry?.id
+      },
+    });
   }
 
   return (
@@ -119,7 +132,9 @@ export function CarSlot({ car, onSell, onCancelListing, onRepair, onInspect }: C
               <Text style={styles.btnText}>СНЯТЬ С ПРОДАЖИ</Text>
             </Pressable>
           }
-          {activeInquiry && <Text>ЕСТЬ!</Text>}
+          {activeInquiry && (
+            <Pressable onPress={onInquiryPress}><Text>ЕСТЬ!</Text></Pressable>
+          )}
         </View>        
       </View>
     </View>

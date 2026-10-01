@@ -81,6 +81,36 @@ export async function getListingInquiries(
   return response.data.inquiries;
 }
 
+export type ActiveListing = {
+  id: string;
+  car_id: string;
+  asking_price: number;
+  listed_at: string;
+  expires_at: string;
+  status: string;
+  final_sale_price: number | null;
+  make: string;
+  model: string;
+  year: number;
+  mileage: number;
+  color: string;
+  condition_tier: string;
+  market_value: number;
+}
+
+export type GetListingResponse = {
+  data: {
+    listing: ActiveListing,
+    inquiries: {
+      total: number;
+      pending: number;
+      accepted: number;
+    }
+  },
+  error: string | null;
+  meta: unknown;
+}
+
 export const listingInquiriesQuery = (listingId: string) =>
   queryOptions({
     queryKey: ["listings", listingId, "inquiries"],
@@ -88,4 +118,20 @@ export const listingInquiriesQuery = (listingId: string) =>
     enabled: Boolean(listingId),
     staleTime: 30_000,
     refetchInterval: 60_000,
+  });
+
+export async function getListing(
+  listingId: string
+): Promise<ActiveListing> {
+  const response = await apiClient<GetListingResponse>(
+    `/listings/${listingId}`
+  );
+
+  return response.data.listing;
+}
+export const listingQuery = (listingId: string) =>
+  queryOptions({
+    queryKey: ["listings", listingId],
+    queryFn: () => getListing(listingId),
+    enabled: Boolean(listingId),
   });

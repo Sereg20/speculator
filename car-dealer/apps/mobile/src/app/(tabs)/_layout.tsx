@@ -75,7 +75,7 @@ export default function TabsLayout() {
           />
 
           <Tabs.Screen
-            name="index"
+            name="(garage)"
             options={{
               tabBarIcon: ({ color, focused }) => (
                 <Ionicons name="home" size={28} color={color} />
