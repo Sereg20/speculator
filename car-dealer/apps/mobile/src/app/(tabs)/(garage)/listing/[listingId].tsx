@@ -40,6 +40,8 @@ export default function ListingInquiryScreen() {
   const [rejectDisabled, setRejectDisabled] = useState<boolean>(false);
   const [isPriceModalVisible, setPriceModalVisible] = useState<boolean>(false);
   const [isSuccessSellDialogDisplayed, setSuccessSellDialogDisplayed] = useState<boolean>(false);
+  const [finalPrice, setFinalPrice] = useState(inquiry?.offered_price || 0);
+  const [purchasePrice, setPurchasePrice] = useState(0);
 
   const respondToInquiryMutation = useMutation({
     mutationFn: ({
@@ -61,6 +63,8 @@ export default function ListingInquiryScreen() {
         setQuitDisabled(false);
         setRejectDisabled(true);
       } else if (result.data.outcome === 'sold') {
+        setFinalPrice(result.data.finalPrice || 0);
+        setPurchasePrice(result.data.purchasePrice || 0);
         setSuccessSellDialogDisplayed(true);
       } else {
         setNegotiateDisabled(false);
@@ -201,8 +205,7 @@ export default function ListingInquiryScreen() {
       </View>
 
       {isPriceModalVisible && <NegotiatePriceSelectorDialog visible={isPriceModalVisible} onClose={() => { setPriceModalVisible(false) }} onConfirm={onConfirmProposedPrice} initialPrice={listing?.asking_price || 0} maxPrice={listing?.asking_price || 0} minPrice={(inquiry?.offered_price || 0) + 1}/>}
-      {isSuccessSellDialogDisplayed && <SuccessSellDialog listing={listing} visible={isSuccessSellDialogDisplayed} finalPrice={listing?.asking_price || 0} onClose={onSuccessSellDialogClose}/>}
-        
+      {isSuccessSellDialogDisplayed && <SuccessSellDialog listing={listing} visible={isSuccessSellDialogDisplayed} finalPrice={finalPrice} purchasePrice={purchasePrice} onClose={onSuccessSellDialogClose}/>}
 
     </View>
   );

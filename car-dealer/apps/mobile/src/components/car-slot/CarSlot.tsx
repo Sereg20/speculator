@@ -101,7 +101,7 @@ export function CarSlot({ car, onSell, onCancelListing, onRepair, onInspect }: C
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Text style={styles.defectsFallbackText}>
-                Не обнаружено!
+                Не обнаружено
               </Text>
             </View>
           }

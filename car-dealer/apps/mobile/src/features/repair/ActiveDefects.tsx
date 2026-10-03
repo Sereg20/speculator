@@ -11,6 +11,7 @@ import { GameModalWithoutHeader } from "@/components/modal/GameModalWithoutHeade
 import { colors } from "@/theme/colors";
 import { DefectToBeRepairedItem } from "./DefectToBeRepairedItem";
 import { useMemo } from "react";
+import { ListItem } from "@/components/list-item/ListItem";
 
 
 interface ActiveDefectsDialogProps {
@@ -31,12 +32,12 @@ export function ActiveDefectsDialog({
     return new Map(
       activeRepairs.map((repair) => [repair.defect_id, repair])
     );
-  }, [activeRepairs]); 
+  }, [activeRepairs]);
 
   return (
     <GameModalWithoutHeader
       visible
-      onClose={onClose}      
+      onClose={onClose}
       confirmHidden={true}
       closeColor={colors.greyButton}
       closeText="ЗАКРЫТЬ"
@@ -48,18 +49,18 @@ export function ActiveDefectsDialog({
           data={defects}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <DefectToBeRepairedItem defect={item} activeRepair={repairsByDefectId.get(item.id)} onPress={onDefectPress} onRepairComplete={onRepairComplete}/>
+            <DefectToBeRepairedItem defect={item} activeRepair={repairsByDefectId.get(item.id)} onPress={onDefectPress} onRepairComplete={onRepairComplete} />
           )}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           refreshing={false}
-          onRefresh={() => {}}
+          onRefresh={() => { }}
           ListEmptyComponent={
-            <View style={styles.emptyContainer}>
+            <ListItem style={styles.emptyContainer}>
               <Text style={styles.emptyText}>
                 Неисправностей не обнаружено
               </Text>
-            </View>
+            </ListItem>
           }
         />
       </View>
@@ -91,13 +92,19 @@ const styles = StyleSheet.create({
   },
 
   emptyContainer: {
-    height: 40,
+    backgroundColor: colors.darkBackground,
+    flex: 1,
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center'
+    paddingVertical: 14,
+    marginTop: 12,
+    borderRadius: 8
   },
 
   emptyText: {
     color: colors.textMain,
-    fontSize: 16
+    fontSize: 18,
+    textAlign: 'center'
+
   }
 });

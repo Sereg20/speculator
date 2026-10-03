@@ -41,6 +41,7 @@ type DeleteListingResponse = {
 export async function deleteListing(listingId: string): Promise<void> {
   await apiClient<DeleteListingResponse>(`/listings/${listingId}`, {
     method: "DELETE",
+    body: JSON.stringify({})
   });
 }
 
@@ -154,7 +155,8 @@ type RespondToInquiryResponse = {
   data: {
     inquiryId?: string;
     listingId?: string;
-    finalPrice?: string;
+    finalPrice?: number;
+    purchasePrice?: number;
     message: string;
     outcome: InquirySellerResponseAction;
     nextInquiryAllowedAt: string;

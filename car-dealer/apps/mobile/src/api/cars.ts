@@ -1,7 +1,8 @@
 import { queryOptions } from "@tanstack/react-query";
 import { apiClient } from "./client";
-import { CategoryId, DefectSeverity } from "./market";
+import { CategoryId, DefectSeverity, InspectionActionId, InspectionTool, RevealedDefect } from "./market";
 import { RepairType } from "./repair";
+import { ApiMeta } from "./player";
 
 export type ActiveDefect = {
   id: string;
@@ -79,3 +80,59 @@ export const carsQuery = () =>
     queryKey: ["cars"],
     queryFn: getCars,
   });
+
+
+
+type CarInspectionToolsResponse = {
+  data: unknown;
+  error: string | null;
+  meta: {
+    availableActions: InspectionTool[];
+    [key: string]: unknown;
+  };
+};
+
+export async function getCarInspectionTools(
+  carId: string,
+): Promise<InspectionTool[]> {
+  const response = await apiClient<CarInspectionToolsResponse>(
+    `/cars/${carId}/inspections`,
+  );
+
+  return response.meta.availableActions;
+}
+
+export const carInspectionToolsQuery = (carId: string) =>
+  queryOptions({
+    queryKey: ["cars", carId, "inspection-tools"],
+    queryFn: () => getCarInspectionTools(carId),
+    enabled: Boolean(carId),
+    staleTime: 600_000,
+  });
+
+
+export type InspectCarPayload = {
+  actionId: InspectionActionId;
+};
+
+type InspectCarResponse = {
+  data: RevealedDefect[];
+  error: string | null;
+  meta: ApiMeta;
+};
+
+export async function inspectCar(
+  carId: string,
+  actionId: InspectionActionId,
+  categoryId: CategoryId,
+): Promise<InspectCarResponse> {
+  const response = await apiClient<InspectCarResponse>(
+    `/cars/${carId}/inspect`,
+    {
+      method: "POST",
+      body: JSON.stringify({actionId, category: categoryId}),
+    },
+  );
+
+  return response;
+}

@@ -8,11 +8,13 @@ import { ListItem } from "@/components/list-item/ListItem";
 interface RevealedDefectsDialogProps {
   visible: boolean,
   defects: RevealedDefect[],
-  onClose: () => void
+  onClose: () => void,
+  make: string;
+  model: string;
 }
 
 export function RevealedDefectsDialog({
-  visible, defects, onClose
+  visible, defects, onClose, make, model
 }: RevealedDefectsDialogProps) {
 
 
@@ -25,7 +27,7 @@ export function RevealedDefectsDialog({
     >
       <View style={styles.container}>
         <Text style={styles.title}>РЕЗУЛЬТАТ ДИАГНОСТИКИ</Text>
-        <Text style={styles.subtitle}>Audi 80</Text>
+        <Text style={styles.subtitle}>{make} {model}</Text>
         <FlatList
           data={defects}
           keyExtractor={(item) => item.id}

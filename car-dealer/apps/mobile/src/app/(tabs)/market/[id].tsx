@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Image } from "react-native";
+import { View, Text, StyleSheet, Image, Pressable } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { colors } from "@/theme/colors";
 import { listingDialogueQuery, chatWithSeller, MarketListing, negotiateListing, purchaseListing, preInspectListing, InspectionActionId, inspectionToolsQuery, CategoryId, RevealedDefect } from "@/api/market";
@@ -16,6 +16,8 @@ import { npcAvatars } from "@/assets/images/npc-avatars/npcAvatars";
 import { SuccessPurchaseDialog } from "@/components/dialog/SuccessPurchaseDialog";
 import { RevealedDefectsDialog } from "@/features/inspection/RevealedDefectsDialog";
 import { updatePlayerState } from "@/api/playerState";
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { CarDetailsDialog } from "@/components/dialog/CarDetailsDialog";
 
 const initMessage: IDialogMessage = {
   id: "1",
@@ -50,6 +52,8 @@ export default function MarketInspectionScreen() {
   const [isSuccessPurchaseVisible, setSuccessPurchaseVisible] = useState<boolean>(false);
   const [currentPrice, setCurrentPrice] = useState<number>(listing?.asking_price || 0);
   const [isRevealedDefectsDialogVisible, setRevealedDefectsDialogVisible] = useState<boolean>(false);
+  const [isCarDetailsExpanded, setCarDetailsExpanded] = useState<boolean>(false);
+
 
   const [allDefects, setAllDefects] = useState<RevealedDefect[]>([]);
   const [lastDefects, setLastDefects] = useState<RevealedDefect[]>([]);
@@ -273,7 +277,15 @@ export default function MarketInspectionScreen() {
       />
       <View style={styles.absolutContainer}>
         <View style={styles.title}>
-          <Text style={styles.titleText}>ОСМОТР АВТОМОБИЛЯ: {listing?.make} {listing?.model}</Text>
+          <Text style={styles.titleText}>ОСМОТР АВТО: {listing?.make} {listing?.model}</Text>
+          <Pressable onPress={() => setCarDetailsExpanded(flag => !flag)}>
+            {isCarDetailsExpanded ? (
+              <MaterialIcons name="expand-less" size={24} color={colors.textMain} />
+            ) : (
+              <MaterialIcons name="expand-more" size={24} color={colors.textMain} />
+            )}
+          </Pressable>
+          
         </View>
 
         <View style={styles.dialogContainer}>
@@ -307,7 +319,8 @@ export default function MarketInspectionScreen() {
       {isPriceModalVisible && <NegotiatePriceSelectorDialog visible={isPriceModalVisible} onClose={() => { setPriceModalVisible(false) }} onConfirm={onConfirmProposedPrice} initialPrice={currentPrice} minPrice={minPrice} />}
       <InspectDialog listingId={id} visible={isInspectModalVisible} onClose={() => { setInspectModalVisible(false) }} onPreInspect={onPreInspect} />
       <SuccessPurchaseDialog car={listing} visible={isSuccessPurchaseVisible} finalPrice={currentPrice} onClose={onSuccessPurchaseDialogClose} onConfirm={onSuccessPurchaseDialogConfirm}/>
-      <RevealedDefectsDialog visible={isRevealedDefectsDialogVisible} onClose={() => {setRevealedDefectsDialogVisible(false)}} defects={lastDefects}/>
+      <RevealedDefectsDialog visible={isRevealedDefectsDialogVisible} onClose={() => {setRevealedDefectsDialogVisible(false)}} defects={lastDefects} make={listing?.make || ''} model={listing?.model || ''}/>
+      <CarDetailsDialog visible={isCarDetailsExpanded} defects={allDefects} car={listing} onClose={() => {setCarDetailsExpanded(false)}}/>
     </View>
   );
 }
@@ -339,7 +352,9 @@ const styles = StyleSheet.create({
     opacity: 0.93,
     height: 50,
     paddingHorizontal: 14,
-    justifyContent: 'center'
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
   },
 
   titleText: {

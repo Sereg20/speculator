@@ -16,13 +16,14 @@ interface SuccessSellDialogProps {
   visible: boolean,
   onClose: () => void,
   finalPrice: number,
+  purchasePrice: number;
   listing: ActiveListing | undefined,
 }
 
 export function SuccessSellDialog({
-  visible, onClose, listing, finalPrice
+  visible, onClose, listing, finalPrice, purchasePrice
 }: SuccessSellDialogProps) {
-  const discount = (listing?.asking_price || 0) - finalPrice;
+  const discount = finalPrice - purchasePrice;
 
   return (
     <GameModalWithoutHeader
@@ -43,20 +44,26 @@ export function SuccessSellDialog({
               <FontAwesome5 name="bitcoin" size={20} color={colors.textGold} />
               <Text style={styles.price}> {finalPrice} BYN</Text>
             </View>
+            <Text style={styles.startPrice}>(Начальная цена: {listing?.asking_price} BYN)</Text>
           </ListItem>
 
           <ListItem>
             <View style={styles.dealContainer}>
-              <Text style={styles.label}>НАВАР: </Text>
+              <Text style={styles.label}>ДОХОД: </Text>
               <Text style={[
                 styles.discount,
                 discount > 0
                   ? {color: colors.textGreen}
-                  : {color: colors.textMain}
-              ]}> - {discount} BYN </Text>
-              { discount > 0 && <Foundation name="arrow-down" size={24} color={colors.textGreen} />}
+                  : {color: colors.textRed}
+              ]}>{discount} BYN </Text>
+              { discount > 0 ? (
+                <Foundation name="arrow-up" size={24} color={colors.textGreen} />
+              ) : (
+                <Foundation name="arrow-down" size={24} color={colors.textRed} />
+              )}
+              
             </View>
-            <Text style={styles.startPrice}>(Начальная цена {listing?.asking_price} BYN)</Text>
+            <Text style={styles.startPrice}>(Цена покупки: {purchasePrice} BYN)</Text>
           </ListItem>
         </View>
       </View>

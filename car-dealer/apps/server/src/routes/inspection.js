@@ -23,13 +23,29 @@ import { requireAuth } from '../middleware/auth.js';
 async function inspect(request, reply) {
   const { carId } = request.params;
   const playerId = request.playerId;
-  const { actionId } = request.body || {};
+  const { actionId, category = null } = request.body || {};
 
   const action = INSPECTION_ACTIONS[actionId];
   if (!action) {
     return reply.code(400).send({
       data: null,
       error: `Unknown actionId. Valid actions: ${Object.keys(INSPECTION_ACTIONS).join(', ')}`,
+      meta: null,
+    });
+  }
+
+  if (category !== null && !action.categories.includes(category)) {
+    return reply.code(400).send({
+      data: null,
+      error: `Category '${category}' is not covered by action '${actionId}'. Valid: ${action.categories.join(', ')}`,
+      meta: null,
+    });
+  }
+
+  if (category === null && action.categories.length > 1) {
+    return reply.code(400).send({
+      data: null,
+      error: `Action '${actionId}' covers multiple categories (${action.categories.join(', ')}). Specify one via 'category'.`,
       meta: null,
     });
   }
@@ -45,15 +61,16 @@ async function inspect(request, reply) {
     return reply.code(404).send({ data: null, error: 'Car not found or not owned', meta: null });
   }
 
-  // Each action can only be performed once per car
+  // Each action+category combo can only be performed once per car
   const [existing] = await sql`
     SELECT id, revealed_count FROM inspections
     WHERE car_id = ${carId} AND action_id = ${actionId}
+      AND category IS NOT DISTINCT FROM ${category}
   `;
   if (existing) {
     return reply.code(409).send({
       data: null,
-      error: `Action '${actionId}' already performed on this car`,
+      error: `Action '${actionId}'${category ? ` (${category})` : ''} already performed on this car`,
       meta: { alreadyRevealedCount: existing.revealed_count },
     });
   }
@@ -67,7 +84,7 @@ async function inspect(request, reply) {
 
   let result;
   try {
-    result = await runInspection(carId, playerId, actionId);
+    result = await runInspection(carId, playerId, actionId, { category });
   } catch (err) {
     // Refund energy on prerequisite failure
     await refundEnergy(playerId, energyCost);
@@ -75,9 +92,9 @@ async function inspect(request, reply) {
   }
 
   await sql`
-    INSERT INTO inspections (car_id, player_id, action_id, revealed_count, energy_cost)
-    VALUES (${carId}, ${playerId}, ${actionId}, ${result.revealed.length}, ${energyCost})
-    ON CONFLICT (car_id, action_id) DO NOTHING
+    INSERT INTO inspections (car_id, player_id, action_id, category, revealed_count, energy_cost)
+    VALUES (${carId}, ${playerId}, ${actionId}, ${category}, ${result.revealed.length}, ${energyCost})
+    ON CONFLICT (car_id, action_id, category) DO NOTHING
   `;
 
   const xpAmount = inspectionXP(actionId);
@@ -88,6 +105,7 @@ async function inspect(request, reply) {
     error: null,
     meta: {
       actionId,
+      category,
       newlyRevealedCount: result.revealed.length,
       energySpent: energyCost,
       xpAwarded: xpAmount,
@@ -115,7 +133,7 @@ async function getInspectionHistory(request, reply) {
 
   // What the player has done on this car
   const completed = await sql`
-    SELECT action_id, revealed_count, energy_cost, performed_at
+    SELECT action_id, category, revealed_count, energy_cost, performed_at
     FROM inspections
     WHERE car_id = ${carId}
     ORDER BY performed_at ASC

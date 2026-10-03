@@ -31,6 +31,7 @@ export type MarketListing = {
   created_at: string;
   updated_at: string;
   days_held: number;
+  market_value: number;
 };
 
 /**

@@ -49,7 +49,7 @@ export function GarageSlots({
       ItemSeparatorComponent={() => <View style={{ width: gap }} />}
       renderItem={({ item }) => (
         <View style={{ width: slotWidth }}>
-          {item.car ? (
+          {item?.car ? (
             <CarSlot
               car={item.car}
               onSell={onSell}

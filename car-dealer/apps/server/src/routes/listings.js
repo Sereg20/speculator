@@ -434,7 +434,7 @@ async function _processInquiryResponse(playerId, listingId, inquiryId, action, c
   const [listing] = await sql`
     SELECT l.id, l.car_id, l.asking_price, l.status,
            l.listed_at,
-           c.market_value,
+           c.market_value, c.purchase_price,
            p.reputation_score, p.in_game_day
     FROM listings l
     JOIN cars c ON c.id = l.car_id
@@ -676,6 +676,7 @@ async function _completeSale(playerId, listing, inquiry, finalPrice) {
     saleResult = {
       outcome: 'sold',
       finalPrice,
+      purchasePrice: listing.purchase_price,
       listingId: listing.id,
       carId: listing.car_id,
       repDelta: repDelta + (allProperlyRepaired ? REP_EVENTS.proper_repair_bonus : 0),

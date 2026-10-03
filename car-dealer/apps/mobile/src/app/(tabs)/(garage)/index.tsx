@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, ImageBackground } from "react-native";
 import { useQuery } from "@tanstack/react-query";
-import { ActiveDefect, Car, carsQuery } from "@/api/cars";
+import { ActiveDefect, Car, carsQuery, inspectCar } from "@/api/cars";
 import { SellingPriceSelectorDialog } from "@/features/selling/SellingPriceSelectorDialog";
 import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -13,8 +13,9 @@ import { playerQuery } from "@/api/player";
 import { GarageSlots } from "@/components/garage/GarageSlots";
 import { SkipActiveRepairDialog } from "@/features/repair/SkipActiveRepairDialog";
 import { getGarageBackground } from "@/assets/images/backgrounds/garage/garageBackground";
-import { InspectDialog } from "@/features/inspection/InspectDialog";
 import { updatePlayerState } from "@/api/playerState";
+import { PurchasedCarInspectDialog } from "@/features/inspection/PurchasedCarInspectDialog";
+import { CategoryId, InspectionActionId } from "@/api/market";
 
 
 export default function GarageScreen() {
@@ -89,7 +90,7 @@ export default function GarageScreen() {
       setSelectedCarId(null);
     },
 
-    onError: () => {},
+    onError: () => { },
   });
 
   const deleteListingMutation = useMutation({
@@ -101,7 +102,7 @@ export default function GarageScreen() {
       });
     },
 
-    onError: () => {},
+    onError: () => { },
   });
 
   const repairMutation = useMutation({
@@ -133,7 +134,32 @@ export default function GarageScreen() {
       setSelectedDefectId(null);
     },
 
-    onError: () => {},
+    onError: () => { },
+  });
+
+  // /inspect request
+  const inspectMutation = useMutation({
+    mutationFn: ({
+      carId,
+      actionId,
+      categoryId,
+    }: {
+      carId: string;
+      actionId: InspectionActionId;
+      categoryId: CategoryId;
+    }) => inspectCar(carId, actionId, categoryId),
+
+    onSuccess: (result) => {
+      updatePlayerState(
+        queryClient,
+        result.meta.playerState
+      );
+      
+    },
+
+    onError: (error) => {
+     
+    },
   });
 
   if (isLoading) {
@@ -216,12 +242,12 @@ export default function GarageScreen() {
   }
 
   function onRepairConfirm(repairType: RepairType) {
-    if (!selectedCar || !selectedDefect) {
+    if (!selectedCarId || !selectedDefect) {
       return;
     }
 
     repairMutation.mutate({
-      carId: selectedCar.id,
+      carId: selectedCarId,
       defectId: selectedDefect.id,
       repairType,
     });
@@ -232,8 +258,14 @@ export default function GarageScreen() {
     setInspectDialogVisible(true);
   }
 
-  function onInspectConfirm() {
-    // ...
+  function onInspectConfirm(actionId: InspectionActionId, categoryId: CategoryId) {
+    if (!selectedCarId || !actionId || !categoryId) return;
+    setInspectDialogVisible(false);
+    inspectMutation.mutate({
+      carId: selectedCarId,
+      actionId,
+      categoryId,
+    });
   }
 
   function onInspectDialogClose() {
@@ -326,11 +358,11 @@ export default function GarageScreen() {
 
       {/* INSPECTION */}
       {isInspectDialogVisible && (
-        <InspectDialog
-          listingId=""
+        <PurchasedCarInspectDialog
+          carId={selectedCarId || ''}
           visible={isInspectDialogVisible}
           onClose={onInspectDialogClose}
-          onPreInspect={onInspectConfirm}
+          onInspect={onInspectConfirm}
         />
       )}
     </ImageBackground>

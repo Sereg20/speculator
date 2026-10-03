@@ -21,7 +21,12 @@ const fastify = Fastify({
 
 // ─── Plugins ────────────────────────────────────────────────────────────────
 
-await fastify.register(cors, { origin: [ 'http://localhost:8081', 'http://127.0.0.1:8081', ], credentials: true, });
+await fastify.register(cors, { 
+  origin: ['http://localhost:8081', 'http://127.0.0.1:8081'], 
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
+});
 
 await fastify.register(fjwt, { secret: JWT_SECRET });
 
