@@ -5,6 +5,7 @@ import {
   type ViewStyle,
 } from "react-native";
 import type { ReactNode } from "react";
+import { colors } from "@/theme/colors";
 
 interface ListItemProps {
   children: ReactNode;
@@ -39,7 +40,7 @@ const styles = StyleSheet.create({
     width: "100%",
     padding: 12,
     borderRadius: 10,
-    backgroundColor: '#122026',
+    backgroundColor: colors.listItemBackgroundColor,
   },
 
   pressed: {

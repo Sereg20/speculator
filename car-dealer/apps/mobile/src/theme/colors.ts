@@ -24,4 +24,6 @@ export const colors = {
 
   greyColor: "#5F6567",
   accentBlueColor: "#49E2FF",
+
+  listItemBackgroundColor: "#122026"
 }
