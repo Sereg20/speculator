@@ -619,6 +619,7 @@ const styles = StyleSheet.create({
 
   statValue: {
     ...typography.bodyMedium,
+    fontWeight: 'bold',
     color: colors.textMain,
     fontSize: 18,
     marginTop: spacing.xs,

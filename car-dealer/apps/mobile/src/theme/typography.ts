@@ -6,27 +6,27 @@ export const fonts = {
 
 export const typography = {
   body: {
-    fontFamily: fonts.regular,
+    // fontFamily: fonts.regular,
     fontSize: 16,
   },
 
   bodyMedium: {
-    fontFamily: fonts.medium,
+    // fontFamily: fonts.medium,
     fontSize: 16,
   },
 
   title: {
-    fontFamily: fonts.bold,
+    // fontFamily: fonts.bold,
     fontSize: 24,
   },
 
   heading: {
-    fontFamily: fonts.bold,
+    // fontFamily: fonts.bold,
     fontSize: 32,
   },
 
   button: {
-    fontFamily: fonts.bold,
+    // fontFamily: fonts.bold,
     fontSize: 14,
   },
 } as const;
