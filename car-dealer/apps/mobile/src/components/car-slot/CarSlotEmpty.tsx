@@ -1,43 +1,73 @@
-import { View, Text, StyleSheet, Image, Pressable, FlatList } from "react-native";
+import { View, Text, StyleSheet, Image, Pressable, Dimensions } from "react-native";
 import { colors } from "@/theme/colors";
-import { Car } from "@/api/cars";
-import { DefectItemIcon } from "./DefectItemIcon";
+import Animated, { Extrapolation, interpolate, SharedValue, useAnimatedStyle } from "react-native-reanimated";
 
 interface CarSlotEmptyProps {
-  onMarket: () => void
+  onMarket: () => void;
+  index: number,
+  scrollX: SharedValue<number>
 }
 
-export function CarSlotEmpty({ onMarket }: CarSlotEmptyProps) {
+export function CarSlotEmpty({ onMarket, index, scrollX }: CarSlotEmptyProps) {
+  const { width } = Dimensions.get('screen');
+  const rnAmimatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        {
+          translateX: interpolate(
+            scrollX.value,
+            [(index - 1) * width, index * width, (index + 1) * width],
+            [-width * 0.25, 0, width * 0.25],
+            Extrapolation.CLAMP
+          ),
+        },
+        {
+          scale: interpolate(
+            scrollX.value,
+            [(index - 1) * width, index * width, (index + 1) * width],
+            [0.9, 1, 0.9],
+            Extrapolation.CLAMP
+          )
+        }
+      ]
+    }
+  });
 
   return (
-    <View style={styles.carSlot}>
-      <View style={{height: '40%'}}>
-        <View>
-          <View style={styles.carSlotIndex}>
-            <Text style={{color: colors.textMain}}>1</Text>
+    <Animated.View style={[styles.carSlotContainer, { width: width }, rnAmimatedStyle]}>
+      <View style={styles.carSlot}>
+        <View style={{ height: '40%' }}>
+          <View>
+            <View style={styles.carSlotIndex}>
+              <Text style={{ color: colors.textMain }}>{index + 1}</Text>
+            </View>
           </View>
+          <Image
+            source={require("@/../assets/images/backgrounds/garage/background_garage1.png")}
+            style={styles.carSlotBackground}
+            resizeMode="cover"
+          />
         </View>
-        <Image
-          source={require("@/../assets/images/backgrounds/garage/background_garage1.png")}
-          style={styles.carSlotBackground}
-          resizeMode="cover"
-        />
-      </View>
 
-      <View style={styles.info}>
-        <Text style={styles.title}>В ГАРАЖЕ СЕЙЧАС НЕТ АВТОМОБИЛЕЙ</Text>
+        <View style={styles.info}>
+          <Text style={styles.title}>В ГАРАЖЕ СЕЙЧАС НЕТ АВТОМОБИЛЕЙ</Text>
+        </View>
+
+        <View style={styles.actions}>
+          <Pressable onPress={onMarket} style={styles.onMarketBtn}>
+            <Text style={styles.btnText}>НА РЫНОК</Text>
+          </Pressable>
+        </View>
       </View>
-      
-      <View style={styles.actions}>
-        <Pressable onPress={onMarket} style={styles.onMarketBtn}>
-          <Text style={styles.btnText}>НА РЫНОК</Text>  
-        </Pressable>
-      </View>
-    </View>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
+  carSlotContainer: {
+    alignItems: 'center'
+  },
+
   carSlot: {
     position: 'relative',
     paddingBottom: 10,
@@ -51,7 +81,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     justifyContent: 'space-between',
   },
-  
+
   carSlotBackground: {
     flex: 1,
     width: "100%",
@@ -78,7 +108,7 @@ const styles = StyleSheet.create({
 
 
   info: {
-   
+
   },
 
   actions: {

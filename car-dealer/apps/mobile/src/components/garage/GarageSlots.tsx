@@ -1,10 +1,11 @@
-import { ActiveDefect, Car } from "@/api/cars";
-import { FlatList, StyleSheet, useWindowDimensions, View } from "react-native";
+import { Car } from "@/api/cars";
+import { View } from "react-native";
 import { CarSlot } from "../car-slot/CarSlot";
-import { CarSlotEmpty } from "../car-slot/CarSlotEmpty";
+import Animated, { useAnimatedScrollHandler, useSharedValue } from "react-native-reanimated";
 
 type GarageSlot = {
   id: string;
+  index: number;
   car: Car | null;
 };
 
@@ -25,43 +26,36 @@ export function GarageSlots({
   onMarket,
   onInspect
 }: GarageSlotsProps) {
-  const { width } = useWindowDimensions();
+  const scrollX = useSharedValue(0);
 
-  const slotWidth = width * 0.85;
-  const gap = 12;
-  const snapInterval = slotWidth + gap;
-
-  const sidePadding = (width - slotWidth) / 2;
+  const onScrollHandler = useAnimatedScrollHandler({
+    onScroll: (e) => {
+      scrollX.value = e.contentOffset.x;
+    }
+  })
 
   return (
-    <FlatList
-      data={slots}
-      horizontal
-      keyExtractor={(item) => item.id}
-      showsHorizontalScrollIndicator={false}
-      decelerationRate="fast"
-      snapToInterval={snapInterval}
-      snapToAlignment="start"
-      disableIntervalMomentum
-      contentContainerStyle={{
-        paddingHorizontal: sidePadding,
-      }}
-      ItemSeparatorComponent={() => <View style={{ width: gap }} />}
-      renderItem={({ item }) => (
-        <View style={{ width: slotWidth }}>
-          {item?.car ? (
-            <CarSlot
-              car={item.car}
-              onSell={onSell}
-              onCancelListing={onCancelListing}
-              onRepair={onRepair}
-              onInspect={onInspect}
-            />
-          ) : (
-            <CarSlotEmpty onMarket={onMarket} />
-          )}
-        </View>
-      )}
-    />
+    <View >
+      <Animated.FlatList
+        data={slots}
+        horizontal
+        keyExtractor={(item) => item.id}
+        showsHorizontalScrollIndicator={false}
+        pagingEnabled={true}
+        renderItem={({ item, index }) => (
+          <CarSlot
+            car={item.car}
+            onSell={onSell}
+            onCancelListing={onCancelListing}
+            onRepair={onRepair}
+            onInspect={onInspect}
+            onMarket={onMarket}
+            index={index}
+            scrollX={scrollX}
+          />
+        )}
+        onScroll={onScrollHandler}
+      />
+    </View>
   );
 }

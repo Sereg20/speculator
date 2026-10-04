@@ -69,6 +69,7 @@ export default function GarageScreen() {
 
     return Array.from({ length: slots }, (_, index) => ({
       id: `garage-slot-${index}`,
+      index: index,
       car: cars[index] ?? null,
     }));
   }, [player?.garage_slots, cars]);
@@ -296,7 +297,7 @@ export default function GarageScreen() {
       imageStyle={styles.backgroundImage}
       resizeMode="cover"
     >
-      <View style={styles.content}>
+      <View style={styles.container}>
         <GarageSlots
           slots={garageSlots}
           onSell={onCarSell}
@@ -380,13 +381,10 @@ const styles = StyleSheet.create({
     height: "100%",
   },
 
-  content: {
+  container: {
     flex: 1,
-    padding: 20,
-    flexDirection: 'row',
-    gap: 20,
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
+    justifyContent: 'center'
+  }
+
 
 });
