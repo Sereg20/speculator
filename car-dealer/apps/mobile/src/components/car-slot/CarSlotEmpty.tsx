@@ -1,7 +1,19 @@
-import { View, Text, StyleSheet, Image, Pressable, Dimensions } from "react-native";
-import { colors } from "@/theme/colors";
-import Animated, { Extrapolation, interpolate, SharedValue, useAnimatedStyle } from "react-native-reanimated";
 import { getGarageImage } from "@/assets/images/garage-bank/garageBank";
+import { colors } from "@/theme/colors";
+import {
+  Dimensions,
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import Animated, {
+  Extrapolation,
+  interpolate,
+  SharedValue,
+  useAnimatedStyle,
+} from "react-native-reanimated";
 
 interface CarSlotEmptyProps {
   onMarket: () => void;
@@ -10,55 +22,116 @@ interface CarSlotEmptyProps {
   garageLevel: number;
 }
 
-export function CarSlotEmpty({ onMarket, index, scrollX, garageLevel }: CarSlotEmptyProps) {
+export function CarSlotEmpty({
+  onMarket,
+  index,
+  scrollX,
+  garageLevel,
+}: CarSlotEmptyProps) {
   const garageImg = getGarageImage(garageLevel);
-  const { width } = Dimensions.get('screen');
-  const rnAmimatedStyle = useAnimatedStyle(() => {
+  const { width } = Dimensions.get("screen");
+
+  const rnAnimatedStyle = useAnimatedStyle(() => {
     return {
       transform: [
         {
           translateX: interpolate(
             scrollX.value,
-            [(index - 1) * width, index * width, (index + 1) * width],
-            [-width * 0.25, 0, width * 0.25],
-            Extrapolation.CLAMP
+            [
+              (index - 1) * width,
+              index * width,
+              (index + 1) * width,
+            ],
+            [
+              -width * 0.25,
+              0,
+              width * 0.25,
+            ],
+            Extrapolation.CLAMP,
           ),
         },
         {
           scale: interpolate(
             scrollX.value,
-            [(index - 1) * width, index * width, (index + 1) * width],
+            [
+              (index - 1) * width,
+              index * width,
+              (index + 1) * width,
+            ],
             [0.9, 1, 0.9],
-            Extrapolation.CLAMP
-          )
-        }
-      ]
-    }
+            Extrapolation.CLAMP,
+          ),
+        },
+      ],
+    };
   });
 
   return (
-    <Animated.View style={[styles.carSlotContainer, { width: width }, rnAmimatedStyle]}>
+    <Animated.View
+      style={[
+        styles.carSlotContainer,
+        { width },
+        rnAnimatedStyle,
+      ]}
+    >
       <View style={styles.carSlot}>
-        <View style={{ height: '40%' }}>
-          <View>
-            <View style={styles.carSlotIndex}>
-              <Text style={{ color: colors.textMain }}>{index + 1}</Text>
-            </View>
-          </View>
+        {/* Garage preview */}
+        <View style={styles.preview}>
           <Image
             source={garageImg}
             style={styles.carSlotBackground}
             resizeMode="cover"
           />
+
+          <View style={styles.previewOverlay} />
+
+          {/* Slot number */}
+          <View style={styles.carSlotIndex}>
+            <Text style={styles.carSlotIndexText}>
+              {String(index + 1).padStart(2, "0")}
+            </Text>
+          </View>
+
+          {/* Empty slot indicator */}
+          <View style={styles.emptyIndicator}>
+            <View style={styles.plusCircle}>
+              <Text style={styles.plus}>+</Text>
+            </View>
+
+            <Text style={styles.emptyLabel}>
+              СЛОТ СВОБОДЕН
+            </Text>
+          </View>
         </View>
 
+        {/* Information */}
         <View style={styles.info}>
-          <Text style={styles.title}>МЕСТО ПУСТУЕТ</Text>
+          <Text style={styles.title}>
+            НЕТ АВТОМОБИЛЯ
+          </Text>
+
+          <Text style={styles.description}>
+            Найди автомобиль на рынке
+            и поставь его в этот слот
+          </Text>
         </View>
 
+        {/* Action */}
         <View style={styles.actions}>
-          <Pressable onPress={onMarket} style={styles.onMarketBtn}>
-            <Text style={styles.btnText}>НА РЫНОК</Text>
+          <Pressable
+            onPress={onMarket}
+            style={({ pressed }) => [
+              styles.onMarketBtn,
+              pressed && styles.buttonPressed,
+            ]}
+          >
+            <Text style={styles.btnText}>
+              ОТКРЫТЬ РЫНОК
+            </Text>
+
+            <Text style={styles.btnArrow}>
+              →
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -68,73 +141,187 @@ export function CarSlotEmpty({ onMarket, index, scrollX, garageLevel }: CarSlotE
 
 const styles = StyleSheet.create({
   carSlotContainer: {
-    alignItems: 'center'
+    alignItems: "center",
   },
 
   carSlot: {
-    position: 'relative',
-    paddingBottom: 10,
-    width: '66%',
+    width: "66%",
     height: 440,
-    backgroundColor: colors.greyColor,
-    borderColor: colors.accentBlueColor,
-    borderRadius: 10,
-    borderWidth: 3,
-    boxShadow: "0px 0px 16px #49E2FF",
-    overflow: 'hidden',
-    justifyContent: 'space-between',
+
+    backgroundColor: "#202323",
+
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(73, 226, 255, 0.45)",
+
+    overflow: "hidden",
+
+    boxShadow:
+      "0px 6px 18px rgba(0, 0, 0, 0.45)",
+  },
+
+  preview: {
+    height: "48%",
+    position: "relative",
+    overflow: "hidden",
   },
 
   carSlotBackground: {
-    flex: 1,
+    position: "absolute",
     width: "100%",
-    minHeight: 140
+    height: "100%",
+  },
+
+  previewOverlay: {
+    position: "absolute",
+    inset: 0,
+    backgroundColor: "rgba(10, 14, 15, 0.62)",
   },
 
   carSlotIndex: {
-    backgroundColor: "#3f4242",
+    position: "absolute",
+    top: 0,
+    left: 0,
+
+    width: 48,
+    height: 36,
+
+    alignItems: "center",
+    justifyContent: "center",
+
+    backgroundColor: "rgba(20, 24, 25, 0.9)",
+
+    borderBottomRightRadius: 12,
+    borderRightWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: "rgba(73, 226, 255, 0.35)",
+  },
+
+  carSlotIndexText: {
     color: colors.textMain,
-    borderBottomRightRadius: 8,
-    width: 28,
-    height: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: "700",
+    letterSpacing: 1,
+  },
+
+  emptyIndicator: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  plusCircle: {
+    width: 62,
+    height: 62,
+
+    borderRadius: 31,
+
+    alignItems: "center",
+    justifyContent: "center",
+
+    backgroundColor: "rgba(73, 226, 255, 0.08)",
+
+    borderWidth: 1,
+    borderColor: "rgba(73, 226, 255, 0.65)",
+
+    boxShadow:
+      "0px 0px 14px rgba(73, 226, 255, 0.35)",
+  },
+
+  plus: {
+    color: colors.accentBlueColor,
+    fontSize: 38,
+    fontWeight: "300",
+    lineHeight: 42,
+  },
+
+  emptyLabel: {
+    marginTop: 12,
+
+    color: "rgba(255, 255, 255, 0.8)",
+
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 1.5,
+  },
+
+  info: {
+    flex: 1,
+
+    alignItems: "center",
+    justifyContent: "center",
+
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
 
   title: {
     color: colors.textMain,
-    fontWeight: '700',
-    textAlign: 'center',
-    fontSize: 18
+
+    fontSize: 17,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+
+    textAlign: "center",
   },
 
+  description: {
+    marginTop: 8,
 
-  info: {
+    color: "rgba(255, 255, 255, 0.5)",
 
+    fontSize: 13,
+    lineHeight: 18,
+
+    textAlign: "center",
   },
 
   actions: {
-    marginHorizontal: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
 
   onMarketBtn: {
+    minHeight: 44,
+
+    borderRadius: 8,
+
     backgroundColor: colors.blueButtonColor,
-    width: '100%',
-    paddingVertical: 6,
-    borderRadius: 6,
-    alignItems: 'center'
+
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+
+    paddingHorizontal: 16,
+
+    boxShadow:
+      "0px 3px 8px rgba(0, 0, 0, 0.3)",
+  },
+
+  buttonPressed: {
+    opacity: 0.75,
+    transform: [{ scale: 0.98 }],
   },
 
   btnText: {
     color: colors.textMain,
-    fontWeight: 'bold'
+
+    fontSize: 13,
+    fontWeight: "700",
+    letterSpacing: 0.5,
   },
 
-  btnDisabled: {
-    opacity: 0.7
-  }
+  btnArrow: {
+    marginLeft: 10,
 
+    color: colors.textMain,
+
+    fontSize: 20,
+    fontWeight: "400",
+  },
 });
