@@ -404,6 +404,7 @@ export function CarSlot({
                   СНЯТЬ
                 </Text>
               </Pressable>
+              
             </View>
           )}
 
@@ -411,7 +412,7 @@ export function CarSlot({
           {/* INQUIRY */}
           {/* ================================================= */}
 
-          {activeInquiry && (
+          {car.state === "listed_for_sale" && activeInquiry && (
             <Pressable
               onPress={onInquiryPress}
               style={({ pressed }) => [
@@ -439,6 +440,19 @@ export function CarSlot({
                 →
               </Text>
             </Pressable>
+          )}
+          {car.state === "listed_for_sale" && !activeInquiry && (
+            <View style={styles.inquiryButtonFallback}>
+              <View style={styles.inquiryIconFallback}>
+                <Text style={styles.inquiryIconText}>
+                  !
+                </Text>
+              </View>
+
+              <View style={styles.inquiryContent}>
+                <Text style={styles.inquiryTitleFallback}>Здесь отобразится активное предложение</Text>
+              </View>
+            </View>
           )}
         </View>
       </View>
@@ -1065,6 +1079,29 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
 
+  inquiryButtonFallback: {
+    minHeight: 48,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    flexDirection: "row",
+    alignItems: "center",
+
+    backgroundColor: "rgba(243, 204, 120, 0.1)",
+
+    borderWidth: 1,
+    borderColor: colors.textGray,
+
+    shadowColor: "#D79820",
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.16,
+    shadowRadius: 5,
+
+    elevation: 3,
+  },
+
   inquiryIcon: {
     width: 29,
     height: 29,
@@ -1078,6 +1115,21 @@ const styles = StyleSheet.create({
 
     borderWidth: 1,
     borderColor: "#F3C85C",
+  },
+
+  inquiryIconFallback: {
+    width: 29,
+    height: 29,
+
+    borderRadius: 9,
+
+    alignItems: "center",
+    justifyContent: "center",
+
+    backgroundColor: colors.greyButton,
+
+    borderWidth: 1,
+    borderColor: "#585a5b",
   },
 
   inquiryIconText: {
@@ -1096,6 +1148,11 @@ const styles = StyleSheet.create({
     color: colors.textGold,
     fontSize: 9,
     fontWeight: "bold",
+  },
+
+  inquiryTitleFallback: {
+    color: colors.textMain,
+    fontSize: 11
   },
 
   inquiryPrice: {

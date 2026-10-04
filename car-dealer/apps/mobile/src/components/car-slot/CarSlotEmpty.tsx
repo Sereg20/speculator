@@ -75,9 +75,9 @@ export function CarSlotEmpty({
       ]}
     >
       <View style={[styles.carSlot, {
-          height: height * 0.77,
-          maxHeight: 525
-        }]}>
+        height: height * 0.77,
+        maxHeight: 525
+      }]}>
         {/* Garage preview */}
         <View style={styles.preview}>
           <Image
@@ -89,13 +89,13 @@ export function CarSlotEmpty({
           <View style={styles.previewOverlay} />
 
           {/* Slot number */}
-          <View style={styles.carSlotIndex}>
-            <Text style={styles.carSlotIndexText}>
-              {String(index + 1).padStart(2, "0")}
+          <View style={styles.slotBadge}>
+            <Text style={styles.slotBadgeText}>
+              {String(index + 1)}
             </Text>
           </View>
 
-        
+
         </View>
 
         {/* Information */}
@@ -166,31 +166,32 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(10, 14, 15, 0.62)",
   },
 
-  carSlotIndex: {
+  slotBadge: {
     position: "absolute",
-    top: 0,
-    left: 0,
 
-    width: 48,
-    height: 36,
+    top: 12,
+    left: 12,
+
+    width: 34,
+    height: 34,
+
+    borderRadius: 8,
 
     alignItems: "center",
     justifyContent: "center",
 
-    backgroundColor: "rgba(20, 24, 25, 0.9)",
+    backgroundColor: "rgba(5, 15, 17, 0.82)",
 
-    borderBottomRightRadius: 12,
-    borderRightWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: "rgba(73, 226, 255, 0.35)",
+    borderWidth: 1,
+    borderColor: "rgba(242, 185, 63, 0.27)",
   },
 
-  carSlotIndexText: {
-    color: colors.textMain,
-    fontSize: 13,
-    fontWeight: "700",
-    letterSpacing: 1,
-  },
+  slotBadgeText: {
+    color: "#f4c65b5d",
+
+    fontSize: 12,
+    fontWeight: "900",
+  },  
 
   info: {
     flex: 1,
