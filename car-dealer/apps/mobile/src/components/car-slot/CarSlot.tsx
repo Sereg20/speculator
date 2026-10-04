@@ -45,7 +45,7 @@ export function CarSlot({
   garageLevel,
 }: CarCardProps) {
   const garageImg = getGarageImage(garageLevel);
-  const { width } = Dimensions.get("screen");
+  const { width, height } = Dimensions.get("screen");
 
 
   const cardWidth = width * 0.7;
@@ -154,6 +154,8 @@ export function CarSlot({
           styles.carSlot,
           {
             width: cardWidth,
+            height: height * 0.77,
+            maxHeight: 525
           },
         ]}
       >
@@ -177,7 +179,7 @@ export function CarSlot({
           {/* Slot number */}
           <View style={styles.slotBadge}>
             <Text style={styles.slotBadgeText}>
-              {String(index + 1).padStart(2, "0")}
+              {String(index + 1)}
             </Text>
           </View>
 
@@ -384,10 +386,7 @@ export function CarSlot({
                 <View style={styles.listingDot} />
 
                 <View>
-                  <Text style={styles.listingTitle}>
-                    НА ПРОДАЖЕ
-                  </Text>
-
+                  <Text style={styles.listingTitle}>НА ПРОДАЖЕ</Text>
                   <Text style={styles.listingPrice}>
                     {car.activeListing?.asking_price ?? 0} BYN
                   </Text>
@@ -427,10 +426,7 @@ export function CarSlot({
               </View>
 
               <View style={styles.inquiryContent}>
-                <Text style={styles.inquiryTitle}>
-                  ЕСТЬ ПРЕДЛОЖЕНИЕ
-                </Text>
-
+                <Text style={styles.inquiryTitle}>ЕСТЬ ПРЕДЛОЖЕНИЕ</Text>
                 <Text style={styles.inquiryPrice}>
                   {activeInquiry.offered_price.toLocaleString(
                     "ru-RU"
@@ -469,7 +465,7 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     boxShadow: "0px 0px 16px #49E2FF",
     backgroundColor: "rgba(7, 25, 27, 0.97)",
-    borderRadius: 16,
+    borderRadius: 14,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -487,7 +483,7 @@ const styles = StyleSheet.create({
    */
 
   hero: {
-    height: 180,
+    height: '43%',
 
     position: "relative",
     overflow: "hidden",
@@ -540,7 +536,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
 
-    borderRadius: 10,
+    borderRadius: 8,
 
     alignItems: "center",
     justifyContent: "center",
@@ -698,36 +694,21 @@ const styles = StyleSheet.create({
 
   statLabel: {
     color: "#7F9691",
-
-    fontSize: 7,
-    fontWeight: "900",
-
-    letterSpacing: 1,
-
+    fontSize: 8,
+    fontWeight: "bold",
     marginBottom: 3,
   },
 
   statValue: {
-    color: "#F0F2ED",
-
-    fontSize: 12,
-    fontWeight: "900",
+    color: colors.textMain,
+    fontSize: 13,
+    fontWeight: "bold",
   },
 
   priceValue: {
-    color: "#F5C451",
-
-    fontSize: 12,
-    fontWeight: "900",
-  },
-
-  statUnit: {
-    color: "#8A9A96",
-
-    fontSize: 7,
-    fontWeight: "700",
-
-    marginTop: 1,
+    color: colors.textGold,
+    fontSize: 13,
+    fontWeight: "bold",
   },
 
   /*
@@ -788,7 +769,7 @@ const styles = StyleSheet.create({
 
   defectBadgeGood: {
     backgroundColor: "rgba(80, 195, 111, 0.12)",
-    borderColor: "rgba(80, 195, 111, 0.32)",
+    borderColor: colors.greenButton,
   },
 
   defectBadgeText: {
@@ -844,11 +825,11 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(77, 198, 111, 0.16)",
 
     borderWidth: 1,
-    borderColor: "rgba(77, 198, 111, 0.30)",
+    borderColor: colors.greenButton,
   },
 
   successIconText: {
-    color: "#6ADB8D",
+    color: colors.textGreen,
 
     fontSize: 14,
     fontWeight: "900",
@@ -919,10 +900,8 @@ const styles = StyleSheet.create({
 
   sellButtonText: {
     color: colors.textMain,
-    fontSize: 10,
-    fontWeight: "900",
-
-    letterSpacing: 0.7,
+    fontSize: 12,
+    fontWeight: "bold",
   },
 
   /*
@@ -930,7 +909,7 @@ const styles = StyleSheet.create({
    */
 
   repairButton: {
-    flex: 0.78,
+    flex: 1,
     minHeight: 40,
     borderRadius: 8,
     alignItems: "center",
@@ -942,9 +921,8 @@ const styles = StyleSheet.create({
 
   repairButtonText: {
     color: colors.textMain,
-    fontSize: 10,
-    fontWeight: "900",
-    letterSpacing: 0.6,
+    fontSize: 12,
+    fontWeight: "bold",
   },
 
   /*
@@ -982,18 +960,8 @@ const styles = StyleSheet.create({
 
   inspectTitle: {
     color: colors.textMain,
-    fontSize: 10,
-    textAlign: 'center',
-    fontWeight: "900",
-    letterSpacing: 0.7,
-  },
-
-  inspectSubtitle: {
-    color: "#6E8580",
-
-    fontSize: 7,
-
-    marginTop: 1,
+    fontSize: 12,
+    fontWeight: "bold",
   },
 
   /*
@@ -1008,7 +976,7 @@ const styles = StyleSheet.create({
     paddingLeft: 10,
     paddingRight: 5,
 
-    borderRadius: 11,
+    borderRadius: 8,
 
     flexDirection: "row",
     alignItems: "center",
@@ -1016,7 +984,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(55, 147, 91, 0.10)",
 
     borderWidth: 1,
-    borderColor: "rgba(79, 190, 111, 0.25)",
+    borderColor: colors.greenButton,
   },
 
   listingLeft: {
@@ -1036,49 +1004,36 @@ const styles = StyleSheet.create({
   },
 
   listingTitle: {
-    color: "#6DDB8C",
-
-    fontSize: 7,
-    fontWeight: "900",
-
-    letterSpacing: 0.8,
-
+    color: colors.textGreen,
+    fontSize: 9,
+    fontWeight: "bold",
     marginLeft: 7,
   },
 
   listingPrice: {
-    color: "#F4C34F",
-
-    fontSize: 11,
-    fontWeight: "900",
-
+    color: colors.textGold,
+    fontSize: 12,
+    fontWeight: "bold",
     marginLeft: 7,
     marginTop: 1,
   },
 
   cancelButton: {
     height: 32,
-
-    paddingHorizontal: 10,
-
+    paddingHorizontal: 24,
     borderRadius: 8,
-
     alignItems: "center",
     justifyContent: "center",
 
-    backgroundColor: "rgba(208, 73, 59, 0.12)",
-
+    backgroundColor: colors.redButtonColor,
     borderWidth: 1,
-    borderColor: "rgba(208, 73, 59, 0.25)",
+    borderColor: "rgba(195, 58, 43, 0.25)"
   },
 
   cancelButtonText: {
-    color: "#E97969",
-
-    fontSize: 8,
-    fontWeight: "900",
-
-    letterSpacing: 0.5,
+    color: colors.textMain,
+    fontSize: 12,
+    fontWeight: "bold",
   },
 
   /*
@@ -1089,18 +1044,15 @@ const styles = StyleSheet.create({
 
   inquiryButton: {
     minHeight: 48,
-
     paddingHorizontal: 10,
-
-    borderRadius: 12,
-
+    borderRadius: 8,
     flexDirection: "row",
     alignItems: "center",
 
     backgroundColor: "rgba(242, 184, 63, 0.10)",
 
-    borderWidth: 1.5,
-    borderColor: "rgba(242, 184, 63, 0.38)",
+    borderWidth: 1,
+    borderColor: colors.textGold,
 
     shadowColor: "#D79820",
     shadowOffset: {
@@ -1137,31 +1089,24 @@ const styles = StyleSheet.create({
 
   inquiryContent: {
     flex: 1,
-
     marginLeft: 8,
   },
 
   inquiryTitle: {
-    color: "#F4C34F",
-
-    fontSize: 8,
-    fontWeight: "900",
-
-    letterSpacing: 0.6,
+    color: colors.textGold,
+    fontSize: 9,
+    fontWeight: "bold",
   },
 
   inquiryPrice: {
-    color: "#F0F2ED",
-
+    color: colors.textMain,
     fontSize: 12,
-    fontWeight: "900",
-
+    fontWeight: "bold",
     marginTop: 1,
   },
 
   inquiryArrow: {
-    color: "#F4C34F",
-
+    color: colors.textGold,
     fontSize: 18,
     fontWeight: "900",
   },

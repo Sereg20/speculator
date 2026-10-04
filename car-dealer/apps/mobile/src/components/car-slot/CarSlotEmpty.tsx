@@ -29,7 +29,7 @@ export function CarSlotEmpty({
   garageLevel,
 }: CarSlotEmptyProps) {
   const garageImg = getGarageImage(garageLevel);
-  const { width } = Dimensions.get("screen");
+  const { width, height } = Dimensions.get("screen");
 
   const rnAnimatedStyle = useAnimatedStyle(() => {
     return {
@@ -74,7 +74,10 @@ export function CarSlotEmpty({
         rnAnimatedStyle,
       ]}
     >
-      <View style={styles.carSlot}>
+      <View style={[styles.carSlot, {
+          height: height * 0.77,
+          maxHeight: 525
+        }]}>
         {/* Garage preview */}
         <View style={styles.preview}>
           <Image
@@ -92,16 +95,7 @@ export function CarSlotEmpty({
             </Text>
           </View>
 
-          {/* Empty slot indicator */}
-          <View style={styles.emptyIndicator}>
-            <View style={styles.plusCircle}>
-              <Text style={styles.plus}>+</Text>
-            </View>
-
-            <Text style={styles.emptyLabel}>
-              СЛОТ СВОБОДЕН
-            </Text>
-          </View>
+        
         </View>
 
         {/* Information */}
@@ -111,8 +105,8 @@ export function CarSlotEmpty({
           </Text>
 
           <Text style={styles.description}>
-            Найди автомобиль на рынке
-            и поставь его в этот слот
+            Купи автомобиль на рынке
+            и он появится здесь
           </Text>
         </View>
 
@@ -125,13 +119,7 @@ export function CarSlotEmpty({
               pressed && styles.buttonPressed,
             ]}
           >
-            <Text style={styles.btnText}>
-              ОТКРЫТЬ РЫНОК
-            </Text>
-
-            <Text style={styles.btnArrow}>
-              →
-            </Text>
+            <Text style={styles.btnText}>ПОЙТИ НА РЫНОК</Text>
           </Pressable>
         </View>
       </View>
@@ -150,7 +138,7 @@ const styles = StyleSheet.create({
 
     backgroundColor: "#202323",
 
-    borderRadius: 16,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: "rgba(73, 226, 255, 0.45)",
 
@@ -204,52 +192,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
 
-  emptyIndicator: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  plusCircle: {
-    width: 62,
-    height: 62,
-
-    borderRadius: 31,
-
-    alignItems: "center",
-    justifyContent: "center",
-
-    backgroundColor: "rgba(73, 226, 255, 0.08)",
-
-    borderWidth: 1,
-    borderColor: "rgba(73, 226, 255, 0.65)",
-
-    boxShadow:
-      "0px 0px 14px rgba(73, 226, 255, 0.35)",
-  },
-
-  plus: {
-    color: colors.accentBlueColor,
-    fontSize: 38,
-    fontWeight: "300",
-    lineHeight: 42,
-  },
-
-  emptyLabel: {
-    marginTop: 12,
-
-    color: "rgba(255, 255, 255, 0.8)",
-
-    fontSize: 12,
-    fontWeight: "700",
-    letterSpacing: 1.5,
-  },
-
   info: {
     flex: 1,
 
@@ -263,10 +205,8 @@ const styles = StyleSheet.create({
   title: {
     color: colors.textMain,
 
-    fontSize: 17,
-    fontWeight: "700",
-    letterSpacing: 0.5,
-
+    fontSize: 18,
+    fontWeight: "bold",
     textAlign: "center",
   },
 
@@ -288,11 +228,9 @@ const styles = StyleSheet.create({
 
   onMarketBtn: {
     minHeight: 44,
-
     borderRadius: 8,
 
     backgroundColor: colors.blueButtonColor,
-
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -311,17 +249,7 @@ const styles = StyleSheet.create({
   btnText: {
     color: colors.textMain,
 
-    fontSize: 13,
-    fontWeight: "700",
-    letterSpacing: 0.5,
-  },
-
-  btnArrow: {
-    marginLeft: 10,
-
-    color: colors.textMain,
-
-    fontSize: 20,
-    fontWeight: "400",
+    fontSize: 14,
+    fontWeight: "bold",
   },
 });
