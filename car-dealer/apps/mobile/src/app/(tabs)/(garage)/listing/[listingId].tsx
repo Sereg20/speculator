@@ -10,7 +10,11 @@ import { DialogSpeakerType, IDialogMessage } from "@/types/dialog";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { CarDetailsDialog } from "@/components/dialog/CarDetailsDialog";
+import { RevealedDefect } from "@/api/market";
+import { SellingListingDialog } from "@/components/dialog/SellingListingDialog";
 
 export default function ListingInquiryScreen() {
   const { showError } = useGame();
@@ -42,6 +46,8 @@ export default function ListingInquiryScreen() {
   const [isSuccessSellDialogDisplayed, setSuccessSellDialogDisplayed] = useState<boolean>(false);
   const [finalPrice, setFinalPrice] = useState(inquiry?.offered_price || 0);
   const [purchasePrice, setPurchasePrice] = useState(0);
+  const [isCarDetailsExpanded, setCarDetailsExpanded] = useState<boolean>(false);
+  const [allDefects, setAllDefects] = useState<RevealedDefect[]>([]);
 
   const respondToInquiryMutation = useMutation({
     mutationFn: ({
@@ -120,7 +126,7 @@ export default function ListingInquiryScreen() {
       },
     });
     setPriceModalVisible(false);
-    
+
   }
 
   function onSell() {
@@ -176,6 +182,13 @@ export default function ListingInquiryScreen() {
       <View style={styles.absolutContainer}>
         <View style={styles.title}>
           <Text style={styles.titleText}>ПРОДАЖА: {listing?.make} {listing?.model}</Text>
+          <Pressable onPress={() => setCarDetailsExpanded(flag => !flag)}>
+            {isCarDetailsExpanded ? (
+              <MaterialIcons name="expand-less" size={24} color={colors.textMain} />
+            ) : (
+              <MaterialIcons name="expand-more" size={24} color={colors.textMain} />
+            )}
+          </Pressable>
         </View>
 
         <View style={styles.dialogContainer}>
@@ -198,14 +211,15 @@ export default function ListingInquiryScreen() {
             <NegotiateAction disabled={negotiateDisabled} text={'ТОРГ'} onPress={onNegotiate} energyCost={2} color="#307DC1" />
             <NegotiateAction disabled={rejectDisabled} text='ОТКАЗ' onPress={onReject} energyCost={2} color={colors.orangeButtonColor} />
             <NegotiateAction disabled={quitDisabled} text='УЙТИ' onPress={onQuit} energyCost={2} color='#C5453C' />
-          
+
           </View>
         </View>
 
       </View>
 
-      {isPriceModalVisible && <NegotiatePriceSelectorDialog visible={isPriceModalVisible} onClose={() => { setPriceModalVisible(false) }} onConfirm={onConfirmProposedPrice} initialPrice={listing?.asking_price || 0} maxPrice={listing?.asking_price || 0} minPrice={(inquiry?.offered_price || 0) + 1}/>}
-      {isSuccessSellDialogDisplayed && <SuccessSellDialog listing={listing} visible={isSuccessSellDialogDisplayed} finalPrice={finalPrice} purchasePrice={purchasePrice} onClose={onSuccessSellDialogClose}/>}
+      <SellingListingDialog visible={isCarDetailsExpanded} defects={allDefects} car={listing} onClose={() => {setCarDetailsExpanded(false)}} finalPrice={finalPrice} purchasePrice={purchasePrice}/>
+      {isPriceModalVisible && <NegotiatePriceSelectorDialog visible={isPriceModalVisible} onClose={() => { setPriceModalVisible(false) }} onConfirm={onConfirmProposedPrice} initialPrice={listing?.asking_price || 0} maxPrice={listing?.asking_price || 0} minPrice={(inquiry?.offered_price || 0) + 1} />}
+      {isSuccessSellDialogDisplayed && <SuccessSellDialog listing={listing} visible={isSuccessSellDialogDisplayed} finalPrice={finalPrice} purchasePrice={purchasePrice} onClose={onSuccessSellDialogClose} />}
 
     </View>
   );
@@ -238,7 +252,9 @@ const styles = StyleSheet.create({
     opacity: 0.93,
     height: 50,
     paddingHorizontal: 14,
-    justifyContent: 'center'
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
   },
 
   titleText: {

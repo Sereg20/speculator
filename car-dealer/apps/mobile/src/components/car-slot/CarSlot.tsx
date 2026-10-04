@@ -6,6 +6,7 @@ import { useListingInquiry } from "@/hooks/useListingInquiry";
 import { router } from "expo-router";
 import Animated, { Extrapolation, interpolate, SharedValue, useAnimatedStyle } from "react-native-reanimated";
 import { CarSlotEmpty } from "./CarSlotEmpty";
+import { getGarageImage } from "@/assets/images/garage-bank/garageBank";
 
 interface CarCardProps {
   car: Car | null;
@@ -16,9 +17,11 @@ interface CarCardProps {
   onMarket: () => void;
   index: number;
   scrollX: SharedValue<number>;
+  garageLevel: number;
 }
 
-export function CarSlot({ car, onSell, onCancelListing, onRepair, onInspect, onMarket, index, scrollX }: CarCardProps) {
+export function CarSlot({ car, onSell, onCancelListing, onRepair, onInspect, onMarket, index, scrollX, garageLevel }: CarCardProps) {
+  const garageImg = getGarageImage(garageLevel);
   const {width} = Dimensions.get("screen");
   const rnAmimatedStyle = useAnimatedStyle(() => {
     return {
@@ -48,7 +51,11 @@ export function CarSlot({ car, onSell, onCancelListing, onRepair, onInspect, onM
   );
 
   if (!car) {
-    return <CarSlotEmpty onMarket={onMarket} index={index} scrollX={scrollX}/>
+    return <CarSlotEmpty
+      onMarket={onMarket}
+      index={index}
+      scrollX={scrollX}
+      garageLevel={garageLevel}/>
   }
   
   
@@ -96,7 +103,7 @@ export function CarSlot({ car, onSell, onCancelListing, onRepair, onInspect, onM
             </View>
           </View>
           <Image
-            source={require("@/../assets/images/backgrounds/garage/background_garage1.png")}
+            source={garageImg}
             style={styles.carSlotBackground}
             resizeMode="cover"
           />

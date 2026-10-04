@@ -1,14 +1,17 @@
 import { View, Text, StyleSheet, Image, Pressable, Dimensions } from "react-native";
 import { colors } from "@/theme/colors";
 import Animated, { Extrapolation, interpolate, SharedValue, useAnimatedStyle } from "react-native-reanimated";
+import { getGarageImage } from "@/assets/images/garage-bank/garageBank";
 
 interface CarSlotEmptyProps {
   onMarket: () => void;
   index: number,
-  scrollX: SharedValue<number>
+  scrollX: SharedValue<number>;
+  garageLevel: number;
 }
 
-export function CarSlotEmpty({ onMarket, index, scrollX }: CarSlotEmptyProps) {
+export function CarSlotEmpty({ onMarket, index, scrollX, garageLevel }: CarSlotEmptyProps) {
+  const garageImg = getGarageImage(garageLevel);
   const { width } = Dimensions.get('screen');
   const rnAmimatedStyle = useAnimatedStyle(() => {
     return {
@@ -43,14 +46,14 @@ export function CarSlotEmpty({ onMarket, index, scrollX }: CarSlotEmptyProps) {
             </View>
           </View>
           <Image
-            source={require("@/../assets/images/backgrounds/garage/background_garage1.png")}
+            source={garageImg}
             style={styles.carSlotBackground}
             resizeMode="cover"
           />
         </View>
 
         <View style={styles.info}>
-          <Text style={styles.title}>В ГАРАЖЕ СЕЙЧАС НЕТ АВТОМОБИЛЕЙ</Text>
+          <Text style={styles.title}>МЕСТО ПУСТУЕТ</Text>
         </View>
 
         <View style={styles.actions}>
@@ -71,7 +74,7 @@ const styles = StyleSheet.create({
   carSlot: {
     position: 'relative',
     paddingBottom: 10,
-    width: '70%',
+    width: '66%',
     height: 440,
     backgroundColor: colors.greyColor,
     borderColor: colors.accentBlueColor,

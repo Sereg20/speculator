@@ -27,6 +27,7 @@ export function GarageSlots({
   onInspect
 }: GarageSlotsProps) {
   const scrollX = useSharedValue(0);
+  const garageLevel = slots.length;
 
   const onScrollHandler = useAnimatedScrollHandler({
     onScroll: (e) => {
@@ -52,6 +53,7 @@ export function GarageSlots({
             onMarket={onMarket}
             index={index}
             scrollX={scrollX}
+            garageLevel={garageLevel}
           />
         )}
         onScroll={onScrollHandler}

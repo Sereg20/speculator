@@ -4,7 +4,7 @@ import {
   Text,
   FlatList,
 } from "react-native";
-import { MarketListing, RevealedDefect } from "@/api/market";
+import { RevealedDefect } from "@/api/market";
 import { GameModalWithoutHeader } from "../modal/GameModalWithoutHeader";
 import { colors } from "@/theme/colors";
 import { ListItem } from "../list-item/ListItem";
@@ -14,16 +14,18 @@ import { DefectItem } from "@/features/inspection/DefectItem";
 import { ActiveListing } from "@/api/listings";
 
 
-interface CarDetailsDialogProps {
+interface SellingListingDialogProps {
   visible: boolean;
   defects: RevealedDefect[];
-  onClose: () => void,
-  car: MarketListing | undefined,
+  onClose: () => void;
+  car: ActiveListing | undefined;
+  finalPrice: number;
+  purchasePrice: number;
 }
 
-export function CarDetailsDialog({
-  visible, defects, onClose, car
-}: CarDetailsDialogProps) {
+export function SellingListingDialog({
+  visible, defects, onClose, car, finalPrice, purchasePrice
+}: SellingListingDialogProps) {
   const askingPrice = car?.asking_price || 0;
   const marketValue = car?.market_value || 0;
 
@@ -40,21 +42,28 @@ export function CarDetailsDialog({
         <Text style={styles.subtitle}>{car?.make} {car?.model} ({car?.year})</Text>
 
         <View style={styles.dealDetails}>
-
           <ListItem>
             <View style={styles.dealContainer}>
               <Text style={styles.label}>Начальная цена:  </Text>
               <FontAwesome5 name="bitcoin" size={20} color={colors.textGold} />
-              <Text style={[styles.price, askingPrice > marketValue ?
+              <Text style={[styles.price, { color: colors.textMain }]}> {askingPrice} BYN </Text>
+            </View>
+          </ListItem>
+
+          <ListItem>
+            <View style={styles.dealContainer}>
+              <Text style={styles.label}>Текущая цена:  </Text>
+              <FontAwesome5 name="bitcoin" size={20} color={colors.textGold} />
+              <Text style={[styles.price, finalPrice < purchasePrice ?
                 { color: colors.textRed } :
                 { color: colors.textGreen }
-              ]}> {askingPrice} BYN </Text>
-              {askingPrice > marketValue ?
-                <Foundation name="arrow-up" size={24} color={colors.textRed} /> :
-                <Foundation name="arrow-down" size={24} color={colors.textGreen} />
+              ]}> {finalPrice} BYN </Text>
+              {finalPrice < purchasePrice ?
+                <Foundation name="arrow-down" size={24} color={colors.textRed} /> :
+                <Foundation name="arrow-up" size={24} color={colors.textGreen} />
               }
             </View>
-            <Text style={styles.startPrice}>(Середина рынка: {marketValue} BYN)</Text>
+            <Text style={styles.startPrice}>(Цена Покупки: {purchasePrice} BYN)</Text>
           </ListItem>
 
           <Text style={styles.defectsTitle}>Неисправности</Text>
@@ -144,7 +153,7 @@ const styles = StyleSheet.create({
 
   listContent: {
     gap: 8,
-    maxHeight: 300
+    maxHeight: 280
   },
 
   emptyContainer: {
