@@ -20,7 +20,7 @@ interface ActiveDefectsDialogProps {
   carMake: string,
   carModel: string,
   onClose: () => void,
-  onDefectPress: (defect: ActiveDefect) => void,
+  onDefectPress: (defect: ActiveDefect, activeRepair?: ActiveRepair) => void,
   onRepairComplete: () => void;
 }
 

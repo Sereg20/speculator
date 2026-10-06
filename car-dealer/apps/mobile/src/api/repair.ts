@@ -28,3 +28,27 @@ export async function repairCar(
 
   return response;
 }
+
+/**
+ * POST /cars/:carId/repairs/:jobId/skip
+ *
+ * Immediately completes an active repair job in exchange for energy.
+ */
+export type SkipRepairResponse = {
+  data: unknown;
+  error: string | null;
+  meta: ApiMeta;
+};
+
+export async function skipRepair(
+  carId: string,
+  jobId: string,
+): Promise<SkipRepairResponse> {
+  return apiClient<SkipRepairResponse>(
+    `/cars/${carId}/repairs/${jobId}/skip`,
+    {
+      method: "POST",
+      body: JSON.stringify({})
+    },
+  );
+}

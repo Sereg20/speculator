@@ -1,7 +1,6 @@
 // src/components/game-header/GameHeader.tsx
 
 import { View, Text, StyleSheet, Pressable } from "react-native";
-import { useGame } from "../../app/context/GameContext";
 import { colors } from "@/theme/colors";
 import AntDesign from '@expo/vector-icons/AntDesign';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';

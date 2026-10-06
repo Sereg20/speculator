@@ -1,13 +1,13 @@
 import { View, Text, StyleSheet, ImageBackground } from "react-native";
 import { useQuery } from "@tanstack/react-query";
-import { ActiveDefect, Car, carsQuery, inspectCar } from "@/api/cars";
+import { ActiveDefect, ActiveRepair, Car, carsQuery, inspectCar } from "@/api/cars";
 import { SellingPriceSelectorDialog } from "@/features/selling/SellingPriceSelectorDialog";
 import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createListing, deleteListing } from "@/api/listings";
 import { RepairDialog } from "@/features/repair/RepairDialog";
 import { ActiveDefectsDialog } from "@/features/repair/ActiveDefects";
-import { RepairType, repairCar } from "@/api/repair";
+import { RepairType, repairCar, skipRepair } from "@/api/repair";
 import { router } from "expo-router";
 import { playerQuery } from "@/api/player";
 import { GarageSlots } from "@/components/garage/GarageSlots";
@@ -16,9 +16,12 @@ import { getGarageBackground } from "@/assets/images/backgrounds/garage/garageBa
 import { updatePlayerState } from "@/api/playerState";
 import { PurchasedCarInspectDialog } from "@/features/inspection/PurchasedCarInspectDialog";
 import { CategoryId, InspectionActionId } from "@/api/market";
+import { useGame } from "@/app/context/GameContext";
 
 
 export default function GarageScreen() {
+  const { showError } = useGame();
+
   const [isSellingPriceSelectorDialogVisible, setSellingPriceSelectorDialogVisible] = useState(false);
   const [isActiveDefectsDialogVisible, setActiveDefectsDialogVisible] = useState(false);
   const [isRepairDialogVisible, setRepairDialogVisible] = useState(false);
@@ -31,6 +34,7 @@ export default function GarageScreen() {
 
   const [selectedCarId, setSelectedCarId] = useState<string | null>(null);
   const [selectedDefectId, setSelectedDefectId] = useState<string | null>(null);
+  const [activeRepairToBeSkiped, setActiveRepairToBeSkiped] = useState<ActiveRepair | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -155,11 +159,47 @@ export default function GarageScreen() {
         queryClient,
         result.meta.playerState
       );
-      
+
     },
 
     onError: (error) => {
-     
+
+    },
+  });
+
+  const skipRepairMutation = useMutation({
+    mutationFn: ({
+      carId,
+      jobId,
+    }: {
+      carId: string;
+      jobId: string;
+    }) => skipRepair(carId, jobId),
+
+    onSuccess: (result, variables) => {
+      onSkilActiveRepairDialogClose();
+
+      updatePlayerState(
+        queryClient,
+        result.meta.playerState,
+      );
+
+      queryClient.invalidateQueries({
+        queryKey: ["cars"],
+      });
+
+      // Если используешь inspection tools
+      // queryClient.invalidateQueries({
+      //   queryKey: [
+      //     "cars",
+      //     variables.carId,
+      //     "inspection-tools",
+      //   ],
+      // });
+    },
+
+    onError: (error) => {
+      showError(error.message);
     },
   });
 
@@ -221,10 +261,11 @@ export default function GarageScreen() {
     setSelectedDefectId(null);
   }
 
-  function onDefectSelect(defect: ActiveDefect) {
+  function onDefectSelect(defect: ActiveDefect, activeRepair?: ActiveRepair) {
     setSelectedDefectId(defect.id);
 
-    if (defect.is_repairing) {
+    if (defect.is_repairing && activeRepair) {
+      setActiveRepairToBeSkiped(activeRepair);
       setSkipActiveRepairDialogVisible(true);
     } else {
       setRepairDialogVisible(true);
@@ -281,7 +322,13 @@ export default function GarageScreen() {
 
 
   function onSkipRepairConfirm() {
-    // ...
+    if (!selectedCarId || !activeRepairToBeSkiped) return;
+    skipRepairMutation.mutate({carId: selectedCarId, jobId: activeRepairToBeSkiped.id})
+  }
+
+  function onSkilActiveRepairDialogClose() {
+    setActiveRepairToBeSkiped(null);
+    setSkipActiveRepairDialogVisible(false);
   }
 
   function onMarket() {
@@ -350,9 +397,8 @@ export default function GarageScreen() {
       {/* SKIP ACTIVE REPAIR */}
       {isSkipActiveRepairDialogVisible && (
         <SkipActiveRepairDialog
-          onClose={() => {
-            setSkipActiveRepairDialogVisible(false);
-          }}
+          skipEnergyCost={activeRepairToBeSkiped?.skipEnergyCost || 0}
+          onClose={onSkilActiveRepairDialogClose}
           onConfirm={onSkipRepairConfirm}
         />
       )}

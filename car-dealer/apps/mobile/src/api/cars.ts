@@ -29,6 +29,7 @@ export type ActiveRepair = {
   id: string;
   repair_type: RepairType;
   started_at: string;
+  skipEnergyCost: number;
 }
 
 type ActiveListing = {

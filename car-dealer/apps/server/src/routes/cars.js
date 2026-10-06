@@ -13,6 +13,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { INGAME_DAY_REAL_MINUTES } from '../config.js';
 import { labelDefect } from '../services/defectEngine.js';
 import { checkCompletion } from '../services/repairQueue.js';
+import { calcSkipEnergyCost } from './repair.js';
 
 /**
  * GET /cars/:carId
@@ -69,6 +70,10 @@ async function getCar(request, reply) {
       AND completed = false
     ORDER BY started_at ASC
   `;
+  const activeRepairsOut = activeRepairs.map(j => ({
+    ...j,
+    skipEnergyCost: calcSkipEnergyCost(j.started_at, j.completes_at).cost,
+  }));
 
   return reply.send({
     data: {
@@ -78,12 +83,12 @@ async function getCar(request, reply) {
         quality_tier: undefined,
       },
       revealedDefects: labelDefect(revealedDefects),
-      activeRepairs,
+      activeRepairs: activeRepairsOut,
     },
     error: null,
     meta: {
       revealedDefectCount: revealedDefects.length,
-      activeRepairCount: activeRepairs.length,
+      activeRepairCount: activeRepairsOut.length,
     },
   });
 }
@@ -160,7 +165,10 @@ async function getMyCars(request, reply) {
       ORDER BY started_at ASC
     `;
     for (const r of allRepairs) {
-      (repairsByCarId[r.car_id] ??= []).push(r);
+      (repairsByCarId[r.car_id] ??= []).push({
+        ...r,
+        skipEnergyCost: calcSkipEnergyCost(r.started_at, r.completes_at).cost,
+      });
     }
   }
 

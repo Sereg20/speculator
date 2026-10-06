@@ -497,7 +497,7 @@ const styles = StyleSheet.create({
    */
 
   hero: {
-    height: '43%',
+    height: '44%',
 
     position: "relative",
     overflow: "hidden",
@@ -878,7 +878,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingBottom: 12,
 
-    gap: 6,
+    gap: 8,
   },
 
   mainActions: {
@@ -1080,7 +1080,7 @@ const styles = StyleSheet.create({
   },
 
   inquiryButtonFallback: {
-    minHeight: 48,
+    minHeight: 44,
     paddingHorizontal: 10,
     borderRadius: 8,
     flexDirection: "row",

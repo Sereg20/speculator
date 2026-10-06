@@ -1,28 +1,22 @@
 
 import {
-  FlatList,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 
-import { ActiveDefect } from "@/api/cars";
-import { GameModalWithoutHeader } from "@/components/modal/GameModalWithoutHeader";
 import { colors } from "@/theme/colors";
-import { useState } from "react";
-import { RepairType } from "@/api/repair";
-import { ListItem } from "@/components/list-item/ListItem";
-import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import { GameModal } from "@/components/modal/GameModal";
-
+import AntDesign from '@expo/vector-icons/AntDesign';
 
 interface SkipActiveRepairDialogProps {
+  skipEnergyCost: number;
   onClose: () => void,
   onConfirm: () => void,
 }
 
 export function SkipActiveRepairDialog({
-  onClose, onConfirm
+  skipEnergyCost, onClose, onConfirm
 }: SkipActiveRepairDialogProps) {
 
   return (
@@ -36,7 +30,9 @@ export function SkipActiveRepairDialog({
     >
       <View style={styles.container}>
 
-       <Text>Ускорить ремонт за энергию?</Text>
+       <Text style={styles.text}>Завершить ремонт за </Text>
+       <Text style={styles.text}>{skipEnergyCost}</Text>
+       <AntDesign name="thunderbolt" size={18} color={colors.textGold} />
         
       </View>
     </GameModal>
@@ -47,7 +43,14 @@ const styles = StyleSheet.create({
 
   container: {
     width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center'
   },
 
- 
+  text: {
+    color: colors.textMain,
+    fontSize: 18
+  }
+
 });

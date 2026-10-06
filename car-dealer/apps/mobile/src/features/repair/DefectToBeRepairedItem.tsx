@@ -10,7 +10,7 @@ import { CountdownTimer } from "@/components/timer/CountdownTimer";
 interface DefectToBeRepairedItemProps {
   defect: ActiveDefect;
   activeRepair?: ActiveRepair;
-  onPress: (defect: ActiveDefect) => void;
+  onPress: (defect: ActiveDefect, activeRepair?: ActiveRepair) => void;
   onRepairComplete: () => void;
 }
 
@@ -26,7 +26,7 @@ export function DefectToBeRepairedItem({
   });
 
   return (
-    <ListItem onPress={() => { onPress(defect) }}>
+    <ListItem onPress={() => { onPress(defect, activeRepair) }}>
       <View style={styles.container}>
         <Image
           source={icon}

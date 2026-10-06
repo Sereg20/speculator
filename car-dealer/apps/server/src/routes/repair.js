@@ -209,7 +209,7 @@ async function cancelRepair(request, reply) {
  * @param {Date|string} completesAt
  * @returns {{ cost: number, remainingMinutes: number, totalMinutes: number }}
  */
-function calcSkipEnergyCost(startedAt, completesAt) {
+export function calcSkipEnergyCost(startedAt, completesAt) {
   const now = Date.now();
   const start = new Date(startedAt).getTime();
   const end = new Date(completesAt).getTime();
