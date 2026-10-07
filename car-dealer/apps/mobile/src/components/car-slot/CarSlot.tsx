@@ -20,6 +20,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { CarSlotEmpty } from "./CarSlotEmpty";
 import { getGarageImage } from "@/assets/images/garage-bank/garageBank";
+import Entypo from '@expo/vector-icons/Entypo';
 
 interface CarCardProps {
   car: Car | null;
@@ -269,14 +270,7 @@ export function CarSlot({
                   : styles.defectBadgeGood,
               ]}
             >
-              <Text
-                style={[
-                  styles.defectBadgeText,
-                  activeDefects.length > 0
-                    ? styles.defectBadgeTextWarning
-                    : styles.defectBadgeTextGood,
-                ]}
-              >
+              <Text style={styles.defectBadgeText}>
                 {activeDefects.length}
               </Text>
             </View>
@@ -296,9 +290,7 @@ export function CarSlot({
               ListEmptyComponent={
                 <View style={styles.noDefects}>
                   <View style={styles.successIcon}>
-                    <Text style={styles.successIconText}>
-                      ✓
-                    </Text>
+                    <Entypo name="check" size={20} color={colors.textMain} />
                   </View>
 
                   <View style={styles.noDefectsContent}>
@@ -618,11 +610,9 @@ const styles = StyleSheet.create({
   },
 
   statusText: {
-    color: "#F0F2ED",
-
-    fontSize: 8,
-    fontWeight: "900",
-
+    color: colors.textMain,
+    fontSize: 9,
+    fontWeight: "bold",
     letterSpacing: 0.5,
   },
 
@@ -768,35 +758,24 @@ const styles = StyleSheet.create({
     minWidth: 28,
     height: 28,
 
-    borderRadius: 8,
+    borderRadius: 6,
 
     alignItems: "center",
     justifyContent: "center",
-
-    borderWidth: 1,
   },
 
   defectBadgeWarning: {
-    backgroundColor: "rgba(224, 88, 65, 0.13)",
-    borderColor: "rgba(224, 88, 65, 0.34)",
+    backgroundColor: colors.orangeButtonColor,
   },
 
   defectBadgeGood: {
-    backgroundColor: "rgba(80, 195, 111, 0.12)",
-    borderColor: colors.greenButton,
+    backgroundColor: colors.greenButton,
   },
 
   defectBadgeText: {
-    fontSize: 11,
-    fontWeight: "900",
-  },
-
-  defectBadgeTextWarning: {
-    color: "#F07862",
-  },
-
-  defectBadgeTextGood: {
-    color: colors.textGreen,
+    fontSize: 12,
+    fontWeight: "bold",
+    color: colors.textMain
   },
 
   defectsContainer: {
@@ -813,7 +792,9 @@ const styles = StyleSheet.create({
   },
 
   listContent: {
-    paddingVertical: 3,
+    paddingHorizontal: 3,
+    height: '100%',
+    justifyContent: 'center'
   },
 
   noDefects: {
@@ -828,18 +809,12 @@ const styles = StyleSheet.create({
   },
 
   successIcon: {
-    width: 27,
-    height: 27,
-
-    borderRadius: 8,
-
+    width: 28,
+    height: 28,
+    borderRadius: 6,
     alignItems: "center",
     justifyContent: "center",
-
-    backgroundColor: "rgba(77, 198, 111, 0.16)",
-
-    borderWidth: 1,
-    borderColor: colors.greenButton,
+    backgroundColor: colors.greenButton,
   },
 
   successIconText: {
@@ -854,18 +829,16 @@ const styles = StyleSheet.create({
   },
 
   noDefectsTitle: {
-    color: "#EAF0EA",
+    color: colors.textMain,
 
-    fontSize: 10,
-    fontWeight: "900",
+    fontSize: 11,
+    fontWeight: "bold",
   },
 
   noDefectsText: {
-    color: "#728782",
-
-    fontSize: 8,
-
-    marginTop: 2,
+    color: colors.textGray,
+    fontSize: 9,
+    marginTop: 1,
   },
 
   /*
@@ -990,14 +963,14 @@ const styles = StyleSheet.create({
     paddingLeft: 10,
     paddingRight: 5,
 
-    borderRadius: 8,
+    borderRadius: 6,
 
     flexDirection: "row",
     alignItems: "center",
 
     backgroundColor: "rgba(55, 147, 91, 0.10)",
 
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: colors.greenButton,
   },
 
@@ -1059,13 +1032,13 @@ const styles = StyleSheet.create({
   inquiryButton: {
     minHeight: 48,
     paddingHorizontal: 10,
-    borderRadius: 8,
+    borderRadius: 6,
     flexDirection: "row",
     alignItems: "center",
 
     backgroundColor: "rgba(242, 184, 63, 0.10)",
 
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: colors.textGold,
 
     shadowColor: "#D79820",
@@ -1082,13 +1055,13 @@ const styles = StyleSheet.create({
   inquiryButtonFallback: {
     minHeight: 44,
     paddingHorizontal: 10,
-    borderRadius: 8,
+    borderRadius: 6,
     flexDirection: "row",
     alignItems: "center",
 
     backgroundColor: "rgba(243, 204, 120, 0.1)",
 
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: colors.textGray,
 
     shadowColor: "#D79820",

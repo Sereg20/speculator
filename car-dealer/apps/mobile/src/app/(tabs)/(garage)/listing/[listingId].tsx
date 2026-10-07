@@ -12,9 +12,9 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { CarDetailsDialog } from "@/components/dialog/CarDetailsDialog";
 import { RevealedDefect } from "@/api/market";
 import { SellingListingDialog } from "@/components/dialog/SellingListingDialog";
+
 
 export default function ListingInquiryScreen() {
   const { showError } = useGame();
@@ -48,6 +48,8 @@ export default function ListingInquiryScreen() {
   const [purchasePrice, setPurchasePrice] = useState(0);
   const [isCarDetailsExpanded, setCarDetailsExpanded] = useState<boolean>(false);
   const [allDefects, setAllDefects] = useState<RevealedDefect[]>([]);
+  const [isDialogLoading, setDialogLoading] = useState<boolean>(true);
+  
 
   const respondToInquiryMutation = useMutation({
     mutationFn: ({
@@ -64,6 +66,7 @@ export default function ListingInquiryScreen() {
     onSuccess: (result) => {
       updatePlayerState(queryClient, result.meta.playerState);
       addMessage(result.data.message, 'npc');
+      setDialogLoading(false);
 
       if (result.data.outcome === 'rejected') {
         setQuitDisabled(false);
@@ -126,6 +129,7 @@ export default function ListingInquiryScreen() {
       },
     });
     setPriceModalVisible(false);
+    setDialogLoading(true);
 
   }
 
@@ -202,7 +206,7 @@ export default function ListingInquiryScreen() {
             </View>
 
           </View>
-          <Dialog messages={messages} />
+          <Dialog messages={messages} isLoading={isDialogLoading}/>
         </View>
 
         <View style={styles.globalActionsContainer}>

@@ -53,6 +53,7 @@ export default function MarketInspectionScreen() {
   const [currentPrice, setCurrentPrice] = useState<number>(listing?.asking_price || 0);
   const [isRevealedDefectsDialogVisible, setRevealedDefectsDialogVisible] = useState<boolean>(false);
   const [isCarDetailsExpanded, setCarDetailsExpanded] = useState<boolean>(false);
+  const [isDialogLoading, setDialogLoading] = useState<boolean>(true);
 
 
   const [allDefects, setAllDefects] = useState<RevealedDefect[]>([]);
@@ -78,6 +79,7 @@ export default function MarketInspectionScreen() {
         result.meta.playerState
       );
       addMessage(result.data.dialogue, "npc");
+      setDialogLoading(false);
       setLastDefects(result.data.revealed);
       setAllDefects(allDefects => [...allDefects, ...result.data.revealed]);
       if(result.data.revealed.length > 0) {
@@ -106,15 +108,14 @@ export default function MarketInspectionScreen() {
       if (result.data.outcome === 'counter' && result.data.sellerCounterPrice) {
         setCurrentPrice(result.data.sellerCounterPrice);
         setNegotiateDisabled(false);
-        setPurchaseDisabled(false);
       } else if (result.data.outcome === 'accepted' && result.data.finalPrice) {
         setCurrentPrice(result.data.finalPrice);
-        setPurchaseDisabled(false);
       } else if (result.data.outcome === 'rejected') {
-        setPreInspectDisabled(true);
         setPreInspectDisabled(true);
         setChatDisabled(true);
       }
+      setPurchaseDisabled(false);
+      setDialogLoading(false);
       addMessage(result.data.message, "npc");
     },
 
@@ -194,6 +195,7 @@ export default function MarketInspectionScreen() {
         text: initialDialogue?.dialogue || '',
       },
     ]);
+    setDialogLoading(false);
   }, [initialDialogue]);
 
   function addMessage(text: string, type: DialogSpeakerType) {
@@ -234,6 +236,7 @@ export default function MarketInspectionScreen() {
   function onChat() {
     setChatDisabled(true);
     addMessage('Что с машиной? Только честно!', 'player');
+    setDialogLoading(true);
     chatMutation.mutate();
   }
 
@@ -251,6 +254,7 @@ export default function MarketInspectionScreen() {
   function onConfirmProposedPrice(proposedPrice: number) {
     setNegotiateDisabled(true);
     setPurchaseDisabled(true);
+    setDialogLoading(true);
     negotiateMutation.mutate(proposedPrice);
     setPriceModalVisible(false);
     addMessage(`Предложение хорошее, но цена велика. Как насчет ${proposedPrice}?`, 'player');
@@ -299,7 +303,7 @@ export default function MarketInspectionScreen() {
             </View>
 
           </View>
-          <Dialog messages={messages} />
+          <Dialog messages={messages} isLoading={isDialogLoading}/>
         </View>
 
         <View style={styles.globalActionsContainer}>

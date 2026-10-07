@@ -173,32 +173,57 @@ function inquiryExpiresAt() {
   return new Date(Date.now() + msToExpire);
 }
 
-// ─── Quick-fix discovery check ────────────────────────────────────────────────
+// ─── Buyer defect discovery check ────────────────────────────────────────────
 
 /**
- * Check if a buyer who inspects discovers any quick-fixed defects.
- * Returns array of discovered defect IDs.
+ * Base discovery probability for hidden (unrevealed) defects by detection tier.
+ * Quick-fixed defects use their own qf_discovery_base column instead.
+ */
+const HIDDEN_DEFECT_DISCOVERY_BASE = {
+  1: 0.70,  // tier 1 — easy to spot (cosmetic, obvious mechanical)
+  2: 0.50,  // tier 2 — noticeable with basic inspection
+  3: 0.30,  // tier 3 — requires closer look
+  4: 0.15,  // tier 4 — specialist knowledge needed
+};
+
+/**
+ * Check if a buyer who inspects discovers any defects.
+ * Covers ALL defects that haven't been properly repaired — both quick-fixed
+ * and hidden/unrevealed ones. Only defects with a completed proper repair job
+ * are excluded (proper fix removes the defect entirely from the buyer's perspective).
  *
  * @param {string} carId
  * @param {number} reputationScore
  * @param {boolean} buyerRequested - whether buyer specifically requested inspection
  * @returns {Promise<string[]>} discovered defect IDs
  */
-async function checkQuickFixDiscovery(carId, reputationScore, buyerRequested) {
-  const quickFixedDefects = await sql`
-    SELECT id, qf_discovery_base
-    FROM defects
-    WHERE car_id = ${carId}
-      AND is_quick_fixed = true
+async function checkBuyerDefectDiscovery(carId, reputationScore, buyerRequested) {
+  const defects = await sql`
+    SELECT d.id, d.qf_discovery_base, d.is_quick_fixed, d.detection_tier
+    FROM defects d
+    WHERE d.car_id = ${carId}
+      AND NOT EXISTS (
+        SELECT 1 FROM repair_jobs rj
+        WHERE rj.defect_id = d.id
+          AND rj.repair_type = 'proper'
+          AND rj.completed = true
+          AND rj.qf_failed = false
+      )
+      AND d.is_odometer_fraud = false
   `;
 
   const discovered = [];
-  for (const defect of quickFixedDefects) {
-    const prob = quickFixDiscoveryProb(
-      defect.qf_discovery_base ?? 0.40,
-      reputationScore,
-      buyerRequested,
-    );
+  for (const defect of defects) {
+    let base;
+    if (defect.is_quick_fixed) {
+      // Quick-fixed: buyer can see the repair was attempted — use qf_discovery_base
+      base = defect.qf_discovery_base ?? 0.40;
+    } else {
+      // Hidden/unrevealed: buyer inspects normally — probability by detection tier
+      base = HIDDEN_DEFECT_DISCOVERY_BASE[defect.detection_tier] ?? 0.30;
+    }
+
+    const prob = quickFixDiscoveryProb(base, reputationScore, buyerRequested);
     if (Math.random() < prob) {
       discovered.push(defect.id);
     }
@@ -277,7 +302,7 @@ export async function generateBuyerInquiry(listingId, log, { force = false } = {
     let discoveredQuickFixes = false;
     let discoveredDefectIds = [];
     if (didInspect) {
-      discoveredDefectIds = await checkQuickFixDiscovery(
+      discoveredDefectIds = await checkBuyerDefectDiscovery(
         listing.car_id,
         listing.reputation_score,
         didInspect,
