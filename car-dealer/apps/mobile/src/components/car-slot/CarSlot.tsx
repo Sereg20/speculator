@@ -265,8 +265,10 @@ export function CarSlot({
             <View
               style={[
                 styles.defectBadge,
-                activeDefects.length > 0
+                (activeDefects.length > 0 && activeDefects.length < 3)
                   ? styles.defectBadgeWarning
+                  : activeDefects.length >= 3 
+                  ? styles.defectBadgeError
                   : styles.defectBadgeGood,
               ]}
             >
@@ -574,7 +576,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9,
     paddingVertical: 7,
 
-    borderRadius: 13,
+    borderRadius: 6,
 
     backgroundColor: "rgba(5, 15, 17, 0.84)",
 
@@ -762,6 +764,10 @@ const styles = StyleSheet.create({
 
     alignItems: "center",
     justifyContent: "center",
+  },
+
+  defectBadgeError: {
+    backgroundColor: colors.redButtonColor,
   },
 
   defectBadgeWarning: {
