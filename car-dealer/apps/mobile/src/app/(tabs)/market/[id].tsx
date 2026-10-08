@@ -244,7 +244,6 @@ export default function MarketInspectionScreen() {
     if (!actionId || !categoryId) return;
     setPreInspectDisabled(true);
     setInspectModalVisible(false);
-    addMessage('А ну открой капот...', 'player');
     preInspectMutation.mutate({
       actionId,
       categoryId,

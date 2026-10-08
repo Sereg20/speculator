@@ -42,11 +42,13 @@ export function DefectToBeRepairedItem({
                 <FontAwesome5 name="bitcoin" size={14} color={colors.textGold} />
                 <Text style={styles.price}> {defect.proper_repair_cost} BYN</Text>
               </View>
-              <View style={styles.priceContainer}>
-                <Text style={styles.priceInfo}>Ремонт на скорую руку:  </Text>
-                <FontAwesome5 name="bitcoin" size={14} color={colors.textGold} />
-                <Text style={styles.price}> {defect.quick_fix_cost} BYN</Text>
-              </View>
+              {defect.quick_fix_cost && (
+                <View style={styles.priceContainer}>
+                  <Text style={styles.priceInfo}>Ремонт на скорую руку:  </Text>
+                  <FontAwesome5 name="bitcoin" size={14} color={colors.textGold} />
+                  <Text style={styles.price}> {defect.quick_fix_cost} BYN</Text>
+                </View>
+              )}
             </View>
           }
           {isRepairing && activeRepair &&

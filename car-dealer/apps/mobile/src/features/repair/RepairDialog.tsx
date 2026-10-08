@@ -55,14 +55,16 @@ export function RepairDialog({
             <Text style={styles.time}>(Время ремонта: {defect.proper_repair_time_minutes} минут)</Text>
           </ListItem>
 
-          <ListItem onPress={() => {setRepairType("quick_fix")}} style={repairType === "quick_fix" && styles.selectedRepair}>
-            <View style={styles.priceContainer}>
-              <Text style={styles.priceInfo}>Ремонт на скорую руку:   </Text>
-              <FontAwesome5 name="bitcoin" size={16} color={colors.textGold} />
-              <Text style={styles.price}> {defect.quick_fix_cost} BYN</Text>
-            </View>
-            <Text style={styles.time}>(Время ремонта: {defect.quick_fix_time_minutes} минут)</Text>
-          </ListItem>
+          {defect.quick_fix_cost && (
+            <ListItem onPress={() => {setRepairType("quick_fix")}} style={repairType === "quick_fix" && styles.selectedRepair}>
+              <View style={styles.priceContainer}>
+                <Text style={styles.priceInfo}>Ремонт на скорую руку:   </Text>
+                <FontAwesome5 name="bitcoin" size={16} color={colors.textGold} />
+                <Text style={styles.price}> {defect.quick_fix_cost} BYN</Text>
+              </View>
+              <Text style={styles.time}>(Время ремонта: {defect.quick_fix_time_minutes} минут)</Text>
+            </ListItem>
+          )}
         </View>
         
       </View>

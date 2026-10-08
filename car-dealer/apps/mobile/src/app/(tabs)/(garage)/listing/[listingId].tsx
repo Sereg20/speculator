@@ -48,7 +48,7 @@ export default function ListingInquiryScreen() {
   const [purchasePrice, setPurchasePrice] = useState(0);
   const [isCarDetailsExpanded, setCarDetailsExpanded] = useState<boolean>(false);
   const [allDefects, setAllDefects] = useState<RevealedDefect[]>([]);
-  const [isDialogLoading, setDialogLoading] = useState<boolean>(true);
+  const [isDialogLoading, setDialogLoading] = useState<boolean>(false);
   
 
   const respondToInquiryMutation = useMutation({
