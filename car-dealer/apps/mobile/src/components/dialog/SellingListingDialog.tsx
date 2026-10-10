@@ -44,26 +44,17 @@ export function SellingListingDialog({
         <View style={styles.dealDetails}>
           <ListItem>
             <View style={styles.dealContainer}>
-              <Text style={styles.label}>Начальная цена:  </Text>
-              <FontAwesome5 name="bitcoin" size={20} color={colors.textGold} />
-              <Text style={[styles.price, { color: colors.textMain }]}> {askingPrice} BYN </Text>
-            </View>
-          </ListItem>
-
-          <ListItem>
-            <View style={styles.dealContainer}>
               <Text style={styles.label}>Текущая цена:  </Text>
               <FontAwesome5 name="bitcoin" size={20} color={colors.textGold} />
-              <Text style={[styles.price, finalPrice < purchasePrice ?
+              <Text style={[styles.price, finalPrice < (askingPrice * 0.9) ?
                 { color: colors.textRed } :
-                { color: colors.textGreen }
+                { color: colors.textMain }
               ]}> {finalPrice} BYN </Text>
-              {finalPrice < purchasePrice ?
-                <Foundation name="arrow-down" size={24} color={colors.textRed} /> :
-                <Foundation name="arrow-up" size={24} color={colors.textGreen} />
+              {finalPrice < askingPrice &&
+                <Foundation name="arrow-down" size={24} color={finalPrice < (askingPrice * 0.9) ? colors.textRed : colors.textMain} />
               }
             </View>
-            <Text style={styles.startPrice}>(Цена Покупки: {purchasePrice} BYN)</Text>
+            <Text style={styles.startPrice}>(Начальная цена: {askingPrice} BYN)</Text>
           </ListItem>
 
           <Text style={styles.defectsTitle}>Неисправности</Text>

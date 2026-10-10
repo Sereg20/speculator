@@ -15,6 +15,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { RevealedDefect } from "@/api/market";
 import { SellingListingDialog } from "@/components/dialog/SellingListingDialog";
 import { energyCost } from "@/constants/constants";
+import { npcBuyersAvatars } from "@/assets/images/npc-avatars/npcAvatars";
 
 
 export default function ListingInquiryScreen() {
@@ -37,7 +38,10 @@ export default function ListingInquiryScreen() {
     id: "1",
     speaker: "npc",
     text: inquiry?.message_text || ''
-  }
+  };
+
+  const npcAvatar = npcBuyersAvatars[inquiry?.buyer_archetype || 'enthusiast'];
+  
   const [messages, setMessages] = useState<IDialogMessage[]>([initMessage]);
   const [negotiateDisabled, setNegotiateDisabled] = useState<boolean>(inquiry?.is_direct_buy || false);
   const [sellDisabled, setSellDisabled] = useState<boolean>(false);
@@ -67,7 +71,6 @@ export default function ListingInquiryScreen() {
     onSuccess: (result) => {
       updatePlayerState(queryClient, result.meta.playerState);
       addMessage(result.data.message, 'npc');
-      setDialogLoading(false);
 
       if (result.data.outcome === 'rejected') {
         setQuitDisabled(false);
@@ -102,6 +105,9 @@ export default function ListingInquiryScreen() {
 
   // ----------------------------------------------
   function addMessage(text: string, type: DialogSpeakerType) {
+    if (type === 'npc') {
+      setDialogLoading(false);
+    }
     setMessages((previousMessages) => [
       ...previousMessages,
       {
@@ -198,10 +204,10 @@ export default function ListingInquiryScreen() {
 
         <View style={styles.dialogContainer}>
           <View style={styles.sellerContainer}>
-            {/* <Image
+            <Image
                 source={npcAvatar}
                 style={styles.npcAvatar}
-              /> */}
+              />
             <View style={styles.sellerTitleContainer}>
               <Text style={styles.sellerTitle}>{inquiry?.buyer_name} (покупатель)</Text>
             </View>

@@ -75,18 +75,18 @@ export function InspectDialog({
         <Text style={styles.subtitle}>Выберите инструмент для проверки</Text>
         <View style={styles.cotegoriesContainer}>
           <View style={styles.categoriesRow}>
-            <InspectionCategorySection selectedItemId={selectedToolId} onSelect={onInspectionToolSelect} refreshing={isLoading} title="МОТОР" icon="" items={engineInspectionTools}/>
-            <InspectionCategorySection selectedItemId={selectedToolId} onSelect={onInspectionToolSelect} refreshing={isLoading} title="КОРОБКА" icon="" items={transmissionInspectionTools}/>
+            <InspectionCategorySection selectedItemId={selectedToolId} onSelect={onInspectionToolSelect} refreshing={isLoading} title="МОТОР" defectCategory="engine" items={engineInspectionTools}/>
+            <InspectionCategorySection selectedItemId={selectedToolId} onSelect={onInspectionToolSelect} refreshing={isLoading} title="КОРОБКА" defectCategory="transmission" items={transmissionInspectionTools}/>
           </View>
 
           <View style={styles.categoriesRow}>
-            <InspectionCategorySection selectedItemId={selectedToolId} onSelect={onInspectionToolSelect} refreshing={isLoading} title="КУЗОВ" icon="" items={bodyInspectionTools}/>
-            <InspectionCategorySection selectedItemId={selectedToolId} onSelect={onInspectionToolSelect} refreshing={isLoading} title="ПОДВЕСКА" icon="" items={suspensionInspectionTools}/>
+            <InspectionCategorySection selectedItemId={selectedToolId} onSelect={onInspectionToolSelect} refreshing={isLoading} title="КУЗОВ" defectCategory="body" items={bodyInspectionTools}/>
+            <InspectionCategorySection selectedItemId={selectedToolId} onSelect={onInspectionToolSelect} refreshing={isLoading} title="ПОДВЕСКА" defectCategory="suspension" items={suspensionInspectionTools}/>
           </View>
 
           <View style={styles.categoriesRow}>
-            <InspectionCategorySection selectedItemId={selectedToolId} onSelect={onInspectionToolSelect} refreshing={isLoading} title="ЭЛЕКТРИКА" icon="" items={electricalInspectionTools}/>
-            <InspectionCategorySection selectedItemId={selectedToolId} onSelect={onInspectionToolSelect} refreshing={isLoading} title="САЛОН" icon="" items={interiorInspectionTools}/>
+            <InspectionCategorySection selectedItemId={selectedToolId} onSelect={onInspectionToolSelect} refreshing={isLoading} title="ЭЛЕКТРИКА" defectCategory="electrical" items={electricalInspectionTools}/>
+            <InspectionCategorySection selectedItemId={selectedToolId} onSelect={onInspectionToolSelect} refreshing={isLoading} title="САЛОН" defectCategory="interior" items={interiorInspectionTools}/>
           </View>
 
         </View>

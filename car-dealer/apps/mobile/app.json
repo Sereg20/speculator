@@ -11,13 +11,9 @@
       "icon": "./assets/expo.icon"
     },
     "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
-      },
-      "predictiveBackGestureEnabled": false
+      "adaptiveIcon": {},
+      "predictiveBackGestureEnabled": false,
+      "package": "com.siarhei.shnitko.mobile"
     },
     "web": {
       "output": "static",
@@ -38,6 +34,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "d503ce14-dc13-4e66-be26-de42fe844a2f"
+      }
     }
   }
 }

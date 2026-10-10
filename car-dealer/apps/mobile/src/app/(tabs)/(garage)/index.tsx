@@ -15,8 +15,9 @@ import { SkipActiveRepairDialog } from "@/features/repair/SkipActiveRepairDialog
 import { getGarageBackground } from "@/assets/images/backgrounds/garage/garageBackground";
 import { updatePlayerState } from "@/api/playerState";
 import { PurchasedCarInspectDialog } from "@/features/inspection/PurchasedCarInspectDialog";
-import { CategoryId, InspectionActionId } from "@/api/market";
+import { CategoryId, InspectionActionId, RevealedDefect } from "@/api/market";
 import { useGame } from "@/app/context/GameContext";
+import { RevealedDefectsDialog } from "@/features/inspection/RevealedDefectsDialog";
 
 
 export default function GarageScreen() {
@@ -35,6 +36,9 @@ export default function GarageScreen() {
   const [selectedCarId, setSelectedCarId] = useState<string | null>(null);
   const [selectedDefectId, setSelectedDefectId] = useState<string | null>(null);
   const [activeRepairToBeSkiped, setActiveRepairToBeSkiped] = useState<ActiveRepair | null>(null);
+  const [isRevealedDefectsDialogVisible, setRevealedDefectsDialogVisible] = useState<boolean>(false);
+  const [lastDefects, setLastDefects] = useState<RevealedDefect[]>([]);
+
 
   const queryClient = useQueryClient();
 
@@ -160,6 +164,12 @@ export default function GarageScreen() {
         result.meta.playerState
       );
 
+      queryClient.invalidateQueries({
+        queryKey: ["cars"],
+      });
+
+      setLastDefects(result.data.revealed);
+      setRevealedDefectsDialogVisible(true);
     },
 
     onError: (error) => {
@@ -331,6 +341,11 @@ export default function GarageScreen() {
     setSkipActiveRepairDialogVisible(false);
   }
 
+  function onRevealedDefectsDialogClose() {
+    setLastDefects([]);
+    setRevealedDefectsDialogVisible(false);
+  }
+
   function onMarket() {
     router.push({
       pathname: "/market",
@@ -411,6 +426,15 @@ export default function GarageScreen() {
           onClose={onInspectDialogClose}
           onInspect={onInspectConfirm}
         />
+      )}
+
+      {isRevealedDefectsDialogVisible && (
+        <RevealedDefectsDialog
+          visible={isRevealedDefectsDialogVisible}
+          onClose={onRevealedDefectsDialogClose}
+          defects={lastDefects}
+          make={selectedCar?.make || ''}
+          model={selectedCar?.model || ''}/>
       )}
     </ImageBackground>
   );

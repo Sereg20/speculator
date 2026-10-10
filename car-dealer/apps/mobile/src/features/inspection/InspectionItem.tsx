@@ -30,13 +30,12 @@ export function InspectionItem({
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     backgroundColor: colors.greyColor,
-    borderRadius: 8,
+    borderRadius: 6,
     overflow: "hidden",
     padding: 6,
-    alignItems: "center",
     justifyContent: "center",
+    height: 40
   },
 
   selected: {
@@ -49,7 +48,7 @@ const styles = StyleSheet.create({
 
   title: {
     color: colors.textMain,
-    fontWeight: "bold",    
+    fontSize: 12 
   },
 
   energy: {

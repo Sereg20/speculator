@@ -117,7 +117,9 @@ export type InspectCarPayload = {
 };
 
 type InspectCarResponse = {
-  data: RevealedDefect[];
+  data: {
+    revealed: RevealedDefect[]
+  };
   error: string | null;
   meta: ApiMeta;
 };

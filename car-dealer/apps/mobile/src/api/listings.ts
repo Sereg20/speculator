@@ -2,6 +2,13 @@ import { queryOptions } from "@tanstack/react-query";
 import { apiClient } from "./client";
 import { ApiMeta } from "./player";
 
+export type BuyerArchetype = 
+  | 'careful_buyer'
+  | 'bargain_hunter'
+  | 'impulsive_buyer'
+  | 'skeptic'
+  | 'enthusiast';
+
 export type SaleListing = {
   id: string;
   carId: string;
@@ -47,7 +54,7 @@ export async function deleteListing(listingId: string): Promise<void> {
 
 export type ListingInquiry = {
   id: string;
-  buyer_archetype: string;
+  buyer_archetype: BuyerArchetype;
   buyer_name: string;
   offered_price: number;
   message_text: string;

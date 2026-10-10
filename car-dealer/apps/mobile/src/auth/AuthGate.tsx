@@ -49,12 +49,10 @@ export function AuthGate({ children }: AuthGateProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const checkSession = useCallback(async () => {
-    debugger
     setStatus("checking");
     setErrorMessage(null);
 
     try {
-      debugger
       const token = await getToken();
 
       if (!token) {

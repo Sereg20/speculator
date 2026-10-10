@@ -1,12 +1,14 @@
 import { View, StyleSheet, Text, FlatList } from "react-native";
 import { colors } from "@/theme/colors";
 import { InspectionItem } from "./InspectionItem";
-import { InspectionToolWithStableId } from "@/api/market";
+import { CategoryId, InspectionToolWithStableId } from "@/api/market";
+import { Image } from "react-native";
+import { defectCategoryIcons } from "@/assets/images/icons/inspection_dialog/defectCategories";
 
 
 interface InspectionCategorySectionProps {
   title: string,
-  icon: string,
+  defectCategory: CategoryId,
   items: InspectionToolWithStableId[],
   refreshing: boolean,
   selectedItemId: string | null,
@@ -14,12 +16,17 @@ interface InspectionCategorySectionProps {
 }
 
 export function InspectionCategorySection({
-  title, icon, items, refreshing = false, selectedItemId, onSelect
+  title, defectCategory, items, refreshing = false, selectedItemId, onSelect
 }: InspectionCategorySectionProps) {
+
+  const defectIcon = defectCategoryIcons[defectCategory];
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
+        <View style={styles.imageContainer}>
+          <Image source={defectIcon} resizeMode="cover" style={styles.icon}/>
+        </View>
         <Text style={styles.title}>{title}</Text>
       </View>
       <View style={styles.toolsContainer}>
@@ -60,7 +67,24 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: '#0F1D26',
     paddingHorizontal: 4,
-    paddingVertical: 2
+    paddingVertical: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6
+  },
+
+  imageContainer: {
+    borderRadius: 4,
+    overflow: 'hidden',
+    width: 22,
+    height: 22,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  
+  icon: {
+    width: 21,
+    height: 21
   },
 
   title: {

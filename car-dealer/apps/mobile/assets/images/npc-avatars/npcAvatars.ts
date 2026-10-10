@@ -1,5 +1,6 @@
 // src/assets/npcAvatars.ts
 
+import { BuyerArchetype } from "@/api/listings";
 import { SellerArchetype } from "@/api/market";
 import { ImageSourcePropType } from "react-native";
 
@@ -14,4 +15,15 @@ export const npcAvatars: Record<
   private_owner: require("./avatar_private_owner_1.png"),
   shady_dealer: require("./avatar_shady_dealer_1.png"),
   urgent_sale: require("./avatar_urgent_sale_1.png"),
+} as const;
+
+export const npcBuyersAvatars: Record<
+  BuyerArchetype,
+  ImageSourcePropType
+> = {
+  careful_buyer: require("./avatar_merchant_1.png"),
+  bargain_hunter: require("./avatar_enthusiast_1.png"),
+  impulsive_buyer: require("./avatar_old_man_1.png"),
+  skeptic: require("./avatar_private_owner_1.png"),
+  enthusiast: require("./avatar_shady_dealer_1.png"),
 } as const;

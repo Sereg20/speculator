@@ -31,6 +31,9 @@ export default function BankScreen() {
         queryClient,
         result.meta.playerState
       );
+      queryClient.invalidateQueries({
+        queryKey: ["player" ,"me"],
+      });
     },
 
     onError: (error) => {

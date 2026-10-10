@@ -81,7 +81,6 @@ export default function MarketInspectionScreen() {
         result.meta.playerState
       );
       addMessage(result.data.dialogue, "npc");
-      setDialogLoading(false);
       setLastDefects(result.data.revealed);
       setAllDefects(allDefects => [...allDefects, ...result.data.revealed]);
       if(result.data.revealed.length > 0) {
@@ -118,13 +117,20 @@ export default function MarketInspectionScreen() {
         setChatDisabled(true);
       }
       setPurchaseDisabled(false);
-      setDialogLoading(false);
       addMessage(result.data.message, "npc");
     },
 
     onError: (error) => {
       setNegotiateDisabled(false);
-      addMessage("что-то я завтыкал. Давай-ка еще раз", "npc");
+      if (
+        error instanceof ApiError &&
+        error.status === 400 &&
+        error.body.error?.includes("energy")
+      ) {
+        addMessage('Что-то ты подустал. Приходи позже.', 'npc');
+      } else {
+        addMessage("что-то я завтыкал. Давай-ка еще раз", "npc");
+      }
     },
   });
 
@@ -202,6 +208,9 @@ export default function MarketInspectionScreen() {
   }, [initialDialogue]);
 
   function addMessage(text: string, type: DialogSpeakerType) {
+    if (type === 'npc') {
+      setDialogLoading(false);
+    }
     setMessages((previousMessages) => [
       ...previousMessages,
       {
