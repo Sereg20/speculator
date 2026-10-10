@@ -849,6 +849,7 @@ export async function computeDefectResaleMultiplier(carId) {
     SELECT resale_impact FROM defects
     WHERE car_id = ${carId}
       AND is_quick_fixed = false
+      AND is_properly_repaired = false
   `;
 
   let total = 0;

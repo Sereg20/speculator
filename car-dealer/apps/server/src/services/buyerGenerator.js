@@ -202,13 +202,7 @@ async function checkBuyerDefectDiscovery(carId, reputationScore, buyerRequested)
     SELECT d.id, d.qf_discovery_base, d.is_quick_fixed, d.detection_tier
     FROM defects d
     WHERE d.car_id = ${carId}
-      AND NOT EXISTS (
-        SELECT 1 FROM repair_jobs rj
-        WHERE rj.defect_id = d.id
-          AND rj.repair_type = 'proper'
-          AND rj.completed = true
-          AND rj.qf_failed = false
-      )
+      AND d.is_properly_repaired = false
       AND d.is_odometer_fraud = false
   `;
 

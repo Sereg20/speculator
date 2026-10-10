@@ -3,7 +3,9 @@ import {
   Text,
   StyleSheet,
   Pressable,
+  View,
 } from "react-native";
+import AntDesign from '@expo/vector-icons/AntDesign';
 
 
 interface NegotiateActionProps {
@@ -30,6 +32,13 @@ export function NegotiateAction({
     >
 
       <Text style={styles.text}>{text}</Text>
+      {energyCost > 0 &&
+        <View style={styles.energyContainer}>
+          <AntDesign name="thunderbolt" size={14} color={colors.textGold} style={styles.icon}/>
+          <Text style={styles.energyCost}>{energyCost}</Text>
+        </View>
+      }
+      
     </Pressable>
   );
 }
@@ -41,6 +50,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 8,
+    flexDirection: 'row',
+    gap: 6,
   },
 
   buttonPressed: {
@@ -55,7 +66,40 @@ const styles = StyleSheet.create({
     color: colors.textMain,
     fontSize: 12,
     fontWeight: 'bold',
-    textAlign: 'center'
+    textAlign: 'center',
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
+    textShadowOffset: {
+      width: 1,
+      height: 1,
+    },
+    textShadowRadius: 4,
+  },
+
+  energyContainer: {
+    flexDirection: 'row',
+    gap: 1,
+    alignItems: 'center'
+  },
+
+  energyCost: {
+    color: colors.textGold,
+    fontWeight: 'bold',
+    fontSize: 14,
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
+    textShadowOffset: {
+      width: 1,
+      height: 1,
+    },
+    textShadowRadius: 4,
+  },
+
+  icon: {
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
+    textShadowOffset: {
+      width: 1,
+      height: 1,
+    },
+    textShadowRadius: 4,
   }
 
 });

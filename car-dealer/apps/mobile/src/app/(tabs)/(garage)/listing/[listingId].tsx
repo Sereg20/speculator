@@ -14,6 +14,7 @@ import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { RevealedDefect } from "@/api/market";
 import { SellingListingDialog } from "@/components/dialog/SellingListingDialog";
+import { energyCost } from "@/constants/constants";
 
 
 export default function ListingInquiryScreen() {
@@ -211,10 +212,10 @@ export default function ListingInquiryScreen() {
 
         <View style={styles.globalActionsContainer}>
           <View style={styles.actionsContainer}>
-            <NegotiateAction disabled={sellDisabled} text={`ПРОДАТЬ\n(${inquiry?.offered_price})`} onPress={onSell} energyCost={2} color='#429958' />
-            <NegotiateAction disabled={negotiateDisabled} text={'ТОРГ'} onPress={onNegotiate} energyCost={2} color="#307DC1" />
-            <NegotiateAction disabled={rejectDisabled} text='ОТКАЗ' onPress={onReject} energyCost={2} color={colors.orangeButtonColor} />
-            <NegotiateAction disabled={quitDisabled} text='УЙТИ' onPress={onQuit} energyCost={2} color='#C5453C' />
+            <NegotiateAction disabled={sellDisabled} text={`ПРОДАТЬ\n(${inquiry?.offered_price})`} onPress={onSell} energyCost={0} color='#429958' />
+            <NegotiateAction disabled={negotiateDisabled} text={'ТОРГ'} onPress={onNegotiate} energyCost={energyCost.sellingNegotiate} color="#307DC1" />
+            <NegotiateAction disabled={rejectDisabled} text='ОТКАЗ' onPress={onReject} energyCost={0} color={colors.orangeButtonColor} />
+            <NegotiateAction disabled={quitDisabled} text='УЙТИ' onPress={onQuit} energyCost={0} color='#C5453C' />
 
           </View>
         </View>
@@ -222,7 +223,7 @@ export default function ListingInquiryScreen() {
       </View>
 
       <SellingListingDialog visible={isCarDetailsExpanded} defects={allDefects} car={listing} onClose={() => {setCarDetailsExpanded(false)}} finalPrice={finalPrice} purchasePrice={purchasePrice}/>
-      {isPriceModalVisible && <NegotiatePriceSelectorDialog visible={isPriceModalVisible} onClose={() => { setPriceModalVisible(false) }} onConfirm={onConfirmProposedPrice} initialPrice={listing?.asking_price || 0} maxPrice={listing?.asking_price || 0} minPrice={(inquiry?.offered_price || 0) + 1} />}
+      {isPriceModalVisible && <NegotiatePriceSelectorDialog visible={isPriceModalVisible} onClose={() => { setPriceModalVisible(false) }} onConfirm={onConfirmProposedPrice} initialPrice={listing?.asking_price || 0} maxPrice={listing?.asking_price || 0} minPrice={(inquiry?.offered_price || 0) + 1} originalPrice={listing?.asking_price || 0}/>}
       {isSuccessSellDialogDisplayed && <SuccessSellDialog listing={listing} visible={isSuccessSellDialogDisplayed} finalPrice={finalPrice} purchasePrice={purchasePrice} onClose={onSuccessSellDialogClose} />}
 
     </View>

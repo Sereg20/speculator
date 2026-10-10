@@ -144,6 +144,26 @@ export const REP_LISTING_EXPIRED     = -1;
 export const REP_PROPER_REPAIR_BONUS = +2;
 export const REP_QUICK_FIX_FAIL      = -12;
 
+// ─── Loan tiers (GMS §10.2) ──────────────────────────────────────────────────
+export const LOANS = {
+  small: {
+    principal:       1500,   // BYN added to cash on take
+    totalRepay:      1950,   // BYN total to repay (30% interest baked in)
+    termDays:        30,     // in-game days
+    dailyInstalment: 65,     // BYN/day auto-deducted
+    levelRequired:   1,
+  },
+  medium: {
+    principal:       4000,
+    totalRepay:      5600,   // 40% interest baked in
+    termDays:        40,
+    dailyInstalment: 140,
+    levelRequired:   5,
+  },
+};
+/** Reputation penalty per in-game day when a loan instalment can't be fully paid. */
+export const LOAN_MISSED_REP_PENALTY = -1;
+
 // Ad grant types (Phase 8 prep)
 export const AD_GRANT_TYPES = [
   'energy_refill',

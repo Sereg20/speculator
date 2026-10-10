@@ -32,13 +32,24 @@ async function getMe(request, reply) {
   const [player] = await sql`
     SELECT id, device_id, display_name, cash, xp, level, reputation_score,
            energy_current, garage_slots, in_game_day, cash_stress_active,
-           onboarding_complete, created_at, updated_at
+           onboarding_complete, created_at, updated_at,
+           loan_tier, loan_principal, loan_remaining, loan_daily_instalment, loan_started_at
     FROM players WHERE id = ${request.playerId}
   `;
 
   if (!player) {
     return reply.code(404).send({ data: null, error: 'Player not found', meta: null });
   }
+
+  const loan = player.loan_remaining > 0
+    ? {
+        tier:            player.loan_tier,
+        principal:       player.loan_principal,
+        remaining:       player.loan_remaining,
+        dailyInstalment: player.loan_daily_instalment,
+        startedAt:       player.loan_started_at,
+      }
+    : null;
 
   return reply.send({
     data: {
@@ -47,6 +58,7 @@ async function getMe(request, reply) {
       energy_max: energyMax,
       reputation_tier: reputationTier(player.reputation_score),
       xp_to_next_level: xpToNextLevel(player.xp, player.level),
+      loan,
     },
     error: null,
     meta: {

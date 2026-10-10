@@ -122,6 +122,7 @@ async function createListing(request, reply) {
         WHERE car_id = ${carId}
           AND is_revealed_to_player = true
           AND is_quick_fixed = false
+          AND is_properly_repaired = false
           AND proper_repair_cost IS NOT NULL
         LIMIT 1
       `;
@@ -643,9 +644,7 @@ async function _completeSale(playerId, listing, inquiry, finalPrice) {
       WHERE car_id = ${listing.car_id}
         AND is_revealed_to_player = true
         AND is_quick_fixed = false
-        AND id NOT IN (
-          SELECT defect_id FROM repair_jobs WHERE car_id = ${listing.car_id} AND completed = true AND repair_type = 'proper'
-        )
+        AND is_properly_repaired = false
     `;
     const allProperlyRepaired = (unrepaired?.cnt ?? 1) === 0;
     if (allProperlyRepaired) {

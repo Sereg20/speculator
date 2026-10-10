@@ -196,13 +196,15 @@ export async function startRepair(carId, defectId, repairType, playerId) {
       );
     }
 
-    // Fetch the defect — must be revealed
+    // Fetch the defect — must be revealed, not already quick-fixed or properly repaired
     const [defect] = await tx`
       SELECT id, defect_type, category, severity, proper_repair_cost, quick_fix_cost,
              repair_time_minutes, qf_success_base, is_odometer_fraud
       FROM defects
       WHERE id = ${defectId} AND car_id = ${carId}
-        AND is_revealed_to_player = true AND is_quick_fixed = false
+        AND is_revealed_to_player = true
+        AND is_quick_fixed = false
+        AND is_properly_repaired = false
     `;
     if (!defect) {
       throw Object.assign(
@@ -321,13 +323,11 @@ export async function startRepair(carId, defectId, repairType, playerId) {
       await tx`
         UPDATE repair_jobs SET completed = true WHERE id = ${job.id}
       `;
-      await tx`
-        UPDATE defects
-        SET is_quick_fixed = ${repairType === 'quick_fix'},
-            is_revealed_to_player = true
-        WHERE id = ${defectId}
-      `;
-      // Car state stays 'purchased' (no state change needed for immediate repair)
+      if (repairType === 'quick_fix') {
+        await tx`UPDATE defects SET is_quick_fixed = true WHERE id = ${defectId}`;
+      } else {
+        await tx`UPDATE defects SET is_properly_repaired = true WHERE id = ${defectId}`;
+      }
       return { ...job, completed: true, toolDiscountApplied: job.toolDiscountApplied };
     }
 
@@ -419,11 +419,10 @@ export async function completeRepairJob(job) {
         `;
       }
     } else {
-      // Proper repair: always succeeds — mark defect repaired
+      // Proper repair: always succeeds — mark defect as fully repaired
+      // (is_properly_repaired=true excludes it from all defect queries and buyer inspection)
       await tx`
-        UPDATE defects
-        SET is_quick_fixed = false
-        WHERE id = ${job.defect_id}
+        UPDATE defects SET is_properly_repaired = true WHERE id = ${job.defect_id}
       `;
     }
 

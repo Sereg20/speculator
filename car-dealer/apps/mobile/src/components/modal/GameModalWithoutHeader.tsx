@@ -7,6 +7,7 @@ import {
   View,
 } from "react-native";
 import { colors } from "@/theme/colors";
+import AntDesign from '@expo/vector-icons/AntDesign';
 
 interface GameModalWithoutHeaderProps {
   visible: boolean;
@@ -19,6 +20,7 @@ interface GameModalWithoutHeaderProps {
   closeColor?: string;
   confirmDisabled?: boolean;
   confirmHidden?: boolean;
+  energyCost?: number;
 }
 
 export function GameModalWithoutHeader({
@@ -31,7 +33,8 @@ export function GameModalWithoutHeader({
   closeText,
   closeColor = colors.redButtonColor,
   confirmDisabled,
-  confirmHidden
+  confirmHidden,
+  energyCost
 }: GameModalWithoutHeaderProps) {
   return (
     <Modal
@@ -84,6 +87,12 @@ export function GameModalWithoutHeader({
                 <Text style={styles.buttonText}>
                   {confirmText}
                 </Text>
+                {energyCost && (
+                  <View style={styles.energyCostContainer}>
+                    <Text style={styles.energyCost}>{energyCost}</Text>
+                    <AntDesign name="thunderbolt" size={15} color={colors.textGold} style={styles.energyIcon}/>
+                  </View>
+                )}
               </Pressable>
             }
           </View>
@@ -134,12 +143,20 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
+    flexDirection: 'row',
+    gap: 8
   },
 
   buttonText: {
     color: colors.textMain,
     fontSize: 14,
     fontWeight: "bold",
+    textShadowColor: "rgba(0, 0, 0, 0.2)",
+    textShadowOffset: {
+      width: 1,
+      height: 1,
+    },
+    textShadowRadius: 4,
   },
 
   pressed: {
@@ -149,4 +166,30 @@ const styles = StyleSheet.create({
   disabled: {
     opacity: 0.5,
   },
+
+  energyCostContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2
+  },
+
+  energyCost: {
+    color: colors.textMain,
+    fontWeight: 'bold',
+    textShadowColor: "rgba(0, 0, 0, 0.2)",
+    textShadowOffset: {
+      width: 1,
+      height: 1,
+    },
+    textShadowRadius: 4,
+  },
+
+  energyIcon: {
+    textShadowColor: "rgba(0, 0, 0, 0.2)",
+    textShadowOffset: {
+      width: 1,
+      height: 1,
+    },
+    textShadowRadius: 4,
+  }
 });

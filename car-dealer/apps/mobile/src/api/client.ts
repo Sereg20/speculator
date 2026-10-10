@@ -26,8 +26,7 @@ export async function apiClient<T>(
   endpoint: string,
   options?: RequestInit
 ): Promise<T> {
-  // const token = await getToken();
-  const token = process.env.EXPO_PUBLIC_API_TOKEN;
+  const token = await getToken();
 
   const response = await fetch(`${API_URL}${endpoint}`, {
     ...options,

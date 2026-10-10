@@ -19,6 +19,10 @@ export default function TabsLayout() {
     return <Text>Loading...</Text>
   }
 
+  if(error) {
+    return <Text>Error</Text>
+  }
+
   function onLvlPress() {
     router.push({
       pathname: '/(tabs)/profile'

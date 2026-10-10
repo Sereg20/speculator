@@ -51,6 +51,7 @@ async function getCar(request, reply) {
       ON rj.defect_id = d.id AND rj.completed = false AND rj.qf_failed = false
     WHERE d.car_id = ${carId}
       AND d.is_revealed_to_player = true
+      AND d.is_properly_repaired = false
     ORDER BY d.severity DESC, d.detection_tier ASC
   `;
 
@@ -147,6 +148,7 @@ async function getMyCars(request, reply) {
         ON rj.defect_id = d.id AND rj.completed = false AND rj.qf_failed = false
       WHERE d.car_id = ANY(${carIds})
         AND d.is_revealed_to_player = true
+        AND d.is_properly_repaired = false
       ORDER BY d.severity DESC, d.detection_tier ASC
     `;
     for (const d of labelDefect(allDefects)) {
@@ -242,6 +244,7 @@ async function getDefects(request, reply) {
       ON rj.defect_id = d.id AND rj.completed = false AND rj.qf_failed = false
     WHERE d.car_id = ${carId}
       AND d.is_revealed_to_player = true
+      AND d.is_properly_repaired = false
     ORDER BY d.severity DESC, d.detection_tier ASC
   `;
 

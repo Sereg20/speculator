@@ -11,6 +11,22 @@ interface SkillListItemProps {
   onPress: (skill: PlayerSkill) => void
 }
 
+function getTierTitle(tier: number) {
+  switch (tier) {
+    case 1:
+      return 'Очевидный';
+      break;
+    case 2:
+      return 'Заметный';
+      break;
+    case 3:
+      return 'Скрытый';
+      break;
+    default:
+      return 'Заметный';
+  }
+}
+
 export function SkillListItem({
   skill, onPress
 }: SkillListItemProps) {
@@ -38,12 +54,19 @@ export function SkillListItem({
             {skill.description}
           </Text>
 
-          {!skill.owned && (
+          
             <View style={styles.footer}>
-              <FontAwesome5 name="bitcoin" size={16} color={colors.textGold} />
-              <Text style={styles.price}> {skill.byn_price} BYN</Text>
+              <View style={styles.tierContainer}>
+                <Text style={styles.tier}>Вид дефектов: {getTierTitle(skill.tier)}</Text>
+              </View>
+              {!skill.owned && (
+                <View style={styles.priceContainer}>
+                  <FontAwesome5 name="bitcoin" size={16} color={colors.textGold} />
+                  <Text style={styles.price}> {skill.byn_price} BYN</Text>
+                </View>
+              )}
             </View>
-          )}
+          
         </View>
       </View>
     </ListItem>
@@ -88,7 +111,7 @@ const styles = StyleSheet.create({
 
   footer: {
     flexDirection: "row",
-    justifyContent: "flex-end",
+    justifyContent: "space-between",
     alignItems: "center",
     marginTop: 4,
   },
@@ -98,8 +121,24 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
 
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+
   price: {
     color: colors.textGold,
     fontWeight: "bold",
   },
+
+  tierContainer: {
+    backgroundColor: colors.greyColor,
+    borderRadius: 4,
+    paddingHorizontal: 4,
+    paddingVertical: 2
+  },
+
+  tier: {
+    color: colors.textMain
+  }
 });

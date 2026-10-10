@@ -14,6 +14,12 @@ export type Player = {
   reputation_tier: string;
   xp_to_next_level: number;
   energy_max: number;
+  loan: unknown;
+  loan_daily_instalment: number;
+  loan_principal: number;
+  loan_remaining: number;
+  loan_started_at: string | null;
+  loan_tier: string| null;
 };
 
 export type PlayerState = {

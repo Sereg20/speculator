@@ -18,6 +18,7 @@ import { RevealedDefectsDialog } from "@/features/inspection/RevealedDefectsDial
 import { updatePlayerState } from "@/api/playerState";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { CarDetailsDialog } from "@/components/dialog/CarDetailsDialog";
+import { energyCost } from "@/constants/constants";
 
 const initMessage: IDialogMessage = {
   id: "1",
@@ -51,6 +52,7 @@ export default function MarketInspectionScreen() {
   const [isInspectModalVisible, setInspectModalVisible] = useState<boolean>(false);
   const [isSuccessPurchaseVisible, setSuccessPurchaseVisible] = useState<boolean>(false);
   const [currentPrice, setCurrentPrice] = useState<number>(listing?.asking_price || 0);
+  const [originalPrice, setOriginalPrice] = useState<number>(listing?.asking_price || 0);
   const [isRevealedDefectsDialogVisible, setRevealedDefectsDialogVisible] = useState<boolean>(false);
   const [isCarDetailsExpanded, setCarDetailsExpanded] = useState<boolean>(false);
   const [isDialogLoading, setDialogLoading] = useState<boolean>(true);
@@ -107,6 +109,7 @@ export default function MarketInspectionScreen() {
       );
       if (result.data.outcome === 'counter' && result.data.sellerCounterPrice) {
         setCurrentPrice(result.data.sellerCounterPrice);
+        setOriginalPrice(result.meta.originalPrice);
         setNegotiateDisabled(false);
       } else if (result.data.outcome === 'accepted' && result.data.finalPrice) {
         setCurrentPrice(result.data.finalPrice);
@@ -307,19 +310,44 @@ export default function MarketInspectionScreen() {
 
         <View style={styles.globalActionsContainer}>
           <View style={styles.actionsContainer}>
-            <NegotiateAction disabled={negotiateDisabled} text={'ТОРГ'} onPress={onNegotiate} energyCost={2} color={colors.orangeButtonColor} />
-            <NegotiateAction disabled={chatDisabled} text={'СПРОСИТЬ'} onPress={onChat} energyCost={2} color='#26b39b' />
+            <NegotiateAction
+              disabled={negotiateDisabled}
+              text={'ТОРГ'}
+              onPress={onNegotiate}
+              energyCost={energyCost.marketNegotiate}
+              color='#307DC1' />
+            <NegotiateAction
+              disabled={chatDisabled}
+              text={'СПРОСИТЬ'}
+              onPress={onChat}
+              energyCost={energyCost.marketChat}
+              color='#26b39b' />
           </View>
           <View style={styles.actionsContainer}>
-            <NegotiateAction disabled={purchaseDisabled} text={`КУПИТЬ\n(${currentPrice})`} onPress={onBuy} energyCost={2} color='#429958' />
-            <NegotiateAction disabled={preInspectDisabled} text={'ПРОВЕРИТЬ'} onPress={onInspect} energyCost={2} color='#307DC1' />
-            <NegotiateAction disabled={quitDisabled} text='УЙТИ' onPress={onQuit} energyCost={2} color='#C5453C' />
+            <NegotiateAction
+              disabled={purchaseDisabled}
+              text={`КУПИТЬ\n(${currentPrice})`}
+              onPress={onBuy}
+              energyCost={0}
+              color='#429958' />
+            <NegotiateAction
+              disabled={preInspectDisabled}
+              text={'ПРОВЕРИТЬ'}
+              onPress={onInspect}
+              energyCost={0}
+              color={colors.orangeButtonColor} />
+            <NegotiateAction
+              disabled={quitDisabled}
+              text='УЙТИ'
+              onPress={onQuit}
+              energyCost={0}
+              color='#C5453C' />
           </View>
         </View>
 
       </View>
 
-      {isPriceModalVisible && <NegotiatePriceSelectorDialog visible={isPriceModalVisible} onClose={() => { setPriceModalVisible(false) }} onConfirm={onConfirmProposedPrice} initialPrice={currentPrice} minPrice={minPrice} />}
+      {isPriceModalVisible && <NegotiatePriceSelectorDialog visible={isPriceModalVisible} onClose={() => { setPriceModalVisible(false) }} onConfirm={onConfirmProposedPrice} initialPrice={currentPrice} minPrice={minPrice} originalPrice={originalPrice}/>}
       <InspectDialog listingId={id} visible={isInspectModalVisible} onClose={() => { setInspectModalVisible(false) }} onPreInspect={onPreInspect} />
       <SuccessPurchaseDialog car={listing} visible={isSuccessPurchaseVisible} finalPrice={currentPrice} onClose={onSuccessPurchaseDialogClose} onConfirm={onSuccessPurchaseDialogConfirm}/>
       <RevealedDefectsDialog visible={isRevealedDefectsDialogVisible} onClose={() => {setRevealedDefectsDialogVisible(false)}} defects={lastDefects} make={listing?.make || ''} model={listing?.model || ''}/>

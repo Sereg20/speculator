@@ -32,6 +32,7 @@ import {
   HOLDING_COST_LATE,
   CASH_STRESS_ENTRY,
   CASH_STRESS_EXIT,
+  LOAN_MISSED_REP_PENALTY,
 } from '../config.js';
 
 const INGAME_DAY_REAL_MS = INGAME_DAY_REAL_MINUTES * 60 * 1000;
@@ -66,7 +67,8 @@ async function tickPlayer(player, log) {
     // Re-lock the player row with the latest state
     const [p] = await tx`
       SELECT id, level, cash, garage_slots, in_game_day,
-             last_day_ticked_at, cash_stress_active
+             last_day_ticked_at, cash_stress_active,
+             loan_remaining, loan_daily_instalment, reputation_score
       FROM players
       WHERE id = ${player.id}
       FOR UPDATE
@@ -128,22 +130,51 @@ async function tickPlayer(player, log) {
       toolUpkeepDeduct = monthlyUpkeep * newPeriods;
     }
 
-    const totalDeduct = holdingDeduct + rentDeduct + toolUpkeepDeduct;
+    const baseDeduct = holdingDeduct + rentDeduct + toolUpkeepDeduct;
+    const cashAfterBase = p.cash - baseDeduct;
+
+    // ── 4. Loan repayment ────────────────────────────────────────────
+    let loanDeduct = 0;
+    let loanRepPenalty = 0;
+    let newLoanRemaining = p.loan_remaining;
+
+    if (p.loan_remaining > 0) {
+      // Total due this tick (instalment × days), capped at outstanding balance
+      const due = Math.min(p.loan_daily_instalment * lockedElapsed, p.loan_remaining);
+      // Pay what we can from cash remaining after other costs
+      const canPay = Math.max(0, cashAfterBase);
+      loanDeduct = Math.min(due, canPay);
+      const unpaid = due - loanDeduct;
+      newLoanRemaining = p.loan_remaining - loanDeduct;
+      if (unpaid > 0) {
+        loanRepPenalty = LOAN_MISSED_REP_PENALTY * lockedElapsed;
+      }
+    }
+
+    const totalDeduct = baseDeduct + loanDeduct;
     const newCash = p.cash - totalDeduct;
     const newCashStress = newCash < CASH_STRESS_ENTRY
       ? true
       : newCash > CASH_STRESS_EXIT
         ? false
         : p.cash_stress_active;
+    const newReputation = Math.max(0, p.reputation_score + loanRepPenalty);
+    const loanCleared = p.loan_remaining > 0 && newLoanRemaining <= 0;
 
     // ── Apply all changes ────────────────────────────────────────────
     await tx`
       UPDATE players
-      SET in_game_day        = ${daysAfter},
-          last_day_ticked_at = NOW(),
-          cash               = GREATEST(0, ${newCash}),
-          cash_stress_active = ${newCashStress},
-          updated_at         = NOW()
+      SET in_game_day            = ${daysAfter},
+          last_day_ticked_at     = NOW(),
+          cash                   = GREATEST(0, ${newCash}),
+          cash_stress_active     = ${newCashStress},
+          reputation_score       = ${newReputation},
+          loan_remaining          = ${newLoanRemaining},
+          loan_daily_instalment  = CASE WHEN ${loanCleared} THEN 0 ELSE loan_daily_instalment END,
+          loan_principal         = CASE WHEN ${loanCleared} THEN 0 ELSE loan_principal END,
+          loan_tier              = CASE WHEN ${loanCleared} THEN NULL ELSE loan_tier END,
+          loan_started_at        = CASE WHEN ${loanCleared} THEN NULL ELSE loan_started_at END,
+          updated_at             = NOW()
       WHERE id = ${p.id}
     `;
 
@@ -175,10 +206,21 @@ async function tickPlayer(player, log) {
         )
       `;
     }
+    if (loanDeduct > 0) {
+      await tx`
+        INSERT INTO transactions (player_id, type, amount, reference_id, description)
+        VALUES (
+          ${p.id}, 'loan_repayment', ${-loanDeduct}, NULL,
+          ${loanCleared
+            ? `Кредит полностью погашен: ${loanDeduct} BYN`
+            : `Платёж по кредиту: ${loanDeduct} BYN (остаток: ${newLoanRemaining} BYN)`}
+        )
+      `;
+    }
 
-    if (totalDeduct > 0) {
+    if (totalDeduct > 0 || loanRepPenalty < 0) {
       log.info(
-        { playerId: p.id, days: lockedElapsed, holdingDeduct, rentDeduct, toolUpkeepDeduct },
+        { playerId: p.id, days: lockedElapsed, holdingDeduct, rentDeduct, toolUpkeepDeduct, loanDeduct, loanRepPenalty },
         '[holdingCost] Charged player',
       );
     }
@@ -193,7 +235,8 @@ export function startHoldingCostJob(log) {
       // Fetch players who are due for at least one tick
       players = await sql`
         SELECT id, level, cash, garage_slots, in_game_day,
-               last_day_ticked_at, cash_stress_active
+               last_day_ticked_at, cash_stress_active,
+               loan_remaining, loan_daily_instalment, reputation_score
         FROM players
         WHERE last_day_ticked_at <= NOW() - (${INGAME_DAY_REAL_MINUTES} || ' minutes')::interval
       `;

@@ -88,7 +88,8 @@ const styles = StyleSheet.create({
   },
 
   listContent: {
-    marginTop: 12
+    marginTop: 12,
+    gap: 4
   },
 
   emptyContainer: {

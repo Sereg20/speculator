@@ -5,6 +5,7 @@ import { colors } from "@/theme/colors";
 import { InspectionCategorySection } from "./InspectionCategorySection";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { energyCost } from "@/constants/constants";
 
 interface InspectDialogProps {
   listingId: string,
@@ -65,7 +66,8 @@ export function InspectDialog({
       confirmHidden={false}
       closeText="ОТМЕНА"
       closeColor={colors.greyButton}
-      confirmText="НАЧАТЬ ОСМОТР"
+      confirmText="ОСМОТР"
+      energyCost={energyCost.marketPreInspect}
       confirmColor={colors.blueButtonColor}
     >
       <View style={styles.container}>

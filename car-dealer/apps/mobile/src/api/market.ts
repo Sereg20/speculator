@@ -148,7 +148,9 @@ export type NegotiateResult = {
 type NegotiateResponse = {
   data: NegotiateResult;
   error: unknown | null;
-  meta: ApiMeta;
+  meta: ApiMeta & {
+    originalPrice: number
+  };
 };
 
 export const negotiateListing = async (

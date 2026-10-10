@@ -3,7 +3,9 @@ import * as SecureStore from "expo-secure-store";
 const TOKEN_KEY = "auth_token";
 
 export async function getToken(): Promise<string | null> {
-  return SecureStore.getItemAsync(TOKEN_KEY);
+  const token = process.env.EXPO_PUBLIC_API_TOKEN as string;
+  return token;
+  // return SecureStore.getItemAsync(TOKEN_KEY);
 }
 
 export async function setToken(token: string): Promise<void> {
