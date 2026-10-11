@@ -6,6 +6,7 @@ import AntDesign from '@expo/vector-icons/AntDesign';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import Entypo from '@expo/vector-icons/Entypo';
 import {CircularProgressBase}  from 'react-native-circular-progress-indicator';
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 
 import { useQuery } from "@tanstack/react-query";
@@ -18,11 +19,12 @@ interface GameHeaderProps {
 }
 
 export function GameHeader({onLvlPress, onCashPress, onEnergyPress}: GameHeaderProps) {
+  const insets = useSafeAreaInsets();
   const { data: player } = useQuery(playerQuery());
   const xpProgress = player!.xp / (player!.xp + player!.xp_to_next_level) * 100;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, {paddingTop: insets.top}]}>
       {/* Level + XP */}
       <Pressable onPress={onLvlPress}>
         <CircularProgressBase

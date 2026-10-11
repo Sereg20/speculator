@@ -15,17 +15,28 @@ function getTierTitle(tier: number) {
   switch (tier) {
     case 1:
       return 'Очевидный';
-      break;
     case 2:
       return 'Заметный';
-      break;
     case 3:
       return 'Скрытый';
-      break;
     default:
-      return 'Заметный';
+      return '';
   }
 }
+
+function getTierColor(tier: number) {
+  switch (tier) {
+    case 1:
+      return colors.textGreen;
+    case 2:
+      return colors.orangeButtonColor;
+    case 3:
+      return colors.textRed;
+    default:
+      return colors.textMain;
+  }
+}
+
 
 export function SkillListItem({
   skill, onPress
@@ -57,7 +68,7 @@ export function SkillListItem({
           
             <View style={styles.footer}>
               <View style={styles.tierContainer}>
-                <Text style={styles.tier}>Вид дефектов: {getTierTitle(skill.tier)}</Text>
+                <Text style={styles.tier}>Вид дефектов: <Text style={{fontWeight: 'bold', color: getTierColor(skill.tier)}}>{getTierTitle(skill.tier)}</Text></Text>
               </View>
               {!skill.owned && (
                 <View style={styles.priceContainer}>

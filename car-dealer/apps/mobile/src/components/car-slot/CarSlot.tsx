@@ -1044,16 +1044,6 @@ const styles = StyleSheet.create({
 
     borderWidth: 2,
     borderColor: colors.textGold,
-
-    shadowColor: "#D79820",
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    shadowOpacity: 0.16,
-    shadowRadius: 5,
-
-    elevation: 3,
   },
 
   inquiryButtonFallback: {
@@ -1067,16 +1057,6 @@ const styles = StyleSheet.create({
 
     borderWidth: 2,
     borderColor: colors.textGray,
-
-    shadowColor: "#D79820",
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    shadowOpacity: 0.16,
-    shadowRadius: 5,
-
-    elevation: 3,
   },
 
   inquiryIcon: {

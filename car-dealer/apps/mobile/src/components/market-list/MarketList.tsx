@@ -72,6 +72,12 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "700",
     color: colors.textMain,
+    textShadowColor: "rgba(0, 0, 0, 0.4)",
+    textShadowOffset: {
+      width: 1,
+      height: 1,
+    },
+    textShadowRadius: 4,
   },
 
   refreshButtonPressed: {

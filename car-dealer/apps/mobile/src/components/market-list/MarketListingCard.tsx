@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
 
   details: {
     color: colors.textBlack,
-    fontSize: 16
+    fontSize: 14
   },
 
   footer: {
@@ -109,8 +109,13 @@ const styles = StyleSheet.create({
   price: {
     color: colors.textBlack,
     fontWeight: 'bold',
-    fontSize: 20,
-    paddingVertical: 5
+    fontSize: 18,
+    textShadowColor: "rgba(0, 0, 0, 0.1)",
+    textShadowOffset: {
+      width: 1,
+      height: 1,
+    },
+    textShadowRadius: 4,
   },
 
   viewButton: {
@@ -118,7 +123,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     justifyContent: 'center',
     paddingHorizontal: 6,
-    height: '100%'
+    paddingVertical: 6
   },
 
   viewButtonPressed: {
@@ -128,7 +133,13 @@ const styles = StyleSheet.create({
   viewText: {
     color: colors.textMain,
     fontWeight: 'bold',
-    fontSize: 16
+    fontSize: 14,
+    textShadowColor: "rgba(0, 0, 0, 0.2)",
+    textShadowOffset: {
+      width: 1,
+      height: 1,
+    },
+    textShadowRadius: 4,
   }
  
 });
