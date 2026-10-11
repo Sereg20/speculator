@@ -53,8 +53,8 @@ export function NegotiatePriceSelectorDialog({
       />
       <View style={styles.infoContainer}>
         <View style={styles.markupBlock}>
-          <Text style={styles.infoLabel}>Скидка: </Text>
-          <Text style={[styles.markup, markup > 0 ? styles.markupPositive : styles.markupNegative]}>{markup} BYN ({markupPercent}%)</Text>
+          <Text style={styles.infoLabel}>Скидка:  </Text>
+          <Text style={styles.markup}>{markup} BYN ({markupPercent}%)</Text>
         </View>
       </View>
     </GameModal>
@@ -87,15 +87,7 @@ const styles = StyleSheet.create({
 
   markup: {
     fontSize: 16,
-    fontWeight: 'bold'
+    fontWeight: 'bold',
+    color: colors.textGold
   },
-
-  markupPositive: {
-    color: colors.textGreen
-  },
-
-  markupNegative: {
-    color: colors.textMain
-  },
-
 });

@@ -87,7 +87,7 @@ export function GameModalWithoutHeader({
                 <Text style={styles.buttonText}>
                   {confirmText}
                 </Text>
-                {energyCost && (
+                {!!energyCost && (
                   <View style={styles.energyCostContainer}>
                     <Text style={styles.energyCost}>{energyCost}</Text>
                     <AntDesign name="thunderbolt" size={15} color={colors.textGold} style={styles.energyIcon}/>

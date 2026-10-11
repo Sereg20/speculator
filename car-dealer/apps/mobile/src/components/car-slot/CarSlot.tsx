@@ -7,6 +7,7 @@ import {
   FlatList,
   Dimensions,
 } from "react-native";
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { colors } from "@/theme/colors";
 import { Car } from "@/api/cars";
 import { DefectItemIcon } from "./DefectItemIcon";
@@ -429,10 +430,7 @@ export function CarSlot({
                   BYN
                 </Text>
               </View>
-
-              <Text style={styles.inquiryArrow}>
-                →
-              </Text>
+              <MaterialIcons name="navigate-next" size={24} color={colors.textGold} />
             </Pressable>
           )}
           {car.state === "listed_for_sale" && !activeInquiry && (
@@ -1139,12 +1137,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "bold",
     marginTop: 1,
-  },
-
-  inquiryArrow: {
-    color: colors.textGold,
-    fontSize: 18,
-    fontWeight: "900",
   },
 
   /*

@@ -1,12 +1,11 @@
 import {  View, StyleSheet, Text } from "react-native";
-import { CategoryId, InspectionActionId, inspectionToolsQuery } from "@/api/market";
+import { CategoryId, InspectionActionId } from "@/api/market";
 import { GameModalWithoutHeader } from "../../components/modal/GameModalWithoutHeader";
 import { colors } from "@/theme/colors";
 import { InspectionCategorySection } from "./InspectionCategorySection";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { carInspectionToolsQuery } from "@/api/cars";
-import { energyCost } from "@/constants/constants";
 
 interface PurchasedCarInspectDialogProps {
   carId: string,
@@ -19,14 +18,11 @@ export function PurchasedCarInspectDialog({
   carId, visible, onClose, onInspect
 }: PurchasedCarInspectDialogProps) {
   const [selectedToolId, setSelectedToolId] = useState<string | null>(null);
+  const [selectedEnergyCost, setSelectedEnergyCost] = useState<number>(0);
 
   const { data: tools = [], isLoading } = useQuery(
     carInspectionToolsQuery(carId)
   );
-
-  useEffect(() => {
-    setSelectedToolId(null);
-  }, [visible]);
 
   if(isLoading) {
     
@@ -46,8 +42,9 @@ export function PurchasedCarInspectDialog({
   const electricalInspectionTools = getToolsForCategory("electrical");
   const interiorInspectionTools = getToolsForCategory("interior");
 
-  function onInspectionToolSelect (stableId: string) {
+  function onInspectionToolSelect (stableId: string, energyCost: number) {
     setSelectedToolId(stableId);
+    setSelectedEnergyCost(energyCost);
   }
 
   function onConfirm () {
@@ -69,7 +66,7 @@ export function PurchasedCarInspectDialog({
       closeColor={colors.greyButton}
       confirmText="ОСМОТР"
       confirmColor={colors.blueButtonColor}
-      energyCost={energyCost.inspect}
+      energyCost={selectedEnergyCost}
     >
       <View style={styles.container}>
         <Text style={styles.title}>ДИАГНОСТИКА АВТОМОБИЛЯ</Text>

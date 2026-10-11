@@ -18,15 +18,12 @@ export function InspectDialog({
   listingId, visible, onClose, onPreInspect
 }: InspectDialogProps) {
   const [selectedToolId, setSelectedToolId] = useState<string | null>(null);
+  const [selectedEnergyCost, setSelectedEnergyCost] = useState<number>(0);
 
   const { data: tools = [], isLoading } = useQuery(
     inspectionToolsQuery(listingId)
   );
-
-  useEffect(() => {
-    setSelectedToolId(null);
-  }, [visible]);
-
+  
   if(isLoading) {
     
   }
@@ -45,7 +42,8 @@ export function InspectDialog({
   const electricalInspectionTools = getToolsForCategory("electrical");
   const interiorInspectionTools = getToolsForCategory("interior");
 
-  function onInspectionToolSelect (stableId: string) {
+  function onInspectionToolSelect (stableId: string, energyCost: number) {
+    setSelectedEnergyCost(energyCost);
     setSelectedToolId(stableId);
   }
 
@@ -67,7 +65,7 @@ export function InspectDialog({
       closeText="ОТМЕНА"
       closeColor={colors.greyButton}
       confirmText="ОСМОТР"
-      energyCost={energyCost.marketPreInspect}
+      energyCost={selectedEnergyCost}
       confirmColor={colors.blueButtonColor}
     >
       <View style={styles.container}>

@@ -357,7 +357,7 @@ export default function MarketInspectionScreen() {
       </View>
 
       {isPriceModalVisible && <NegotiatePriceSelectorDialog visible={isPriceModalVisible} onClose={() => { setPriceModalVisible(false) }} onConfirm={onConfirmProposedPrice} initialPrice={currentPrice} minPrice={minPrice} originalPrice={originalPrice}/>}
-      <InspectDialog listingId={id} visible={isInspectModalVisible} onClose={() => { setInspectModalVisible(false) }} onPreInspect={onPreInspect} />
+      {isInspectModalVisible && <InspectDialog listingId={id} visible={isInspectModalVisible} onClose={() => { setInspectModalVisible(false) }} onPreInspect={onPreInspect} />}
       <SuccessPurchaseDialog car={listing} visible={isSuccessPurchaseVisible} finalPrice={currentPrice} onClose={onSuccessPurchaseDialogClose} onConfirm={onSuccessPurchaseDialogConfirm}/>
       <RevealedDefectsDialog visible={isRevealedDefectsDialogVisible} onClose={() => {setRevealedDefectsDialogVisible(false)}} defects={lastDefects} make={listing?.make || ''} model={listing?.model || ''}/>
       <CarDetailsDialog visible={isCarDetailsExpanded} defects={allDefects} car={listing} onClose={() => {setCarDetailsExpanded(false)}}/>

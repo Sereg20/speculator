@@ -12,7 +12,7 @@ interface InspectionCategorySectionProps {
   items: InspectionToolWithStableId[],
   refreshing: boolean,
   selectedItemId: string | null,
-  onSelect: (id: string) => void
+  onSelect: (id: string, energyCost: number) => void
 }
 
 export function InspectionCategorySection({
@@ -34,7 +34,7 @@ export function InspectionCategorySection({
           data={items}
           keyExtractor={(item) => item.stableId}
           renderItem={({ item }) => (
-            <InspectionItem selected={item.stableId === selectedItemId} item={item} onPress={() => onSelect(item.stableId)} />
+            <InspectionItem selected={item.stableId === selectedItemId} item={item} onPress={() => onSelect(item.stableId, item.energy)} />
           )}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
