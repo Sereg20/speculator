@@ -549,12 +549,12 @@ const styles = StyleSheet.create({
 
     backgroundColor: "rgba(5, 15, 17, 0.82)",
 
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: "rgba(242, 184, 63, 0.48)",
   },
 
   slotBadgeText: {
-    color: "#F4C55B",
+    color: colors.textGold,
 
     fontSize: 12,
     fontWeight: "900",
@@ -578,7 +578,7 @@ const styles = StyleSheet.create({
 
     backgroundColor: "rgba(5, 15, 17, 0.84)",
 
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: "rgba(255,255,255,0.12)",
   },
 

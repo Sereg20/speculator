@@ -14,10 +14,10 @@ import { requireAuth } from '../middleware/auth.js';
 import {
   SKIP_ENERGY_MINUTES_PER_POINT,
   SKIP_ENERGY_MAX,
+  ENERGY_COST_REPAIR,
 } from '../config.js';
 
-// Energy cost per GMS §1.3
-const ENERGY_COST_REPAIR = 3;
+
 
 /**
  * POST /cars/:carId/repairs

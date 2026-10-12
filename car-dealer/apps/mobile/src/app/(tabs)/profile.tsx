@@ -23,6 +23,8 @@ import {
 import { colors } from "@/theme/colors";
 import { spacing } from "@/theme/spacing";
 import { typography } from "@/theme/typography";
+import Entypo from '@expo/vector-icons/Entypo';
+
 
 const playerAvatar = require("../../../assets/images/playerAvatar.png");
 
@@ -38,6 +40,64 @@ function formatNumber(value: number): string {
 
 function formatMoney(value: number): string {
   return `${formatNumber(value)} BYN`;
+}
+
+function getTierTitle(tier: number) {
+  switch (tier) {
+    case 0:
+      return 'Базовый';
+    case 1:
+      return 'Очевидный';
+    case 2:
+      return 'Заметный';
+    case 3:
+      return 'Скрытый';
+    default:
+      return '';
+  }
+}
+
+function getTierColor(tier: number) {
+  switch (tier) {
+    case 0:
+      return colors.blueButtonColor;
+    case 1:
+      return colors.textGreen;
+    case 2:
+      return colors.orangeButtonColor;
+    case 3:
+      return colors.textRed;
+    default:
+      return colors.textMain;
+  }
+}
+
+function getSkillTypeText(skillType: string) {
+  switch (skillType) {
+    case 'inspection':
+      return 'диагностика'
+    case 'negotiation':
+      return 'торг';
+    case 'repair':
+      return 'ремонт'
+  }
+}
+
+function getEquipmentCategoryText(category: string) {
+  switch (category) {
+    case 'body':
+      return 'кузов'
+    case 'engine':
+      return 'двигатель';
+    case 'transmission':
+      return 'трансмиссия';
+    case 'electrical':
+      return 'электрика'
+    case 'interior':
+      return 'салон';
+    case 'suspension':
+      return 'подвеска'
+  }
 }
 
 function StatCard({
@@ -66,13 +126,18 @@ function SkillItem({
   return (
     <View style={styles.listItem}>
       <View style={styles.listItemIcon}>
-        <Text style={styles.listItemIconText}>✓</Text>
+        <Text style={styles.listItemIconText}>
+          <Entypo name="check" size={20} color={colors.blueButtonColor} />
+        </Text>
       </View>
 
       <View style={styles.listItemContent}>
         <Text style={styles.listItemTitle}>
           {skill.name}
         </Text>
+        {(skill.skill_type === 'inspection' || skill.skill_type === 'repair') && <Text style={styles.tierText}>
+          {getTierTitle(skill.tier)}
+        </Text>}
 
         <Text style={styles.listItemDescription}>
           {skill.description}
@@ -81,17 +146,9 @@ function SkillItem({
         <View style={styles.badgesRow}>
           <View style={styles.badge}>
             <Text style={styles.badgeText}>
-              Уровень {skill.tier}
+              {getSkillTypeText(skill.skill_type)}
             </Text>
           </View>
-
-          {skill.skill_type ? (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>
-                {skill.skill_type}
-              </Text>
-            </View>
-          ) : null}
         </View>
       </View>
     </View>
@@ -115,7 +172,7 @@ function EquipmentItem({
         </Text>
 
         <Text style={styles.listItemDescription}>
-          {equipment.detection_bonus}
+           Шанс обнаружения неисправности: +{equipment.detection_bonus}
         </Text>
 
         {equipment.defect_categories_targeted.length > 0 ? (
@@ -127,7 +184,7 @@ function EquipmentItem({
                   style={styles.badge}
                 >
                   <Text style={styles.badgeText}>
-                    {category}
+                    {getEquipmentCategoryText(category)}
                   </Text>
                 </View>
               ),
@@ -662,14 +719,19 @@ const styles = StyleSheet.create({
     ...typography.bodyMedium,
     color: colors.textMain,
     fontSize: 16,
+    fontWeight: 'bold'
+  },
+
+  tierText: {
+    color: colors.textGray,
+    fontSize: 11,
   },
 
   listItemDescription: {
     ...typography.body,
-    color: colors.greyColor,
+    color: colors.textMain,
     fontSize: 13,
-    lineHeight: 18,
-    marginTop: 4,
+    marginTop: 8,
   },
 
   badgesRow: {
@@ -683,12 +745,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
-    backgroundColor: "#303030",
+    backgroundColor: "#4c5052",
   },
 
   badgeText: {
     ...typography.body,
-    color: colors.greyColor,
+    color: colors.textMain,
     fontSize: 11,
   },
 

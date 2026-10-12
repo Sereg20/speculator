@@ -10,10 +10,18 @@
 
 import { sql } from '../db/client.js';
 import { requireAuth } from '../middleware/auth.js';
-import { INGAME_DAY_REAL_MINUTES } from '../config.js';
+import { INGAME_DAY_REAL_MINUTES, ENERGY_COST_REPAIR } from '../config.js';
 import { labelDefect } from '../services/defectEngine.js';
 import { checkCompletion } from '../services/repairQueue.js';
 import { calcSkipEnergyCost } from './repair.js';
+
+function withEnergyCosts(defects) {
+  return defects.map(d => ({
+    ...d,
+    proper_repair_energy_cost: ENERGY_COST_REPAIR,
+    quick_fix_energy_cost: d.quick_fix_cost != null ? ENERGY_COST_REPAIR : null,
+  }));
+}
 
 /**
  * GET /cars/:carId
@@ -83,7 +91,7 @@ async function getCar(request, reply) {
         // Don't expose quality_tier (reveals listing deal quality to client)
         quality_tier: undefined,
       },
-      revealedDefects: labelDefect(revealedDefects),
+      revealedDefects: withEnergyCosts(labelDefect(revealedDefects)),
       activeRepairs: activeRepairsOut,
     },
     error: null,
@@ -153,6 +161,9 @@ async function getMyCars(request, reply) {
     `;
     for (const d of labelDefect(allDefects)) {
       (defectsByCarId[d.car_id] ??= []).push(d);
+    }
+    for (const carId in defectsByCarId) {
+      defectsByCarId[carId] = withEnergyCosts(defectsByCarId[carId]);
     }
   }
 
@@ -249,7 +260,7 @@ async function getDefects(request, reply) {
   `;
 
   return reply.send({
-    data: { defects: labelDefect(defects) },
+    data: { defects: withEnergyCosts(labelDefect(defects)) },
     error: null,
     meta: { count: defects.length },
   });

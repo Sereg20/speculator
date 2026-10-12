@@ -13,6 +13,8 @@ interface SkillListItemProps {
 
 function getTierTitle(tier: number) {
   switch (tier) {
+    case 0:
+      return 'Базовый';
     case 1:
       return 'Очевидный';
     case 2:
@@ -26,6 +28,8 @@ function getTierTitle(tier: number) {
 
 function getTierColor(tier: number) {
   switch (tier) {
+    case 0:
+      return colors.blueButtonColor;
     case 1:
       return colors.textGreen;
     case 2:
@@ -34,6 +38,17 @@ function getTierColor(tier: number) {
       return colors.textRed;
     default:
       return colors.textMain;
+  }
+}
+
+function getSkillTypeText(skillType: string) {
+  switch (skillType) {
+    case 'inspection':
+      return 'диагностика'
+    case 'negotiation':
+      return 'торг';
+    case 'repair':
+      return 'ремонт'
   }
 }
 
@@ -46,9 +61,12 @@ export function SkillListItem({
       <View style={styles.container}>
         <View style={styles.info}>
           <View style={styles.header}>
-            <Text style={styles.title}>
-              {skill.name}
-            </Text>
+            <View>
+              <Text style={styles.title}>
+                {skill.name}
+              </Text>
+              <Text style={styles.skillType}>{getSkillTypeText(skill.skill_type)}</Text>
+            </View>
 
             {skill.owned ? (
               <Text style={styles.owned}>
@@ -67,12 +85,12 @@ export function SkillListItem({
 
           
             <View style={styles.footer}>
-              <View style={styles.tierContainer}>
-                <Text style={styles.tier}>Вид дефектов: <Text style={{fontWeight: 'bold', color: getTierColor(skill.tier)}}>{getTierTitle(skill.tier)}</Text></Text>
-              </View>
+              {(skill.skill_type === 'inspection' || skill.skill_type === 'repair') ? <View style={styles.tierContainer}>
+                <Text style={styles.tier}><Text style={{fontWeight: 'bold', color: getTierColor(skill.tier)}}>{getTierTitle(skill.tier)}</Text></Text>
+              </View> : <View></View>}
               {!skill.owned && (
                 <View style={styles.priceContainer}>
-                  <FontAwesome5 name="bitcoin" size={16} color={colors.textGold} />
+                  <FontAwesome5 name="bitcoin" size={14} color={colors.textGold} />
                   <Text style={styles.price}> {skill.byn_price} BYN</Text>
                 </View>
               )}
@@ -96,7 +114,7 @@ const styles = StyleSheet.create({
 
   header: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
     gap: 8,
   },
@@ -104,8 +122,13 @@ const styles = StyleSheet.create({
   title: {
     flex: 1,
     color: colors.textMain,
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: "bold",
+  },
+
+  skillType: {
+    color: colors.textGray,
+    fontSize: 11,
   },
 
   owned: {
@@ -118,6 +141,7 @@ const styles = StyleSheet.create({
     color: colors.textMain,
     opacity: 0.8,
     lineHeight: 20,
+    fontSize: 12
   },
 
   footer: {
@@ -140,16 +164,18 @@ const styles = StyleSheet.create({
   price: {
     color: colors.textGold,
     fontWeight: "bold",
+    fontSize: 13
   },
 
   tierContainer: {
-    backgroundColor: colors.greyColor,
+    backgroundColor: "#4c5052",
     borderRadius: 4,
     paddingHorizontal: 4,
     paddingVertical: 2
   },
 
   tier: {
-    color: colors.textMain
+    color: colors.textMain,
+    fontSize: 13
   }
 });

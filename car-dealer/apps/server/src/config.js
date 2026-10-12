@@ -113,6 +113,7 @@ export const LISTING_EXPIRY_DAYS_DISTRIBUTION = [3, 4, 5, 6, 7]; // 20/30/25/15/
 export const ENERGY_COST_LIST_CAR     = 1;
 export const ENERGY_COST_RESPOND_BUYER = 1;
 export const ENERGY_COST_NEGOTIATE    = 2;
+export const ENERGY_COST_REPAIR       = 3;  // same for both proper and quick-fix
 
 // Skip-repair energy cost constants (GMS §8.3)
 // Base energy = ceil(totalRepairMinutes / SKIP_ENERGY_MINUTES_PER_POINT), capped at SKIP_ENERGY_MAX.

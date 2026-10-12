@@ -345,12 +345,12 @@ async function upgradeGarage(request, reply) {
 
     if (player.level < levelRequired) {
       throw Object.assign(
-        new Error(`Level ${levelRequired} required for Garage Tier ${nextSlots}`),
+        new Error(`Нужен уровень ${levelRequired} для гаража с ${nextSlots} местами`),
         { statusCode: 400 },
       );
     }
     if (player.cash < cost) {
-      throw Object.assign(new Error('Insufficient funds'), { statusCode: 400 });
+      throw Object.assign(new Error('Недостаточно денег'), { statusCode: 400 });
     }
 
     await tx`
