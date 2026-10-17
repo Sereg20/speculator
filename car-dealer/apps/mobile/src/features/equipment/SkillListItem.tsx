@@ -4,6 +4,8 @@ import type { PlayerSkill } from "@/api/player";
 import { ListItem } from "@/components/list-item/ListItem";
 import { colors } from "@/theme/colors";
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
+import { typography } from "@/theme/typography";
+import { spacing } from "@/theme/spacing";
 
 
 interface SkillListItemProps {
@@ -26,21 +28,6 @@ function getTierTitle(tier: number) {
   }
 }
 
-function getTierColor(tier: number) {
-  switch (tier) {
-    case 0:
-      return colors.blueButtonColor;
-    case 1:
-      return colors.textGreen;
-    case 2:
-      return colors.orangeButtonColor;
-    case 3:
-      return colors.textRed;
-    default:
-      return colors.textMain;
-  }
-}
-
 function getSkillTypeText(skillType: string) {
   switch (skillType) {
     case 'inspection':
@@ -57,7 +44,7 @@ export function SkillListItem({
   skill, onPress
 }: SkillListItemProps) {
   return (
-    <ListItem onPress={() => {onPress(skill)}} disabled={skill.owned}>
+    <ListItem onPress={() => { onPress(skill) }} disabled={skill.owned}>
       <View style={styles.container}>
         <View style={styles.info}>
           <View style={styles.header}>
@@ -65,7 +52,9 @@ export function SkillListItem({
               <Text style={styles.title}>
                 {skill.name}
               </Text>
-              <Text style={styles.skillType}>{getSkillTypeText(skill.skill_type)}</Text>
+              {(skill.skill_type === 'inspection' || skill.skill_type === 'repair') && <Text style={styles.tierText}>
+                {getTierTitle(skill.tier)}
+              </Text>}
             </View>
 
             {skill.owned ? (
@@ -83,19 +72,23 @@ export function SkillListItem({
             {skill.description}
           </Text>
 
-          
-            <View style={styles.footer}>
-              {(skill.skill_type === 'inspection' || skill.skill_type === 'repair') ? <View style={styles.tierContainer}>
-                <Text style={styles.tier}><Text style={{fontWeight: 'bold', color: getTierColor(skill.tier)}}>{getTierTitle(skill.tier)}</Text></Text>
-              </View> : <View></View>}
-              {!skill.owned && (
-                <View style={styles.priceContainer}>
-                  <FontAwesome5 name="bitcoin" size={14} color={colors.textGold} />
-                  <Text style={styles.price}> {skill.byn_price} BYN</Text>
-                </View>
-              )}
+
+          <View style={styles.footer}>
+            <View style={styles.badgesRow}>
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>
+                  {getSkillTypeText(skill.skill_type)}
+                </Text>
+              </View>
             </View>
-          
+            {!skill.owned && (
+              <View style={styles.priceContainer}>
+                <FontAwesome5 name="bitcoin" size={14} color={colors.textGold} />
+                <Text style={styles.price}> {skill.byn_price} BYN</Text>
+              </View>
+            )}
+          </View>
+
         </View>
       </View>
     </ListItem>
@@ -177,5 +170,30 @@ const styles = StyleSheet.create({
   tier: {
     color: colors.textMain,
     fontSize: 13
-  }
+  },
+
+  tierText: {
+    color: colors.textGray,
+    fontSize: 11,
+  },
+
+  badgesRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginTop: spacing.sm,
+  },
+
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: "#4c5052",
+  },
+
+  badgeText: {
+    ...typography.body,
+    color: colors.textMain,
+    fontSize: 11,
+  },
 });

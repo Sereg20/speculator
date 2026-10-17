@@ -22,10 +22,12 @@ import {
 import { PurchaseSkillConfirmDialog } from "@/features/equipment/PurchaseSkillConfirmDialog";
 import { PurchaseEquipmentConfirmDialog } from "@/features/equipment/PurchaseEquipmentConfirmDialog";
 import { updatePlayerState } from "@/api/playerState";
+import { useGame } from "../context/GameContext";
 
 type EquipmentTab = "skills" | "equipment";
 
 export default function EquipmentScreen() {
+  const { showError } = useGame();
   const [activeTab, setActiveTab] = useState<EquipmentTab>("skills");
   const [isPurchaseSkillConfirmDialogVisible, setPurchaseSkillConfirmDialogVisible] = useState<boolean>(false);
   const [isPurchaseEquipmentConfirmDialogVisible, setPurchaseEquipmentConfirmDialogVisible] = useState<boolean>(false);
@@ -63,8 +65,8 @@ export default function EquipmentScreen() {
       setSelectedSkill(null);
 
     },
-    onError: () => {
-
+    onError: (error) => {
+      showError(error.message);
     }
   });
 
@@ -84,8 +86,8 @@ export default function EquipmentScreen() {
       setPurchaseEquipmentConfirmDialogVisible(false);
       setSelectedEquipment(null);
     },
-    onError: () => {
-      
+    onError: (error) => {
+      showError(error.message);
     }
   });
 

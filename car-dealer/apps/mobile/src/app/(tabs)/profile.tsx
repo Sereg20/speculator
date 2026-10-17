@@ -175,7 +175,7 @@ function EquipmentItem({
            Шанс обнаружения неисправности: +{equipment.detection_bonus}
         </Text>
 
-        {equipment.defect_categories_targeted.length > 0 ? (
+        {equipment.defect_categories_targeted?.length > 0 ? (
           <View style={styles.badgesRow}>
             {equipment.defect_categories_targeted.map(
               (category) => (
@@ -190,7 +190,7 @@ function EquipmentItem({
               ),
             )}
           </View>
-        ) : null}
+        ) : <View></View>}
       </View>
     </View>
   );

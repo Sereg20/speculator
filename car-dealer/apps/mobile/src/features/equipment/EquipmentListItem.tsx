@@ -4,11 +4,30 @@ import type { PlayerEquipment } from "@/api/player";
 import { ListItem } from "@/components/list-item/ListItem";
 import { colors } from "@/theme/colors";
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
+import { spacing } from "@/theme/spacing";
+import { typography } from "@/theme/typography";
 
 
 interface EquipmentListItemProps {
   equipment: PlayerEquipment;
   onPress: (equipment: PlayerEquipment) => void
+}
+
+function getEquipmentCategoryText(category: string) {
+  switch (category) {
+    case 'body':
+      return 'кузов'
+    case 'engine':
+      return 'двигатель';
+    case 'transmission':
+      return 'трансмиссия';
+    case 'electrical':
+      return 'электрика'
+    case 'interior':
+      return 'салон';
+    case 'suspension':
+      return 'подвеска';
+  }
 }
 
 function getTierTitle(tier: number) {
@@ -45,13 +64,15 @@ export function EquipmentListItem({
   equipment, onPress
 }: EquipmentListItemProps) {
   return (
-    <ListItem disabled={equipment.owned} onPress={() => {onPress(equipment)}}>
+    <ListItem disabled={equipment.owned} onPress={() => { onPress(equipment) }}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>
-            {equipment.name}
-          </Text>
-
+          <View>
+            <Text style={styles.title}>
+              {equipment.name}
+            </Text>
+            <Text style={styles.tierText}>{getTierTitle(equipment.detection_tier)}</Text>
+          </View>
           {equipment.owned ? (
             <Text style={styles.owned}>
               КУПЛЕНО
@@ -62,16 +83,29 @@ export function EquipmentListItem({
         </View>
 
         <View style={styles.info}>
-          
+
           <Text style={styles.infoText}>
             Шанс обнаружения неисправности: +{equipment.detection_bonus}
           </Text>
         </View>
 
         <View style={styles.footer}>
-          <View style={styles.tierContainer}>
-            <Text style={styles.tier}><Text style={{fontWeight: 'bold', color: getTierColor(equipment.detection_tier)}}>{getTierTitle(equipment.detection_tier)}</Text></Text>
-          </View>
+          {equipment.defect_categories_targeted?.length > 0 ? (
+            <View style={styles.badgesRow}>
+              {equipment.defect_categories_targeted.map(
+                (category) => (
+                  <View
+                    key={category}
+                    style={styles.badge}
+                  >
+                    <Text style={styles.badgeText}>
+                      {getEquipmentCategoryText(category)}
+                    </Text>
+                  </View>
+                ),
+              )}
+            </View>
+          ) : <View></View>}
           <View style={styles.costContainer}>
             {!equipment.owned && (
               <View style={styles.priceContainer}>
@@ -99,7 +133,7 @@ const styles = StyleSheet.create({
 
   header: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "flex-start",
     justifyContent: "space-between",
     gap: 8,
   },
@@ -134,7 +168,7 @@ const styles = StyleSheet.create({
 
   footer: {
     flexDirection: 'row',
-    alignItems: "center",
+    alignItems: "flex-end",
     justifyContent: "space-between",
     gap: 2
   },
@@ -170,5 +204,30 @@ const styles = StyleSheet.create({
   tier: {
     fontSize: 13,
     color: colors.textMain
-  }
+  },
+
+  tierText: {
+    color: colors.textGray,
+    fontSize: 11,
+  },
+
+  badgesRow: {
+    flexWrap: "wrap",
+    gap: 6,
+    marginTop: spacing.sm,
+  },
+
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    backgroundColor: "#4c5052",
+  },
+
+  badgeText: {
+    ...typography.body,
+    color: colors.textMain,
+    fontSize: 11,
+    textAlign: 'center'
+  },
 });
