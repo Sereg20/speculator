@@ -49,6 +49,7 @@ export function AuthGate({ children }: AuthGateProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const checkSession = useCallback(async () => {
+    debugger
     setStatus("checking");
     setErrorMessage(null);
 
@@ -81,7 +82,7 @@ export function AuthGate({ children }: AuthGateProps) {
         throw error;
       }
     } catch (error) {
-      setErrorMessage("Что-то пошло не так");
+      setErrorMessage(error?.message);
       setStatus("error");
     }
   }, [queryClient]);

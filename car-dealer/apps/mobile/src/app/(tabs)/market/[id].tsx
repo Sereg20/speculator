@@ -19,6 +19,7 @@ import { updatePlayerState } from "@/api/playerState";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { CarDetailsDialog } from "@/components/dialog/CarDetailsDialog";
 import { energyCost } from "@/constants/constants";
+import { randomUUID } from "expo-crypto";
 
 const initMessage: IDialogMessage = {
   id: "1",
@@ -199,7 +200,7 @@ export default function MarketInspectionScreen() {
     setMessages((previousMessages) => [
       ...previousMessages,
       {
-        id: crypto.randomUUID(),
+        id: randomUUID(),
         speaker: "npc",
         text: initialDialogue?.dialogue || '',
       },
@@ -214,7 +215,7 @@ export default function MarketInspectionScreen() {
     setMessages((previousMessages) => [
       ...previousMessages,
       {
-        id: crypto.randomUUID(),
+        id: randomUUID(),
         speaker: type,
         text: text,
       },

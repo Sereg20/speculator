@@ -16,6 +16,7 @@ import { RevealedDefect } from "@/api/market";
 import { SellingListingDialog } from "@/components/dialog/SellingListingDialog";
 import { energyCost } from "@/constants/constants";
 import { npcBuyersAvatars } from "@/assets/images/npc-avatars/npcAvatars";
+import { randomUUID } from "expo-crypto";
 
 
 export default function ListingInquiryScreen() {
@@ -111,7 +112,7 @@ export default function ListingInquiryScreen() {
     setMessages((previousMessages) => [
       ...previousMessages,
       {
-        id: crypto.randomUUID(),
+        id: randomUUID(),
         speaker: type,
         text: text,
       },

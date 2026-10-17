@@ -44,7 +44,7 @@ export function CarDetailsDialog({
           <ListItem>
             <View style={styles.dealContainer}>
               <Text style={styles.label}>Начальная цена:  </Text>
-              <FontAwesome5 name="bitcoin" size={20} color={colors.textGold} />
+              <FontAwesome5 name="bitcoin" size={18} color={colors.textGold} />
               <Text style={[styles.price, askingPrice > marketValue ?
                 { color: colors.textRed } :
                 { color: colors.textGreen }
@@ -89,13 +89,13 @@ const styles = StyleSheet.create({
 
   title: {
     fontWeight: 'bold',
-    fontSize: 22,
+    fontSize: 20,
     color: colors.textGold,
     textAlign: 'center',
   },
 
   subtitle: {
-    fontSize: 18,
+    fontSize: 17,
     textAlign: 'center',
     color: colors.textMain
   },
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   },
 
   label: {
-    fontSize: 18,
+    fontSize: 16,
     textAlign: 'center',
     color: colors.textMain
   },
@@ -120,16 +120,17 @@ const styles = StyleSheet.create({
 
   price: {
     fontWeight: 'bold',
-    fontSize: 18,
+    fontSize: 16,
     color: colors.textGold
   },
 
   discount: {
     fontWeight: 'bold',
-    fontSize: 18
+    fontSize: 16
   },
 
   startPrice: {
+    fontSize: 13,
     textAlign: 'center',
     color: colors.textGray,
     marginTop: 4
