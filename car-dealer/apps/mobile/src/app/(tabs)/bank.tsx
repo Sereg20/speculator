@@ -52,6 +52,7 @@ export default function BankScreen() {
       imageStyle={styles.backgroundImage}
       resizeMode="cover"
     >
+      <View style={styles.container}>
       <View style={styles.content}>
         <Text style={styles.title}>ОТДЕЛ НЕДВИЖИМОСТИ</Text>
         <GarageItem garageLevel={(player?.garage_slots || 1) + 1} onGarageBuy={onGarageBuy}/>
@@ -62,6 +63,7 @@ export default function BankScreen() {
         <LoanItem />
         <LoanItem />
       </View>
+      </View>
     </ImageBackground>
   );
 }
@@ -70,16 +72,20 @@ const styles = StyleSheet.create({
   background: {
     flex: 1,
     backgroundColor: "#111111",
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    paddingBottom: 40,
-    gap: 30
+    justifyContent: 'flex-end',    
   },
 
   backgroundImage: {
+    width: '100%',
+    height: '100%'
+  },
 
-    width: "100%",
-    height: "100%",
+  container: {
+    width: '100%',
+    gap: 30,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingBottom: 30
   },
 
   content: {

@@ -100,12 +100,12 @@ const styles = StyleSheet.create({
   },
 
   listContent: {
-    flex: 1,
+    flexGrow: 1,
     gap: 4
   },
 
   emptyContainer: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center'
   },
 
