@@ -36,13 +36,13 @@ const styles = StyleSheet.create({
 
   text: {
     color: colors.textGold,
-    fontSize: 20
+    fontSize: 18
   },
 
   icon: {
     borderRadius: 8,
-    height: 60,
-    width: 60,
+    height: 54,
+    width: 54,
     marginRight: 12
   }
 });

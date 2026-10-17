@@ -31,7 +31,7 @@ export function SkipActiveRepairDialog({
       <View style={styles.container}>
 
        <Text style={styles.text}>Завершить ремонт за </Text>
-       <Text style={styles.text}>{skipEnergyCost}</Text>
+       <Text style={styles.text}>{skipEnergyCost} </Text>
        <AntDesign name="thunderbolt" size={18} color={colors.textGold} />
         
       </View>

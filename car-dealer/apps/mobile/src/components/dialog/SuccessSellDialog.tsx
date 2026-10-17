@@ -41,7 +41,7 @@ export function SuccessSellDialog({
           <ListItem>
             <View style={styles.dealContainer}>
               <Text style={styles.label}>Цена продажи: </Text>
-              <FontAwesome5 name="bitcoin" size={20} color={colors.textGold} />
+              <FontAwesome5 name="bitcoin" size={18} color={colors.textGold} />
               <Text style={styles.price}> {finalPrice} BYN</Text>
             </View>
             <Text style={styles.startPrice}>(Начальная цена: {listing?.asking_price} BYN)</Text>
@@ -57,9 +57,9 @@ export function SuccessSellDialog({
                   : {color: colors.textRed}
               ]}>{discount} BYN </Text>
               { discount > 0 ? (
-                <Foundation name="arrow-up" size={24} color={colors.textGreen} />
+                <Foundation name="arrow-up" size={22} color={colors.textGreen} />
               ) : (
-                <Foundation name="arrow-down" size={24} color={colors.textRed} />
+                <Foundation name="arrow-down" size={22} color={colors.textRed} />
               )}
               
             </View>
@@ -78,13 +78,13 @@ const styles = StyleSheet.create({
 
   title: {
     fontWeight: 'bold',
-    fontSize: 22,
+    fontSize: 20,
     color: colors.textGold,
     textAlign: 'center',
   },
 
   subtitle: {
-    fontSize: 18,
+    fontSize: 17,
     textAlign: 'center',
     color: colors.textMain
   },
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
   },
 
   label: {
-    fontSize: 18,
+    fontSize: 16,
     textAlign: 'center',
     color: colors.textMain
   },
@@ -109,19 +109,20 @@ const styles = StyleSheet.create({
 
   price: {
     fontWeight: 'bold',
-    fontSize: 18,
+    fontSize: 16,
     color: colors.textGold
   },
 
   discount: {
     fontWeight: 'bold',
-    fontSize: 18
+    fontSize: 16
   },
 
   startPrice: {
     textAlign: 'center',
     color: colors.textGray,
-    marginTop: 4
+    fontSize: 13,
+    marginTop: 2
   }
 
 });

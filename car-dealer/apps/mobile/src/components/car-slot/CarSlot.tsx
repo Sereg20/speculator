@@ -796,9 +796,11 @@ const styles = StyleSheet.create({
   },
 
   listContent: {
-    paddingHorizontal: 3,
+    paddingHorizontal: 4,
     height: '100%',
-    justifyContent: 'center'
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 4
   },
 
   noDefects: {

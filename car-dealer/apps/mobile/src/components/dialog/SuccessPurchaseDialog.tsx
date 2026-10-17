@@ -73,13 +73,13 @@ const styles = StyleSheet.create({
 
   title: {
     fontWeight: 'bold',
-    fontSize: 22,
+    fontSize: 20,
     color: colors.textGold,
     textAlign: 'center',
   },
 
   subtitle: {
-    fontSize: 18,
+    fontSize: 17,
     textAlign: 'center',
     color: colors.textMain
   },
@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
   },
 
   label: {
-    fontSize: 18,
+    fontSize: 16,
     textAlign: 'center',
     color: colors.textMain
   },
@@ -104,19 +104,20 @@ const styles = StyleSheet.create({
 
   price: {
     fontWeight: 'bold',
-    fontSize: 18,
+    fontSize: 16,
     color: colors.textGold
   },
 
   discount: {
     fontWeight: 'bold',
-    fontSize: 18
+    fontSize: 16
   },
 
   startPrice: {
     textAlign: 'center',
     color: colors.textGray,
-    marginTop: 4
+    marginTop: 2,
+    fontSize: 13
   }
 
 });

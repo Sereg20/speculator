@@ -20,6 +20,8 @@ export type ActiveDefect = {
   is_odometer_fraud: boolean;
   label: string;
   is_repairing: boolean;
+  proper_repair_energy_cost: number;
+  quick_fix_energy_cost: number;
 }
 
 export type ActiveRepair = {

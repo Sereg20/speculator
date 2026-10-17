@@ -45,13 +45,13 @@ export function SellingListingDialog({
           <ListItem>
             <View style={styles.dealContainer}>
               <Text style={styles.label}>Текущая цена:  </Text>
-              <FontAwesome5 name="bitcoin" size={20} color={colors.textGold} />
+              <FontAwesome5 name="bitcoin" size={18} color={colors.textGold} />
               <Text style={[styles.price, finalPrice < (askingPrice * 0.9) ?
                 { color: colors.textRed } :
                 { color: colors.textMain }
               ]}> {finalPrice} BYN </Text>
               {finalPrice < askingPrice &&
-                <Foundation name="arrow-down" size={24} color={finalPrice < (askingPrice * 0.9) ? colors.textRed : colors.textMain} />
+                <Foundation name="arrow-down" size={22} color={finalPrice < (askingPrice * 0.9) ? colors.textRed : colors.textMain} />
               }
             </View>
             <Text style={styles.startPrice}>(Начальная цена: {askingPrice} BYN)</Text>
@@ -89,13 +89,13 @@ const styles = StyleSheet.create({
 
   title: {
     fontWeight: 'bold',
-    fontSize: 22,
+    fontSize: 20,
     color: colors.textGold,
     textAlign: 'center',
   },
 
   subtitle: {
-    fontSize: 18,
+    fontSize: 17,
     textAlign: 'center',
     color: colors.textMain
   },
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   },
 
   label: {
-    fontSize: 18,
+    fontSize: 16,
     textAlign: 'center',
     color: colors.textMain
   },
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
 
   price: {
     fontWeight: 'bold',
-    fontSize: 18,
+    fontSize: 16,
     color: colors.textGold
   },
 
@@ -132,7 +132,8 @@ const styles = StyleSheet.create({
   startPrice: {
     textAlign: 'center',
     color: colors.textGray,
-    marginTop: 4
+    fontSize: 13,
+    marginTop: 2
   },
 
   defectsTitle: {

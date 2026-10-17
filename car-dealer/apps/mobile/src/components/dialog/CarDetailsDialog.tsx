@@ -50,8 +50,8 @@ export function CarDetailsDialog({
                 { color: colors.textGreen }
               ]}> {askingPrice} BYN </Text>
               {askingPrice > marketValue ?
-                <Foundation name="arrow-up" size={24} color={colors.textRed} /> :
-                <Foundation name="arrow-down" size={24} color={colors.textGreen} />
+                <Foundation name="arrow-up" size={22} color={colors.textRed} /> :
+                <Foundation name="arrow-down" size={22} color={colors.textGreen} />
               }
             </View>
             <Text style={styles.startPrice}>(Середина рынка: {marketValue} BYN)</Text>
@@ -150,19 +150,17 @@ const styles = StyleSheet.create({
 
   emptyContainer: {
     backgroundColor: colors.darkBackground,
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 14,
-    marginTop: 12,
+    marginTop: 10,
   },
 
   emptyText: {
     color: colors.textMain,
     fontWeight: 'bold',
-    fontSize: 18,
+    fontSize: 16,
     textAlign: 'center'
-
   }
 
 });

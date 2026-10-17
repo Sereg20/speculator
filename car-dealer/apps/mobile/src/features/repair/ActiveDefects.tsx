@@ -76,13 +76,13 @@ const styles = StyleSheet.create({
 
   title: {
     fontWeight: 'bold',
-    fontSize: 22,
+    fontSize: 20,
     color: colors.textGold,
     textAlign: 'center',
   },
 
   carInfo: {
-    fontSize: 18,
+    fontSize: 17,
     textAlign: 'center',
     color: colors.textMain
   },

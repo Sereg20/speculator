@@ -58,14 +58,14 @@ const styles = StyleSheet.create({
   title: {
     color: colors.textGold,
     fontWeight: 'bold',
-    fontSize: 22,
+    fontSize: 20,
     textAlign: 'center',
     marginBottom: 4
   },
 
   subtitle: {
     color: colors.textMain,
-    fontSize: 18,
+    fontSize: 17,
     textAlign: 'center',
     marginBottom: 8
   },
