@@ -49,7 +49,7 @@ export function SuccessSellDialog({
 
           <ListItem>
             <View style={styles.dealContainer}>
-              <Text style={styles.label}>ДОХОД: </Text>
+              <Text style={styles.label}>Доход: </Text>
               <Text style={[
                 styles.discount,
                 discount > 0
