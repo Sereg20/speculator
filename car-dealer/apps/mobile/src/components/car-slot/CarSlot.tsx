@@ -717,7 +717,7 @@ const styles = StyleSheet.create({
    */
 
   condition: {
-    marginTop: 26,
+    marginTop: 20,
     paddingHorizontal: 12,
     paddingTop: 10,
     paddingBottom: 8,
