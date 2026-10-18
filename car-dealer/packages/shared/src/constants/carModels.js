@@ -10,16 +10,16 @@ export const CAR_MODELS = [
   // Budget beaters (800 – 3,500 BYN) — early game
   // ============================================================
 
-  { make: 'ВАЗ', model: '2105', yearRange: [1980, 2010], priceRange: [800, 1800] },
-  { make: 'ВАЗ', model: '2106', yearRange: [1976, 2006], priceRange: [900, 2000] },
-  { make: 'ВАЗ', model: '2107', yearRange: [1982, 2012], priceRange: [1000, 2200] },
-  { make: 'ВАЗ', model: '2109', yearRange: [1987, 2004], priceRange: [1200, 2500] },
-  { make: 'ВАЗ', model: '2110', yearRange: [1995, 2007], priceRange: [1200, 2500] },
-  { make: 'ВАЗ', model: '2111', yearRange: [1997, 2009], priceRange: [1300, 2600] },
-  { make: 'ВАЗ', model: '2112', yearRange: [1999, 2008], priceRange: [1300, 2700] },
-  { make: 'ВАЗ', model: '2113', yearRange: [2004, 2013], priceRange: [1400, 2800] },
-  { make: 'ВАЗ', model: '2114', yearRange: [2001, 2013], priceRange: [1500, 3000] },
-  { make: 'ВАЗ', model: '2115', yearRange: [1997, 2012], priceRange: [1400, 2800] },
+  { make: 'Lada', model: '2105', yearRange: [1980, 2010], priceRange: [800, 1800] },
+  { make: 'Lada', model: '2106', yearRange: [1976, 2006], priceRange: [900, 2000] },
+  { make: 'Lada', model: '2107', yearRange: [1982, 2012], priceRange: [1000, 2200] },
+  { make: 'Lada', model: '2109', yearRange: [1987, 2004], priceRange: [1200, 2500] },
+  { make: 'Lada', model: '2110', yearRange: [1995, 2007], priceRange: [1200, 2500] },
+  { make: 'Lada', model: '2111', yearRange: [1997, 2009], priceRange: [1300, 2600] },
+  { make: 'Lada', model: '2112', yearRange: [1999, 2008], priceRange: [1300, 2700] },
+  { make: 'Lada', model: '2113', yearRange: [2004, 2013], priceRange: [1400, 2800] },
+  { make: 'Lada', model: '2114', yearRange: [2001, 2013], priceRange: [1500, 3000] },
+  { make: 'Lada', model: '2115', yearRange: [1997, 2012], priceRange: [1400, 2800] },
 
   { make: 'Daewoo', model: 'Nexia', yearRange: [1994, 2016], priceRange: [1300, 2800] },
   { make: 'Daewoo', model: 'Matiz', yearRange: [1998, 2015], priceRange: [1200, 2500] },
