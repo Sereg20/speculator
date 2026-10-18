@@ -18,6 +18,7 @@ import { PurchasedCarInspectDialog } from "@/features/inspection/PurchasedCarIns
 import { CategoryId, InspectionActionId, RevealedDefect } from "@/api/market";
 import { useGame } from "@/app/context/GameContext";
 import { RevealedDefectsDialog } from "@/features/inspection/RevealedDefectsDialog";
+import { FullScreenLoader } from "@/components/Loading/FullScreenLoader";
 
 
 export default function GarageScreen() {
@@ -215,9 +216,7 @@ export default function GarageScreen() {
 
   if (isLoading) {
     return (
-      <View>
-        <Text>Loading</Text>
-      </View>
+      <FullScreenLoader />
     );
   }
 

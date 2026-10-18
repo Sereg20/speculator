@@ -518,13 +518,10 @@ const styles = StyleSheet.create({
 
   heroTopShade: {
     position: "absolute",
-
     left: 0,
     right: 0,
     top: 0,
-
-    height: 70,
-
+    height: 60,
     backgroundColor: "rgba(0,0,0,0.30)",
   },
 

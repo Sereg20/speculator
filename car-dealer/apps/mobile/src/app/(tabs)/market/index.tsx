@@ -5,6 +5,7 @@ import {
   StyleSheet,
   Image,
   Text,
+  ActivityIndicator,
 } from "react-native";
 import { useMutation, useQuery, useQueryClient  } from "@tanstack/react-query";
 import { marketListingsQuery, refreshListings } from "@/api/market";
@@ -44,8 +45,8 @@ export default function MarketScreen() {
         resizeMode="cover"
       />
       {isLoading ? (
-        <View>
-          <Text>Loading</Text>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color={colors.blueButtonColor}/>
         </View>
       ) : (
         <MarketList listings={listings} onRefresh={() =>{refreshMutation.mutate()}}/>
@@ -70,4 +71,10 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
   },
+
+  center: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  }
 });

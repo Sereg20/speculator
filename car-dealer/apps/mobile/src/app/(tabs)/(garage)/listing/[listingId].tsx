@@ -17,6 +17,7 @@ import { SellingListingDialog } from "@/components/dialog/SellingListingDialog";
 import { energyCost } from "@/constants/constants";
 import { npcBuyersAvatars } from "@/assets/images/npc-avatars/npcAvatars";
 import { randomUUID } from "expo-crypto";
+import { FullScreenLoader } from "@/components/Loading/FullScreenLoader";
 
 
 export default function ListingInquiryScreen() {
@@ -101,7 +102,7 @@ export default function ListingInquiryScreen() {
   });
 
   if (isListingLoading || isInquiriesLoading) {
-    return <Text>Loading...</Text>;
+    return <FullScreenLoader />
   }
 
   // ----------------------------------------------

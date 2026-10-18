@@ -11,12 +11,13 @@ import { router } from "expo-router";
 
 import { GameHeader } from "../../components/game-header/GameHeader";
 import { colors } from "@/theme/colors";
+import { FullScreenLoader } from "@/components/Loading/FullScreenLoader";
 
 export default function TabsLayout() {
   const { isLoading, error } = useQuery(playerQuery());
 
   if(isLoading) {
-    return <Text>Loading...</Text>
+    return <FullScreenLoader/>
   }
 
   if(error) {

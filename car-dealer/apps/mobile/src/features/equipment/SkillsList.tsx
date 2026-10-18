@@ -8,6 +8,7 @@ import {
 
 import type { PlayerSkill } from "@/api/player";
 import { SkillListItem } from "./SkillListItem";
+import { colors } from "@/theme/colors";
 
 interface SkillsListProps {
   skills: PlayerSkill[];
@@ -25,7 +26,7 @@ export function SkillsList({
   if (isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator />
+        <ActivityIndicator color={colors.blueButtonColor} size='large'/>
       </View>
     );
   }

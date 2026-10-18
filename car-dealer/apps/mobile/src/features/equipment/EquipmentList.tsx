@@ -8,6 +8,7 @@ import {
 
 import type { PlayerEquipment } from "@/api/player";
 import { EquipmentListItem } from "./EquipmentListItem";
+import { colors } from "@/theme/colors";
 
 interface EquipmentListProps {
   equipment: PlayerEquipment[];
@@ -25,7 +26,7 @@ export function EquipmentList({
   if (isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator />
+        <ActivityIndicator color={colors.blueButtonColor} size='large'/>
       </View>
     );
   }
