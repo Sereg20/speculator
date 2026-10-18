@@ -47,7 +47,10 @@ async function getListings(request, reply) {
   const listings = await getOrRefreshListings(playerId, player.level);
 
   // Strip internal quality_tier from response — don't leak deal quality to client
-  const safeListings = listings.map(({ quality_tier: _qt, ...rest }) => rest);
+  const safeListings = listings.map(({ quality_tier: _qt, ...rest }) => ({
+    ...rest,
+    imageKey: `${rest.make}_${rest.model}`.toLowerCase().replace(/\s+/g, '_'),
+  }));
 
   return reply.send({
     data: { listings: safeListings },
@@ -238,7 +241,10 @@ async function forceRefresh(request, reply) {
   if (!player) return reply.code(404).send({ data: null, error: 'Player not found', meta: null });
 
   const listings = await generateListings(playerId, player.level);
-  const safeListings = listings.map(({ quality_tier: _qt, ...rest }) => rest);
+  const safeListings = listings.map(({ quality_tier: _qt, ...rest }) => ({
+    ...rest,
+    imageKey: `${rest.make}_${rest.model}`.toLowerCase().replace(/\s+/g, '_'),
+  }));
 
   return reply.send({
     data: { listings: safeListings },

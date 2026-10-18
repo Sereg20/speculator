@@ -90,6 +90,7 @@ async function getCar(request, reply) {
         ...car,
         // Don't expose quality_tier (reveals listing deal quality to client)
         quality_tier: undefined,
+        imageKey: `${car.make}_${car.model}`.toLowerCase().replace(/\s+/g, '_'),
       },
       revealedDefects: withEnergyCosts(labelDefect(revealedDefects)),
       activeRepairs: activeRepairsOut,
@@ -203,6 +204,7 @@ async function getMyCars(request, reply) {
     const out = {
       ...car,
       days_held: Math.floor((now - new Date(car.created_at).getTime()) / INGAME_DAY_MS),
+      imageKey: `${car.make}_${car.model}`.toLowerCase().replace(/\s+/g, '_'),
     };
     if (include.has('defects'))  out.revealedDefects = defectsByCarId[car.id] ?? [];
     if (include.has('repairs'))  out.activeRepairs   = repairsByCarId[car.id] ?? [];

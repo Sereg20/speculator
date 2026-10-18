@@ -85,12 +85,12 @@ export const LEVEL_XP_THRESHOLDS = [
 ];
 
 // Market listings per refresh (GMS §4)
-export const MARKET_LISTINGS_PER_REFRESH = 8;
+export const MARKET_LISTINGS_PER_REFRESH = 12;
 export const MARKET_LISTING_DISTRIBUTION = {
-  bad:       2,  // overpriced or wrecked
-  below_avg: 2,  // fair car but below-avg deal
-  fair:      2,  // fair price, fair car
-  good:      1,  // good deal
+  bad:       3,  // overpriced or wrecked
+  below_avg: 3,  // fair car but below-avg deal
+  fair:      3,  // fair price, fair car
+  good:      2,  // good deal
   bargain:   1,  // genuine bargain
 };
 

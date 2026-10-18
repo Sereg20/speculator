@@ -8,6 +8,7 @@ import {
   ImageBackground,
 } from "react-native";
 import { router } from "expo-router";
+import { getCarImage } from "@/assets/images/cars/carImages";
 
 
 interface MarketListCardProps {
@@ -20,7 +21,7 @@ export function MarketListingCard({
   return (
     <View style={styles.container}>
       <ImageBackground
-        source={require("@/../assets/images/backgrounds/background_listing_item.webp")}
+        source={getCarImage(listing.imageKey)}
         style={styles.backgroundListItem}
         imageStyle={styles.backgroundListImage}
         resizeMode="cover"
