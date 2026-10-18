@@ -39,7 +39,7 @@ export function GarageItem({
         <View style={styles.footer}>
           <View style={styles.priceContainer}>
             <FontAwesome5 name="bitcoin" size={18} color={colors.textGold} />
-            <Text style={styles.price}>25000 BYN</Text>
+            <Text style={styles.price}>25000 USD</Text>
           </View>
           <Pressable onPress={onGarageBuy} style={styles.buyBtn}>
             <Text style={styles.btnText}>КУПИТЬ</Text>

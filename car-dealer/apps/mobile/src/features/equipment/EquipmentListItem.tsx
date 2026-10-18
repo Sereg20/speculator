@@ -110,13 +110,13 @@ export function EquipmentListItem({
             {!equipment.owned && (
               <View style={styles.priceContainer}>
                 <FontAwesome5 name="bitcoin" size={14} color={colors.textGold} />
-                <Text style={styles.price}> {equipment.purchase_price} BYN</Text>
+                <Text style={styles.price}> {equipment.purchase_price} USD</Text>
               </View>
             )}
 
             {equipment.monthly_upkeep > 0 && (
               <Text style={styles.upkeep}>
-                Содержание: {equipment.monthly_upkeep} BYN/мес.
+                Содержание: {equipment.monthly_upkeep} USD/мес.
               </Text>
             )}
           </View>

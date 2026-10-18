@@ -33,7 +33,7 @@ export function MarketListingCard({
         <Text style={styles.details}>Год: {listing.year}</Text>
 
         <View style={styles.footer}>
-          <Text style={styles.price}>{listing.asking_price} BYN</Text>
+          <Text style={styles.price}>{listing.asking_price} USD</Text>
 
           <Pressable 
             style={({ pressed }) => [

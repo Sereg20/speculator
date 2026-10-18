@@ -42,9 +42,9 @@ export function SuccessSellDialog({
             <View style={styles.dealContainer}>
               <Text style={styles.label}>Цена продажи: </Text>
               <FontAwesome5 name="bitcoin" size={18} color={colors.textGold} />
-              <Text style={styles.price}> {finalPrice} BYN</Text>
+              <Text style={styles.price}> {finalPrice} USD</Text>
             </View>
-            <Text style={styles.startPrice}>(Начальная цена: {listing?.asking_price} BYN)</Text>
+            <Text style={styles.startPrice}>(Начальная цена: {listing?.asking_price} USD)</Text>
           </ListItem>
 
           <ListItem>
@@ -55,7 +55,7 @@ export function SuccessSellDialog({
                 discount > 0
                   ? {color: colors.textGreen}
                   : {color: colors.textRed}
-              ]}>{discount} BYN </Text>
+              ]}>{discount} USD </Text>
               { discount > 0 ? (
                 <Foundation name="arrow-up" size={22} color={colors.textGreen} />
               ) : (
@@ -63,7 +63,7 @@ export function SuccessSellDialog({
               )}
               
             </View>
-            <Text style={styles.startPrice}>(Цена покупки: {purchasePrice} BYN)</Text>
+            <Text style={styles.startPrice}>(Цена покупки: {purchasePrice} USD)</Text>
           </ListItem>
         </View>
       </View>

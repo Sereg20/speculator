@@ -32,7 +32,7 @@ export function PurchaseSkillConfirmDialog({
        
        <View style={styles.footer}>
           <FontAwesome5 name="bitcoin" size={22} color={colors.textGold} />
-          <Text style={styles.price}> {skill.byn_price} BYN</Text>
+          <Text style={styles.price}> {skill.byn_price} USD</Text>
        </View>
       </View>
     </GameModal>

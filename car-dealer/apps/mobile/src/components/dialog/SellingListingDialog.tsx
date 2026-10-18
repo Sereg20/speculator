@@ -49,12 +49,12 @@ export function SellingListingDialog({
               <Text style={[styles.price, finalPrice < (askingPrice * 0.9) ?
                 { color: colors.textRed } :
                 { color: colors.textMain }
-              ]}> {finalPrice} BYN </Text>
+              ]}> {finalPrice} USD </Text>
               {finalPrice < askingPrice &&
                 <Foundation name="arrow-down" size={22} color={finalPrice < (askingPrice * 0.9) ? colors.textRed : colors.textMain} />
               }
             </View>
-            <Text style={styles.startPrice}>(Начальная цена: {askingPrice} BYN)</Text>
+            <Text style={styles.startPrice}>(Начальная цена: {askingPrice} USD)</Text>
           </ListItem>
 
           <Text style={styles.defectsTitle}>Неисправности</Text>

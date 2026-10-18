@@ -184,7 +184,7 @@ async function tickPlayer(player, log) {
         INSERT INTO transactions (player_id, type, amount, reference_id, description)
         VALUES (
           ${p.id}, 'holding_cost', ${-holdingDeduct}, NULL,
-          ${`Стоимость хранения: ${car_count} авто × ${lockedElapsed} дн. × ${dailyCost} BYN`}
+          ${`Стоимость хранения: ${car_count} авто × ${lockedElapsed} дн. × ${dailyCost} USD`}
         )
       `;
     }
@@ -193,7 +193,7 @@ async function tickPlayer(player, log) {
         INSERT INTO transactions (player_id, type, amount, reference_id, description)
         VALUES (
           ${p.id}, 'rent', ${-rentDeduct}, NULL,
-          ${`Аренда гаража (уровень ${p.garage_slots}): ${rentDeduct} BYN`}
+          ${`Аренда гаража (уровень ${p.garage_slots}): ${rentDeduct} USD`}
         )
       `;
     }
@@ -202,7 +202,7 @@ async function tickPlayer(player, log) {
         INSERT INTO transactions (player_id, type, amount, reference_id, description)
         VALUES (
           ${p.id}, 'tool_upkeep', ${-toolUpkeepDeduct}, NULL,
-          ${`Обслуживание оборудования: ${toolUpkeepDeduct} BYN`}
+          ${`Обслуживание оборудования: ${toolUpkeepDeduct} USD`}
         )
       `;
     }
@@ -212,8 +212,8 @@ async function tickPlayer(player, log) {
         VALUES (
           ${p.id}, 'loan_repayment', ${-loanDeduct}, NULL,
           ${loanCleared
-            ? `Кредит полностью погашен: ${loanDeduct} BYN`
-            : `Платёж по кредиту: ${loanDeduct} BYN (остаток: ${newLoanRemaining} BYN)`}
+            ? `Кредит полностью погашен: ${loanDeduct} USD`
+            : `Платёж по кредиту: ${loanDeduct} USD (остаток: ${newLoanRemaining} USD)`}
         )
       `;
     }

@@ -54,7 +54,7 @@ export function NegotiatePriceSelectorDialog({
       <View style={styles.infoContainer}>
         <View style={styles.markupBlock}>
           <Text style={styles.infoLabel}>Скидка:  </Text>
-          <Text style={styles.markup}>{markup} BYN ({markupPercent}%)</Text>
+          <Text style={styles.markup}>{markup} USD ({markupPercent}%)</Text>
         </View>
       </View>
     </GameModal>

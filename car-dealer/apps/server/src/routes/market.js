@@ -316,7 +316,7 @@ async function negotiatePurchase(request, reply) {
     await refundEnergy(playerId, ENERGY_COST_NEGOTIATE);
     return reply.code(400).send({
       data: null,
-      error: `Proposed price is too low. Minimum is ${minAllowedPrice} BYN (70% of original ${originalPrice} BYN).`,
+      error: `Proposed price is too low. Minimum is ${minAllowedPrice} USD (70% of original ${originalPrice} USD).`,
       meta: { minAllowedPrice, originalPrice },
     });
   }
@@ -326,7 +326,7 @@ async function negotiatePurchase(request, reply) {
     await refundEnergy(playerId, ENERGY_COST_NEGOTIATE);
     return reply.code(400).send({
       data: null,
-      error: `Proposed price must be below the current asking price of ${currentPrice} BYN.`,
+      error: `Proposed price must be below the current asking price of ${currentPrice} USD.`,
       meta: { currentPrice },
     });
   }

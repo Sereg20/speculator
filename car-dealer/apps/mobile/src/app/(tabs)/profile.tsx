@@ -39,7 +39,7 @@ function formatNumber(value: number): string {
 }
 
 function formatMoney(value: number): string {
-  return `${formatNumber(value)} BYN`;
+  return `${formatNumber(value)} USD`;
 }
 
 function getTierTitle(tier: number) {

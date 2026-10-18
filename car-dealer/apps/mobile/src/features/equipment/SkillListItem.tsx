@@ -84,7 +84,7 @@ export function SkillListItem({
             {!skill.owned && (
               <View style={styles.priceContainer}>
                 <FontAwesome5 name="bitcoin" size={14} color={colors.textGold} />
-                <Text style={styles.price}> {skill.byn_price} BYN</Text>
+                <Text style={styles.price}> {skill.byn_price} USD</Text>
               </View>
             )}
           </View>

@@ -163,7 +163,7 @@ async function purchaseSkill(request, reply) {
 
     if (player.cash < skill.byn_price) {
       throw Object.assign(
-        new Error(`Insufficient funds (need ${skill.byn_price} BYN, have ${player.cash} BYN)`),
+        new Error(`Insufficient funds (need ${skill.byn_price} USD, have ${player.cash} USD)`),
         { statusCode: 400 },
       );
     }

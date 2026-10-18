@@ -57,7 +57,7 @@ export function RepairDialog({
               <View style={styles.costContainer}>
                 <View style={styles.priceContainer}>
                   <FontAwesome5 name="bitcoin" size={16} color={colors.textGold} />
-                  <Text style={styles.price}> {defect.proper_repair_cost} BYN</Text>
+                  <Text style={styles.price}> {defect.proper_repair_cost} USD</Text>
                 </View>
                 <View style={styles.priceContainer}>
                   <AntDesign name="thunderbolt" size={16} color={colors.textGold} />
@@ -78,7 +78,7 @@ export function RepairDialog({
                 <View style={styles.costContainer}>
                   <View style={styles.priceContainer}>
                     <FontAwesome5 name="bitcoin" size={16} color={colors.textGold} />
-                    <Text style={styles.price}> {defect.quick_fix_cost} BYN</Text>
+                    <Text style={styles.price}> {defect.quick_fix_cost} USD</Text>
                   </View>
                   <View style={styles.priceContainer}>
                     <AntDesign name="thunderbolt" size={16} color={colors.textGold} />

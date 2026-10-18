@@ -110,7 +110,7 @@ async function createListing(request, reply) {
         const maxAllowed = Math.round(car.market_value * 1.5);
         if (askingPrice > maxAllowed) {
           throw Object.assign(
-            new Error(`Asking price cannot exceed 150% of market value (max ${maxAllowed} BYN)`),
+            new Error(`Asking price cannot exceed 150% of market value (max ${maxAllowed} USD)`),
             { statusCode: 400 },
           );
         }
@@ -394,14 +394,14 @@ async function respondToInquiry(request, reply) {
       if (counterPrice > lst.asking_price) {
         return reply.code(400).send({
           data: null,
-          error: `Counter offer cannot exceed your asking price (${lst.asking_price} BYN)`,
+          error: `Counter offer cannot exceed your asking price (${lst.asking_price} USD)`,
           meta: null,
         });
       }
       if (counterPrice <= inq.offered_price) {
         return reply.code(400).send({
           data: null,
-          error: `Counter offer must be above the buyer's offer (${inq.offered_price} BYN) — just accept instead`,
+          error: `Counter offer must be above the buyer's offer (${inq.offered_price} USD) — just accept instead`,
           meta: null,
         });
       }
@@ -619,7 +619,7 @@ async function _completeSale(playerId, listing, inquiry, finalPrice) {
     await tx`
       INSERT INTO transactions (player_id, type, amount, reference_id, description)
       VALUES (${playerId}, 'sale_revenue', ${finalPrice}, ${listing.car_id},
-              ${`Продажа: ${finalPrice} BYN`})
+              ${`Продажа: ${finalPrice} USD`})
     `;
 
     // Reputation: determine clean sale vs quick-fix issues

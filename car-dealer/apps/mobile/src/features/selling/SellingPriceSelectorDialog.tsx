@@ -46,19 +46,19 @@ export function SellingPriceSelectorDialog({
       <View style={styles.infoContainer}>
           <View style={styles.markupBlock}>
             <Text style={styles.infoLabel}>Наценка: </Text>
-            <Text style={[styles.markup, markup > 0 ? styles.markupPositive : styles.markupNegative]}>{markup} BYN ({markupPercent}%)</Text>
+            <Text style={[styles.markup, markup > 0 ? styles.markupPositive : styles.markupNegative]}>{markup} USD ({markupPercent}%)</Text>
           </View>
 
           <View style={styles.infoBlock}>
             <Text style={styles.infoLabel}>Рыночная цена:  </Text>
             <FontAwesome5 name="bitcoin" size={18} color={colors.textGold} />
-            <Text style={styles.price}> {marketValue} BYN</Text>
+            <Text style={styles.price}> {marketValue} USD</Text>
           </View>
 
           <View style={styles.infoBlock}>
             <Text style={styles.infoLabel}>Цена покупки:  </Text>
             <FontAwesome5 name="bitcoin" size={16} color={colors.textGold} />
-            <Text style={styles.price}> {purchasePrice} BYN</Text>
+            <Text style={styles.price}> {purchasePrice} USD</Text>
           </View>
       </View>
     </GameModal>

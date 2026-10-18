@@ -109,7 +109,7 @@ async function takeLoan(request, reply) {
       INSERT INTO transactions (player_id, type, amount, reference_id, description)
       VALUES (
         ${playerId}, 'loan_taken', ${loanDef.principal}, NULL,
-        ${`Кредит банка (${tier}): +${loanDef.principal} BYN, к возврату ${loanDef.totalRepay} BYN`}
+        ${`Кредит банка (${tier}): +${loanDef.principal} USD, к возврату ${loanDef.totalRepay} USD`}
       )
     `;
   }).catch(err => {
@@ -162,7 +162,7 @@ async function repayLoan(request, reply) {
 
     if (p.cash < p.loan_remaining) {
       const err = new Error(
-        `Not enough cash for full repayment. Need ${p.loan_remaining} BYN, have ${p.cash} BYN. ` +
+        `Not enough cash for full repayment. Need ${p.loan_remaining} USD, have ${p.cash} USD. ` +
         `Daily instalments will continue automatically.`,
       );
       err.statusCode = 400;
@@ -194,7 +194,7 @@ async function repayLoan(request, reply) {
       INSERT INTO transactions (player_id, type, amount, reference_id, description)
       VALUES (
         ${playerId}, 'loan_repayment', ${-repaid}, NULL,
-        ${`Досрочное погашение кредита: ${repaid} BYN`}
+        ${`Досрочное погашение кредита: ${repaid} USD`}
       )
     `;
   }).catch(err => {

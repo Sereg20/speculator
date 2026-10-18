@@ -48,13 +48,13 @@ export function CarDetailsDialog({
               <Text style={[styles.price, askingPrice > marketValue ?
                 { color: colors.textRed } :
                 { color: colors.textGreen }
-              ]}> {askingPrice} BYN </Text>
+              ]}> {askingPrice} USD </Text>
               {askingPrice > marketValue ?
                 <Foundation name="arrow-up" size={22} color={colors.textRed} /> :
                 <Foundation name="arrow-down" size={22} color={colors.textGreen} />
               }
             </View>
-            <Text style={styles.startPrice}>(Середина рынка: {marketValue} BYN)</Text>
+            <Text style={styles.startPrice}>(Середина рынка: {marketValue} USD)</Text>
           </ListItem>
 
           <Text style={styles.defectsTitle}>Неисправности</Text>

@@ -114,7 +114,7 @@ export function CarSlot({
   function getStateText(state: string) {
     switch (state) {
       case "listed_for_sale":
-        return `НА ПРОДАЖЕ • ${car?.activeListing?.asking_price ?? 0} BYN`;
+        return `НА ПРОДАЖЕ • ${car?.activeListing?.asking_price ?? 0} USD`;
 
       case "in_repair":
         return "В РЕМОНТЕ";
@@ -384,7 +384,7 @@ export function CarSlot({
                 <View>
                   <Text style={styles.listingTitle}>НА ПРОДАЖЕ</Text>
                   <Text style={styles.listingPrice}>
-                    {car.activeListing?.asking_price ?? 0} BYN
+                    {car.activeListing?.asking_price ?? 0} USD
                   </Text>
                 </View>
               </View>
@@ -428,7 +428,7 @@ export function CarSlot({
                   {activeInquiry.offered_price.toLocaleString(
                     "ru-RU"
                   )}{" "}
-                  BYN
+                  USD
                 </Text>
               </View>
               <MaterialIcons name="navigate-next" size={24} color={colors.textGold} />
