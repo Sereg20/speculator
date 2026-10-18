@@ -21,9 +21,6 @@ export const CAR_MODELS = [
   { make: 'ВАЗ', model: '2114', yearRange: [2001, 2013], priceRange: [1500, 3000] },
   { make: 'ВАЗ', model: '2115', yearRange: [1997, 2012], priceRange: [1400, 2800] },
 
-  { make: 'Москвич', model: '2141', yearRange: [1986, 2001], priceRange: [800, 1800] },
-  { make: 'ЗАЗ', model: 'Славута', yearRange: [1999, 2011], priceRange: [800, 1800] },
-  { make: 'ZAZ', model: 'Sens', yearRange: [2002, 2017], priceRange: [1000, 2200] },
   { make: 'Daewoo', model: 'Nexia', yearRange: [1994, 2016], priceRange: [1300, 2800] },
   { make: 'Daewoo', model: 'Matiz', yearRange: [1998, 2015], priceRange: [1200, 2500] },
   { make: 'Daewoo', model: 'Lanos', yearRange: [1997, 2017], priceRange: [1400, 3000] },
