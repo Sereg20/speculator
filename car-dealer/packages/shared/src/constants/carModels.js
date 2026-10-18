@@ -17,7 +17,6 @@ export const CAR_MODELS = [
   { make: 'Lada', model: '2110', yearRange: [1995, 2007], priceRange: [1200, 2500] },
   { make: 'Lada', model: '2111', yearRange: [1997, 2009], priceRange: [1300, 2600] },
   { make: 'Lada', model: '2112', yearRange: [1999, 2008], priceRange: [1300, 2700] },
-  { make: 'Lada', model: '2113', yearRange: [2004, 2013], priceRange: [1400, 2800] },
   { make: 'Lada', model: '2114', yearRange: [2001, 2013], priceRange: [1500, 3000] },
   { make: 'Lada', model: '2115', yearRange: [1997, 2012], priceRange: [1400, 2800] },
 
