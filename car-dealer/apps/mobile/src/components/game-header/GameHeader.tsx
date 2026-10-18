@@ -80,6 +80,8 @@ const styles = StyleSheet.create({
   },
 
   level: {
+    position: 'absolute',
+    top: -30,
     color: colors.textGold,
     fontSize: 15,
     fontWeight: "bold",

@@ -22,6 +22,7 @@ import Animated, {
 import { CarSlotEmpty } from "./CarSlotEmpty";
 import { getGarageImage } from "@/assets/images/garage-bank/garageBank";
 import Entypo from '@expo/vector-icons/Entypo';
+import { getCarImage } from "@/assets/images/cars/carImages";
 
 interface CarCardProps {
   car: Car | null;
@@ -167,7 +168,7 @@ export function CarSlot({
 
         <View style={styles.hero}>
           <Image
-            source={garageImg}
+            source={getCarImage(car.imageKey)}
             style={styles.carSlotBackground}
             resizeMode="cover"
           />
@@ -489,7 +490,7 @@ const styles = StyleSheet.create({
    */
 
   hero: {
-    height: '44%',
+    height: '40%',
 
     position: "relative",
     overflow: "hidden",
@@ -502,12 +503,6 @@ const styles = StyleSheet.create({
 
     width: "100%",
     height: "100%",
-
-    transform: [
-      {
-        scale: 1.04,
-      },
-    ],
   },
 
   heroOverlay: {
@@ -722,6 +717,7 @@ const styles = StyleSheet.create({
    */
 
   condition: {
+    marginTop: 26,
     paddingHorizontal: 12,
     paddingTop: 10,
     paddingBottom: 8,
