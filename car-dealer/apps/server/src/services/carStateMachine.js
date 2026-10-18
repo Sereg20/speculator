@@ -38,7 +38,7 @@ export async function transitionCar(carId, targetState, opts = {}) {
   `;
 
   if (!car) {
-    throw Object.assign(new Error('Car not found'), { statusCode: 404 });
+    throw Object.assign(new Error('Авто не найден'), { statusCode: 404 });
   }
 
   const allowed = ALLOWED_TRANSITIONS[car.state] || [];

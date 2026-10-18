@@ -152,7 +152,7 @@ export default function MarketInspectionScreen() {
       if (
         error instanceof ApiError &&
         error.status === 400 &&
-        error.body.error === "No free garage slot"
+        error.body.error === "В гараже нет свободных мест"
       ) {
         addMessage('Совсем забыл! У меня нет свободных мест в гараже', 'player');
       } else {

@@ -156,14 +156,14 @@ async function purchaseSkill(request, reply) {
 
     if (player.level < skill.level_required) {
       throw Object.assign(
-        new Error(`Level ${skill.level_required} required to unlock this skill`),
+        new Error(`Level ${skill.level_required} нужно разблокировать навык`),
         { statusCode: 400 },
       );
     }
 
     if (player.cash < skill.byn_price) {
       throw Object.assign(
-        new Error(`Insufficient funds (need ${skill.byn_price} USD, have ${player.cash} USD)`),
+        new Error(`Недостаточно средств (нужно ${skill.byn_price} USD, есть ${player.cash} USD)`),
         { statusCode: 400 },
       );
     }
@@ -173,7 +173,7 @@ async function purchaseSkill(request, reply) {
       SELECT 1 FROM player_skills WHERE player_id = ${playerId} AND skill_id = ${skillId}
     `;
     if (existing) {
-      throw Object.assign(new Error('Skill already owned'), { statusCode: 409 });
+      throw Object.assign(new Error('Навык уже получен'), { statusCode: 409 });
     }
 
     // Check prerequisites
@@ -186,7 +186,7 @@ async function purchaseSkill(request, reply) {
       if (ownedPrereqs.length < skill.prerequisites.length) {
         const missing = skill.prerequisites.filter(p => !ownedPrereqs.find(o => o.skill_id === p));
         throw Object.assign(
-          new Error(`Missing prerequisites: ${missing.join(', ')}`),
+          new Error(`Сперва нужно: ${missing.join(', ')}`),
           { statusCode: 400 },
         );
       }
@@ -274,19 +274,19 @@ async function purchaseEquipment(request, reply) {
 
     if (player.level < equip.level_required) {
       throw Object.assign(
-        new Error(`Level ${equip.level_required} required for this equipment`),
+        new Error(`Нужен уровень ${equip.level_required} для этого инструмента`),
         { statusCode: 400 },
       );
     }
 
     if (player.cash < equip.purchase_price) {
-      throw Object.assign(new Error('Insufficient funds'), { statusCode: 400 });
+      throw Object.assign(new Error('Недостаточно средств'), { statusCode: 400 });
     }
 
     const [existing] = await tx`
       SELECT 1 FROM player_equipment WHERE player_id = ${playerId} AND equipment_id = ${equipmentId}
     `;
-    if (existing) throw Object.assign(new Error('Equipment already owned'), { statusCode: 409 });
+    if (existing) throw Object.assign(new Error('Инструмент уже в наличии'), { statusCode: 409 });
 
     await tx`
       UPDATE players
@@ -336,7 +336,7 @@ async function upgradeGarage(request, reply) {
 
     const currentSlots = player.garage_slots;
     if (currentSlots >= MAX_GARAGE_SLOTS) {
-      throw Object.assign(new Error('Garage already at maximum tier'), { statusCode: 400 });
+      throw Object.assign(new Error('Гараж уже максимальный'), { statusCode: 400 });
     }
 
     const nextSlots = currentSlots + 1;

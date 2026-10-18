@@ -259,7 +259,7 @@ export async function startRepair(carId, defectId, repairType, playerId) {
     }
 
     if (player.cash < cost) {
-      throw Object.assign(new Error('Insufficient funds'), { statusCode: 400 });
+      throw Object.assign(new Error('Недостаточно средств'), { statusCode: 400 });
     }
 
     // Compute repair duration from per-defect repairMinutes stored on the defect row.

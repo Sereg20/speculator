@@ -282,7 +282,7 @@ function computeDetectionProb(defect, action, hasPatternBonus, baseMultiplier = 
 async function executeInspectionAction(carId, playerId, actionId, client, baseMultiplier = 1.0, category = null) {
   const action = INSPECTION_ACTIONS[actionId];
   if (!action) {
-    throw Object.assign(new Error(`Unknown inspection action: ${actionId}`), { statusCode: 400 });
+    throw Object.assign(new Error(`Неизвестный тип диагностики: ${actionId}`), { statusCode: 400 });
   }
 
   const targetCategories = category ? [category] : action.categories;
@@ -295,7 +295,7 @@ async function executeInspectionAction(carId, playerId, actionId, client, baseMu
       `;
       if (!row) {
         throw Object.assign(
-          new Error(`Skill '${action.requires.skill}' required for this inspection`),
+          new Error(`Skill '${action.requires.skill}' нужен для этой проверки`),
           { statusCode: 400 },
         );
       }
@@ -305,7 +305,7 @@ async function executeInspectionAction(carId, playerId, actionId, client, baseMu
       `;
       if (!row) {
         throw Object.assign(
-          new Error(`Equipment '${action.requires.equipment}' required for this inspection`),
+          new Error(`Equipment '${action.requires.equipment}' нужен для этой проверки`),
           { statusCode: 400 },
         );
       }
@@ -398,7 +398,7 @@ export async function runPrePurchaseInspection(carId, playerId, actionId, catego
       AND market_listing_expires_at > NOW()
   `;
   if (!car) {
-    throw Object.assign(new Error('Listing not found or expired'), { statusCode: 404 });
+    throw Object.assign(new Error('Объявление не найдено или устарело'), { statusCode: 404 });
   }
 
   return executeInspectionAction(carId, playerId, actionId, sql, PRE_PURCHASE_ACCURACY, category);

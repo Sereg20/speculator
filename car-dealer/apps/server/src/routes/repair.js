@@ -151,8 +151,8 @@ async function cancelRepair(request, reply) {
       FOR UPDATE
     `;
 
-    if (!job) throw Object.assign(new Error('Repair job not found'), { statusCode: 404 });
-    if (job.completed) throw Object.assign(new Error('Repair already completed — cannot cancel'), { statusCode: 409 });
+    if (!job) throw Object.assign(new Error('Ремонт не найден'), { statusCode: 404 });
+    if (job.completed) throw Object.assign(new Error('Ремонт уже завершился - невозможно остановить'), { statusCode: 409 });
 
     const now = Date.now();
     const started = new Date(job.started_at).getTime();

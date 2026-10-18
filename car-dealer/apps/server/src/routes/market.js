@@ -152,7 +152,7 @@ async function purchaseCar(request, reply) {
           AND state IN ('purchased', 'in_repair', 'listed_for_sale')
       `;
       if (Number(ownedCount) >= player.garage_slots) {
-        throw Object.assign(new Error('No free garage slot'), { statusCode: 400 });
+        throw Object.assign(new Error('В гараже нет свободных мест'), { statusCode: 400 });
       }
 
       // Lock the car row — must still be available
@@ -166,12 +166,12 @@ async function purchaseCar(request, reply) {
         FOR UPDATE
       `;
       if (!listing) {
-        throw Object.assign(new Error('Listing not found or expired'), { statusCode: 404 });
+        throw Object.assign(new Error('Объявление не найдено или устарело'), { statusCode: 404 });
       }
 
       const price = listing.asking_price;
       if (player.cash < price) {
-        throw Object.assign(new Error('Insufficient funds'), { statusCode: 400 });
+        throw Object.assign(new Error('Недостаточно средств'), { statusCode: 400 });
       }
 
       // Deduct cash
