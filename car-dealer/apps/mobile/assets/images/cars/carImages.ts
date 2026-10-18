@@ -4,8 +4,7 @@ export const carImages: Record<string, ImageSourcePropType> = {
 
 };
 
-export const placeholderCarImage =
-  require("@/../assets/images/cars/placeholder.webp");
+export const placeholderCarImage = require("@/../assets/images/cars/placeholder.webp");
 
 export function getCarImage(
   imageKey?: string | null,
