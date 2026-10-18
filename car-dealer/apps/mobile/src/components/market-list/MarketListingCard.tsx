@@ -84,19 +84,19 @@ const styles = StyleSheet.create({
   },
 
   info: {
-    paddingVertical: 4,
+    paddingVertical: 3,
     flex: 1
   },
 
   title: {
     color: colors.textBlack,
     fontWeight: 'bold',
-    fontSize: 18
+    fontSize: 17
   },
 
   details: {
     color: colors.textBlack,
-    fontSize: 14
+    fontSize: 13
   },
 
   footer: {
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
   price: {
     color: colors.textBlack,
     fontWeight: 'bold',
-    fontSize: 18,
+    fontSize: 17,
     textShadowColor: "rgba(0, 0, 0, 0.1)",
     textShadowOffset: {
       width: 1,
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
   viewText: {
     color: colors.textMain,
     fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: 13,
     textShadowColor: "rgba(0, 0, 0, 0.2)",
     textShadowOffset: {
       width: 1,
