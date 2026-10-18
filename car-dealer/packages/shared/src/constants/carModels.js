@@ -131,7 +131,6 @@ export const CAR_MODELS = [
   { make: 'Volkswagen', model: 'Touran I', yearRange: [2003, 2010], priceRange: [5500, 10000] },
 
   { make: 'Skoda', model: 'Fabia II', yearRange: [2007, 2014], priceRange: [5000, 9000] },
-  { make: 'Skoda', model: 'Octavia Tour', yearRange: [1996, 2010], priceRange: [3500, 7500] },
   { make: 'Skoda', model: 'Octavia A5', yearRange: [2004, 2013], priceRange: [5000, 11000] },
   { make: 'Skoda', model: 'Roomster', yearRange: [2006, 2015], priceRange: [4500, 8500] },
 
@@ -158,7 +157,6 @@ export const CAR_MODELS = [
   // Asian mid-range
   // ============================================================
 
-  { make: 'Hyundai', model: 'Accent', yearRange: [2000, 2011], priceRange: [3500, 8000] },
   { make: 'Hyundai', model: 'Getz', yearRange: [2002, 2011], priceRange: [3000, 6500] },
   { make: 'Hyundai', model: 'i30 I', yearRange: [2007, 2012], priceRange: [5000, 9000] },
   { make: 'Hyundai', model: 'Elantra HD', yearRange: [2006, 2011], priceRange: [4500, 8500] },
@@ -238,10 +236,8 @@ export const CAR_MODELS = [
   // Premium (14,000 – 50,000 BYN)
   // ============================================================
 
-  { make: 'BMW', model: '3 E46', yearRange: [1998, 2006], priceRange: [7000, 18000] },
   { make: 'BMW', model: '3 E90', yearRange: [2005, 2012], priceRange: [10000, 24000] },
   { make: 'BMW', model: '3 F30', yearRange: [2012, 2016], priceRange: [22000, 38000] },
-  { make: 'BMW', model: '5 E39', yearRange: [1995, 2003], priceRange: [6000, 16000] },
   { make: 'BMW', model: '5 E60', yearRange: [2003, 2010], priceRange: [14000, 32000] },
   { make: 'BMW', model: '5 F10', yearRange: [2010, 2016], priceRange: [24000, 45000] },
   { make: 'BMW', model: 'X3 E83', yearRange: [2003, 2010], priceRange: [10000, 22000] },
@@ -256,10 +252,8 @@ export const CAR_MODELS = [
 
   { make: 'Mercedes', model: 'C-Class W203', yearRange: [2000, 2007], priceRange: [7000, 18000] },
   { make: 'Mercedes', model: 'C-Class W204', yearRange: [2007, 2014], priceRange: [15000, 32000] },
-  { make: 'Mercedes', model: 'E-Class W210', yearRange: [1995, 2002], priceRange: [5000, 14000] },
   { make: 'Mercedes', model: 'E-Class W211', yearRange: [2002, 2009], priceRange: [10000, 26000] },
   { make: 'Mercedes', model: 'E-Class W212', yearRange: [2009, 2015], priceRange: [22000, 42000] },
-  { make: 'Mercedes', model: 'ML W163', yearRange: [1998, 2005], priceRange: [8000, 18000] },
 
   { make: 'Lexus', model: 'IS 250', yearRange: [2005, 2012], priceRange: [14000, 28000] },
   { make: 'Lexus', model: 'GS 300', yearRange: [2005, 2011], priceRange: [14000, 28000] },
@@ -294,20 +288,18 @@ export const CAR_MODELS = [
   // Miscellaneous / market variety
   // ============================================================
 
-  { make: 'Chevrolet', model: 'Lacetti', yearRange: [2004, 2013], priceRange: [3000, 6500] },
   { make: 'Chevrolet', model: 'Aveo', yearRange: [2003, 2011], priceRange: [2500, 5500] },
   { make: 'Chevrolet', model: 'Cruze', yearRange: [2009, 2015], priceRange: [5500, 10000] },
   { make: 'Chevrolet', model: 'Malibu VIII', yearRange: [2012, 2016], priceRange: [9000, 17000] },
   { make: 'Chevrolet', model: 'Equinox I', yearRange: [2004, 2009], priceRange: [5000, 11000] },
   { make: 'Chevrolet', model: 'Equinox II', yearRange: [2009, 2017], priceRange: [8000, 16000] },
   { make: 'Daewoo', model: 'Lacetti', yearRange: [2002, 2010], priceRange: [2500, 5500] },
-  { make: 'Suzuki', model: 'Swift III', yearRange: [2005, 2010], priceRange: [4000, 7500] },
+  { make: 'Suzuki', model: 'Swift IV', yearRange: [2010, 2013], priceRange: [6000, 9500] },
   { make: 'Suzuki', model: 'SX4', yearRange: [2006, 2013], priceRange: [5500, 10000] },
   { make: 'Suzuki', model: 'Grand Vitara II', yearRange: [2005, 2014], priceRange: [8000, 15000] },
   { make: 'Mitsubishi', model: 'Pajero III', yearRange: [1999, 2006], priceRange: [9000, 20000] },
   { make: 'Mitsubishi', model: 'Outlander II', yearRange: [2006, 2012], priceRange: [7000, 15000] },
   { make: 'Honda', model: 'CR-V II', yearRange: [2002, 2006], priceRange: [6500, 13000] },
   { make: 'Honda', model: 'CR-V III', yearRange: [2007, 2012], priceRange: [10000, 20000] },
-  { make: 'Nissan', model: 'Tiida', yearRange: [2004, 2011], priceRange: [4000, 8000] },
   { make: 'Nissan', model: 'Juke', yearRange: [2010, 2015], priceRange: [8000, 15000] },
 ];
