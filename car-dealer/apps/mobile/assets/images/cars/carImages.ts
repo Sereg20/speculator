@@ -1,6 +1,8 @@
 import type { ImageSourcePropType } from "react-native";
 
 export const carImages: Record<string, ImageSourcePropType> = {
+  volkswagen_polo_iii: require("@/../assets/images/cars/volkswagen_polo_iii.jpeg"),
+  volkswagen_tiguan_i: require("@/../assets/images/cars/volkswagen_tiguan_i.jpeg"),
 
 };
 

@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
 
   backgroundListItem: {
     backgroundColor: colors.mainBackground,
-    width: '33%',
+    width: '39%',
     height: '100%'
   },
 
