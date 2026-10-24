@@ -10,10 +10,12 @@ import { colors } from "@/theme/colors";
 export function FullScreenLoader() {
   return (
     <View style={styles.container}>
+      <View style={styles.imageContainer}>
       <Image
-      source={require("@/../assets/images/icon.png")}
+      source={require("@/../assets/images/icon_formatter.webp")}
       style={styles.image}
       resizeMode="cover"/>
+      </View>
       <Text style={styles.text}>ЗАГРУЗКА</Text>
     </View>
   );
@@ -25,15 +27,23 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: colors.mainBackground,
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    gap: 4
   },
 
-  image: {
+  imageContainer: {
+    overflow: 'hidden',
     width: 120,
     height: 120,
     borderWidth: 2,
-    borderRadius: 26,
-    borderColor: colors.darkBackground,
+    borderRadius: 16,
+    borderColor: 'rgba(73, 225, 255, 0.8)',
+    boxShadow: "0px 0px 10px rgba(73, 225, 255, 0.4)",
+  },
+
+  image: {
+    width: '100%',
+    height: '100%'
   },
 
   text: {

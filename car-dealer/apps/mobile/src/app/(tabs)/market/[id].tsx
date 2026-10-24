@@ -57,6 +57,7 @@ export default function MarketInspectionScreen() {
   const [isRevealedDefectsDialogVisible, setRevealedDefectsDialogVisible] = useState<boolean>(false);
   const [isCarDetailsExpanded, setCarDetailsExpanded] = useState<boolean>(false);
   const [isDialogLoading, setDialogLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
 
   const [allDefects, setAllDefects] = useState<RevealedDefect[]>([]);
@@ -116,6 +117,7 @@ export default function MarketInspectionScreen() {
       } else if (result.data.outcome === 'rejected') {
         setPreInspectDisabled(true);
         setChatDisabled(true);
+        setPurchaseDisabled(true);
       }
       setPurchaseDisabled(false);
       addMessage(result.data.message, "npc");
@@ -149,6 +151,7 @@ export default function MarketInspectionScreen() {
       setSuccessPurchaseVisible(true);
     },
     onError: (error) => {
+      setIsLoading(false);
       if (
         error instanceof ApiError &&
         error.status === 400 &&
@@ -179,11 +182,11 @@ export default function MarketInspectionScreen() {
       setLastDefects(result.data.revealed);
       setAllDefects(allDefects => [...allDefects, ...result.data.revealed]);
       setRevealedDefectsDialogVisible(true);
-      setPreInspectDisabled(false);
+      setIsLoading(false);
     },
 
     onError: (error) => {
-      setPreInspectDisabled(false);
+      setIsLoading(false);
       if (
         error instanceof ApiError &&
         error.status === 409 &&
@@ -224,6 +227,7 @@ export default function MarketInspectionScreen() {
 
   function onBuy() {
     setPurchaseDisabled(true);
+    setIsLoading(true);
     addMessage('По рукам! Поехали оформляться.', 'player');
     purchaseMutation.mutate();
   }
@@ -255,8 +259,8 @@ export default function MarketInspectionScreen() {
 
   function onPreInspect(actionId: InspectionActionId | null, categoryId: CategoryId | null) {
     if (!actionId || !categoryId) return;
-    setPreInspectDisabled(true);
     setInspectModalVisible(false);
+    setIsLoading(true);
     preInspectMutation.mutate({
       actionId,
       categoryId,
@@ -321,13 +325,13 @@ export default function MarketInspectionScreen() {
         <View style={styles.globalActionsContainer}>
           <View style={styles.actionsContainer}>
             <NegotiateAction
-              disabled={negotiateDisabled}
+              disabled={negotiateDisabled || isDialogLoading || isLoading}
               text={'ТОРГ'}
               onPress={onNegotiate}
               energyCost={energyCost.marketNegotiate}
               color='#307DC1' />
             <NegotiateAction
-              disabled={chatDisabled}
+              disabled={chatDisabled || isDialogLoading || isLoading}
               text={'СПРОСИТЬ'}
               onPress={onChat}
               energyCost={energyCost.marketChat}
@@ -335,13 +339,13 @@ export default function MarketInspectionScreen() {
           </View>
           <View style={styles.actionsContainer}>
             <NegotiateAction
-              disabled={purchaseDisabled}
+              disabled={purchaseDisabled || isDialogLoading || isLoading}
               text={`КУПИТЬ\n(${currentPrice})`}
               onPress={onBuy}
               energyCost={0}
               color='#429958' />
             <NegotiateAction
-              disabled={preInspectDisabled}
+              disabled={preInspectDisabled || isDialogLoading || isLoading}
               text={'ПРОВЕРИТЬ'}
               onPress={onInspect}
               energyCost={0}

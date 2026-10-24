@@ -2,6 +2,7 @@
 import { useState } from "react";
 import {
   ActivityIndicator,
+  Image,
   Modal,
   Pressable,
   StyleSheet,
@@ -51,7 +52,10 @@ export function FirstLaunchModal({
         <View style={styles.modal}>
           <View style={styles.header}>
             <View style={styles.iconContainer}>
-              <Text style={styles.icon}>🚘</Text>
+              <Image
+                source={require('@/assets/images/icon_formatter.webp')}
+                style={styles.icon}
+                resizeMode="cover"/>
             </View>
 
             <Text style={styles.title}>Добро пожаловать!</Text>
@@ -125,19 +129,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: spacing.lg,
-    backgroundColor: "rgba(0, 0, 0, 0.82)",
+    backgroundColor: colors.darkBackground,
   },
 
   modal: {
     width: "100%",
     maxWidth: 420,
     padding: spacing.xl,
-    borderRadius: 24,
-    backgroundColor: colors.darkBackground,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
+    borderRadius: 16,
+    backgroundColor: colors.mainBackground,
+    borderWidth: 2,
     gap: spacing.xl,
-    boxShadow: "0px 8px 0px rgba(0, 0, 0, 0.3)",
+    borderColor: 'rgba(73, 225, 255, 0.8)',
+    boxShadow: "0px 0px 10px rgba(73, 225, 255, 0.6)",
   },
 
   header: {
@@ -146,18 +150,21 @@ const styles = StyleSheet.create({
   },
 
   iconContainer: {
-    width: 76,
-    height: 76,
+    overflow: 'hidden',
+    width: 80,
+    height: 80,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 22,
+    borderRadius: 10,
     backgroundColor: colors.lightBackground,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
+    borderWidth: 1.5,
+    borderColor: 'rgba(73, 225, 255, 0.3)',
+    boxShadow: "0px 0px 10px rgba(73, 225, 255, 0.6)",
   },
 
   icon: {
-    fontSize: 38,
+    width: '100%',
+    height: '100%'
   },
 
   title: {
@@ -170,7 +177,7 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.greyColor,
     textAlign: "center",
-    lineHeight: 23,
+    lineHeight: 20,
   },
 
   form: {
@@ -180,13 +187,12 @@ const styles = StyleSheet.create({
   label: {
     ...typography.button,
     color: colors.greyColor,
-    letterSpacing: 1,
   },
 
   input: {
     minHeight: 54,
     paddingHorizontal: spacing.lg,
-    borderRadius: 14,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.greyColor,
     backgroundColor: colors.mainBackground,
@@ -203,16 +209,20 @@ const styles = StyleSheet.create({
 
   errorContainer: {
     padding: spacing.md,
-    borderRadius: 10,
+    borderRadius: 8,
     backgroundColor: "rgba(255, 80, 80, 0.12)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 80, 80, 0.3)",
   },
 
   errorText: {
-    color: "#FF7777",
+    color: colors.textRed,
     fontSize: 13,
     lineHeight: 19,
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
+    textShadowOffset: {
+      width: 1,
+      height: 1,
+    },
+    textShadowRadius: 4,
   },
 
   button: {
@@ -220,10 +230,8 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 14,
+    borderRadius: 8,
     backgroundColor: colors.blueButtonColor,
-    borderBottomWidth: 4,
-    borderBottomColor: "rgba(0, 0, 0, 0.25)",
   },
 
   buttonDisabled: {
@@ -231,15 +239,20 @@ const styles = StyleSheet.create({
   },
 
   buttonPressed: {
-    transform: [{ translateY: 2 }],
-    borderBottomWidth: 2,
+    opacity: 0.8
   },
 
   buttonText: {
     ...typography.button,
-    color: "#FFFFFF",
+    color: colors.textMain,
+    fontWeight: 'bold',
     fontSize: 15,
-    letterSpacing: 1,
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
+    textShadowOffset: {
+      width: 1,
+      height: 1,
+    },
+    textShadowRadius: 4,
   },
 
   footer: {

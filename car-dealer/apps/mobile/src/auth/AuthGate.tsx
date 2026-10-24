@@ -49,7 +49,6 @@ export function AuthGate({ children }: AuthGateProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const checkSession = useCallback(async () => {
-    debugger
     setStatus("checking");
     setErrorMessage(null);
 
@@ -82,7 +81,9 @@ export function AuthGate({ children }: AuthGateProps) {
         throw error;
       }
     } catch (error) {
-      setErrorMessage(error?.message);
+      setErrorMessage(
+        error instanceof Error ? error.message : "Произошла неизвестная ошибка"
+      );
       setStatus("error");
     }
   }, [queryClient]);
@@ -150,7 +151,7 @@ export function AuthGate({ children }: AuthGateProps) {
     <AuthContext.Provider
       value={{ isAuthenticated: status === "ready" }}
     >
-      {children}
+      {status === "ready" ? children : null}
 
       <FirstLaunchModal
         visible={status === "registration"}
