@@ -51,7 +51,7 @@ export function SellingPriceSelectorDialog({
 
           <View style={styles.infoBlock}>
             <Text style={styles.infoLabel}>Рыночная цена:  </Text>
-            <FontAwesome5 name="bitcoin" size={18} color={colors.textGold} />
+            <FontAwesome5 name="bitcoin" size={16} color={colors.textGold} />
             <Text style={styles.price}> {marketValue} USD</Text>
           </View>
 
