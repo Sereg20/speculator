@@ -21,7 +21,8 @@ interface GameHeaderProps {
 export function GameHeader({onLvlPress, onCashPress, onEnergyPress}: GameHeaderProps) {
   const insets = useSafeAreaInsets();
   const { data: player } = useQuery(playerQuery());
-  const xpProgress = player!.xp / (player!.xp + player!.xp_to_next_level) * 100;
+  // const xpProgress = player!.xp / (player!.xp + player!.xp_to_next_level) * 100;
+  const filled = (player!.xp - player!.xp_level_start) / (player!.xp_next_level_start - player!.xp_level_start);
 
   return (
     <View style={[styles.container, {paddingTop: insets.top}]}>
@@ -29,7 +30,7 @@ export function GameHeader({onLvlPress, onCashPress, onEnergyPress}: GameHeaderP
       <Pressable onPress={onLvlPress}>
         <CircularProgressBase
           radius={20}
-          value={xpProgress}
+          value={filled}
           activeStrokeWidth={6}
           inActiveStrokeWidth={6}
           activeStrokeColor={colors.textGold}

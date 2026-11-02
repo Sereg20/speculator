@@ -164,6 +164,8 @@ type RespondToInquiryResponse = {
     listingId?: string;
     finalPrice?: number;
     purchasePrice?: number;
+    totalRepairCost?: number;
+    dealProfit?: number;
     message: string;
     outcome: InquirySellerResponseAction;
     nextInquiryAllowedAt: string;

@@ -1,26 +1,7 @@
 import { sql } from '../db/client.js';
 import { requireAuth } from '../middleware/auth.js';
 import { getEnergy, getPlayerState } from '../services/energyService.js';
-import { REPUTATION_TIERS, LEVEL_XP_THRESHOLDS } from '../config.js';
-
-function reputationTier(score) {
-  return REPUTATION_TIERS.findLast((t) => score >= t.min)?.name || 'Новичок';
-}
-
-/**
- * Compute XP needed to reach the next level.
- * Returns 0 if at max level in the threshold table.
- */
-function xpToNextLevel(xp, level) {
-  const nextThreshIdx = level; // level is 1-based; index for next threshold = level (0-based)
-  if (nextThreshIdx >= LEVEL_XP_THRESHOLDS.length) {
-    // Beyond table: every 300 XP = 1 level
-    const xpIntoCurrentLevel = xp - LEVEL_XP_THRESHOLDS[LEVEL_XP_THRESHOLDS.length - 1]
-      - (level - LEVEL_XP_THRESHOLDS.length) * 300;
-    return 300 - xpIntoCurrentLevel;
-  }
-  return Math.max(0, LEVEL_XP_THRESHOLDS[nextThreshIdx] - xp);
-}
+import { reputationTier, xpToNextLevel, xpLevelStart, xpNextLevelStart } from '../services/playerStats.js';
 
 /**
  * GET /player/me
@@ -57,7 +38,9 @@ async function getMe(request, reply) {
       energy_current: energyCurrent,
       energy_max: energyMax,
       reputation_tier: reputationTier(player.reputation_score),
-      xp_to_next_level: xpToNextLevel(player.xp, player.level),
+      xp_to_next_level:    xpToNextLevel(player.xp, player.level),
+      xp_level_start:      xpLevelStart(player.level),
+      xp_next_level_start: xpNextLevelStart(player.level),
       loan,
     },
     error: null,

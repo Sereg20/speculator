@@ -672,10 +672,20 @@ async function _completeSale(playerId, listing, inquiry, finalPrice) {
       )
     `;
 
+    // Sum all repair costs charged for this car
+    const [repairCosts] = await tx`
+      SELECT COALESCE(SUM(cost_charged), 0)::int AS total
+      FROM repair_jobs
+      WHERE car_id = ${listing.car_id} AND completed = true
+    `;
+    const totalRepairCost = repairCosts.total;
+
     saleResult = {
       outcome: 'sold',
       finalPrice,
       purchasePrice: listing.purchase_price,
+      totalRepairCost,
+      dealProfit: finalPrice - listing.purchase_price - totalRepairCost,
       listingId: listing.id,
       carId: listing.car_id,
       repDelta: repDelta + (allProperlyRepaired ? REP_EVENTS.proper_repair_bonus : 0),
