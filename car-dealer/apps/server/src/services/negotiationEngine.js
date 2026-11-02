@@ -327,28 +327,32 @@ export async function resolveSaleNegotiation(playerId, context) {
  *
  * @param {number} baseQFDiscovery  - from defects.qf_discovery_base (e.g. 0.45)
  * @param {number} reputationScore
- * @param {boolean} buyerRequestedInspection
+ * @param {boolean} buyerRequestedInspection  - unused, kept for signature compat
  * @returns {number} effective probability 0–1
  */
 export function quickFixDiscoveryProb(baseQFDiscovery, reputationScore, buyerRequestedInspection) {
   const repTier = getRepTierName(reputationScore);
 
+  // Reputation is a small flavour modifier — max ±0.08
   const REP_MOD = {
-    'Легенда':   -0.20,
-    'Авторитет': -0.12,
-    'Надёжный':  -0.06,
+    'Легенда':   -0.08,
+    'Авторитет': -0.05,
+    'Надёжный':  -0.02,
     'Знакомый':   0,
-    'Новичок':   +0.10,
+    'Новичок':   +0.05,
   };
 
-  let p = baseQFDiscovery + (REP_MOD[repTier] ?? 0);
-  if (buyerRequestedInspection) p += 0.25;
-
+  const p = baseQFDiscovery + (REP_MOD[repTier] ?? 0);
   return clamp(p, 0.05, 0.95);
 }
 
 /**
  * Compute buyer inspection probability (GMS §9.3).
+ *
+ * Design intent: NPCs inspect ~8/10 cars at a fair price. Price ratio is the
+ * primary driver — a heavily underpriced car gets bought without scrutiny, an
+ * overpriced one gets inspected almost certainly. Reputation is a small flavour
+ * modifier (max ±0.08 swing total).
  *
  * @param {number} reputationScore
  * @param {number} askingPrice
@@ -358,21 +362,27 @@ export function quickFixDiscoveryProb(baseQFDiscovery, reputationScore, buyerReq
 export function buyerInspectionProb(reputationScore, askingPrice, marketValue) {
   const repTier = getRepTierName(reputationScore);
 
+  // Reputation: max ±0.08 total swing — trusted sellers see slightly less scrutiny
   const REP_MOD = {
-    'Легенда':   -0.20,
-    'Авторитет': -0.12,
-    'Надёжный':  -0.06,
+    'Легенда':   -0.08,
+    'Авторитет': -0.05,
+    'Надёжный':  -0.02,
     'Знакомый':   0,
-    'Новичок':  +0.15,
+    'Новичок':  +0.05,
   };
 
-  let p = 0.30 + (REP_MOD[repTier] ?? 0);
+  // Base 0.75 → ~8/10 at fair price. Price ratio shifts it significantly.
+  let p = 0.75 + (REP_MOD[repTier] ?? 0);
 
   if (marketValue > 0) {
     const ratio = askingPrice / marketValue;
-    if (ratio > 1.10) p += 0.10;
-    else if (ratio < 0.90) p -= 0.05;
+    if      (ratio < 0.80) p -= 0.30;  // very cheap — buyers just grab it, skip inspection
+    else if (ratio < 0.90) p -= 0.15;  // underpriced — less scrutiny
+    else if (ratio < 1.00) p -= 0.05;  // slight bargain
+    else if (ratio <= 1.10) p += 0.00; // fair price — baseline
+    else if (ratio <= 1.20) p += 0.10; // premium — buyers get cautious
+    else                    p += 0.20; // expensive — almost always inspect
   }
 
-  return clamp(p, 0.05, 1.0);
+  return clamp(p, 0.10, 0.98);
 }
