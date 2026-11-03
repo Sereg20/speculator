@@ -43,7 +43,7 @@ export const HOLDING_COST_LATE  = 40;   // BYN/day
 
 // Garage upgrade costs (BYN, index = target tier)
 export const GARAGE_UPGRADE_COST = [0, 0, 900, 2200, 5500, 14000];
-export const GARAGE_UPGRADE_LEVEL_REQUIRED = [0, 1, 3, 6, 10, 15];
+export const GARAGE_UPGRADE_LEVEL_REQUIRED = [0, 1, 2, 6, 10, 15];
 
 // Energy (GMS §1.3)
 export const ENERGY_MAX_EARLY = 50;   // levels 1–7

@@ -47,10 +47,7 @@ export function CarSlot({
   scrollX,
   garageLevel,
 }: CarCardProps) {
-  const garageImg = getGarageImage(garageLevel);
   const { width, height } = Dimensions.get("screen");
-
-
   const cardWidth = width * 0.7;
 
   const rnAmimatedStyle = useAnimatedStyle(() => {
@@ -521,7 +518,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     top: 0,
-    height: 60,
+    height: 56,
     backgroundColor: "rgba(0,0,0,0.30)",
   },
 
