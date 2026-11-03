@@ -283,9 +283,7 @@ export default function MarketInspectionScreen() {
   }
 
   function onSuccessPurchaseDialogConfirm() {
-    router.replace({
-      pathname: "/"
-    });
+    router.replace("/(tabs)/(garage)");
   }
 
   return (

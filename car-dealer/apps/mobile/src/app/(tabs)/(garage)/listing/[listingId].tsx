@@ -179,9 +179,7 @@ export default function ListingInquiryScreen() {
   }
 
   function onQuit() {
-    router.replace({
-      pathname: "/"
-    });
+    router.replace("/(tabs)/(garage)");
   }
 
 
