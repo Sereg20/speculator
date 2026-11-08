@@ -21,8 +21,7 @@ interface GameHeaderProps {
 export function GameHeader({onLvlPress, onCashPress, onEnergyPress}: GameHeaderProps) {
   const insets = useSafeAreaInsets();
   const { data: player } = useQuery(playerQuery());
-  // const xpProgress = player!.xp / (player!.xp + player!.xp_to_next_level) * 100;
-  const filled = (player!.xp - player!.xp_level_start) / (player!.xp_next_level_start - player!.xp_level_start);
+  const filled = (player!.xp - player!.xp_level_start) / (player!.xp_next_level_start - player!.xp_level_start) * 100;
 
   return (
     <View style={[styles.container, {paddingTop: insets.top}]}>

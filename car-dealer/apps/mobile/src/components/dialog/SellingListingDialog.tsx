@@ -150,7 +150,6 @@ const styles = StyleSheet.create({
 
   emptyContainer: {
     backgroundColor: colors.darkBackground,
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 14,
